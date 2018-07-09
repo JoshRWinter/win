@@ -1,0 +1,9 @@
+# linux
+*.o
+*.*.swp
+vgcore.*
+driver/driver
+
+# windows
+*.obj
+*.exe
