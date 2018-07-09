@@ -4,8 +4,13 @@
 // redifined platform macros for conditional compilation
 #if defined __linux__
 #define WINPLAT_LINUX
+#include <X11/Xlib.h>
+#include <GL/glx.h>
+
 #elif defined _WIN32
 #define WINPLAT_WINDOWS
+#include <windows.h>
+
 #else
 #error "unsupported platform"
 #endif
@@ -21,11 +26,12 @@ namespace win
 #if defined WINPLAT_WINDOWS
 	typedef HWND window_handle;
 #elif defined WINPLAT_LINUX
-	typedef void* window_handle;
+	typedef Window window_handle;
 #endif
 }
 
 #include "system.h"
+#include "event.h"
 #include "display.h"
 #include "audio.h"
 

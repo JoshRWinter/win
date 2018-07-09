@@ -9,15 +9,27 @@ class display
 	friend class system;
 
 public:
-	display() : window(NULL) {}
+	display();
 	display(const char*, int, int, int, window_handle);
 	display(const display&) = delete;
 	display(display&&);
+	~display();
 
 	display &operator=(display&&);
 
+	event poll();
+
 private:
-	window_handle window;
+	void finalize();
+
+#if defined WINPLAT_LINUX
+	Window window_;
+	GLXContext context_;
+	XVisualInfo *xvi_;
+#elif defined WINPLAT_WINDOWS
+#else
+#error "unsupported platform"
+#endif
 };
 
 }

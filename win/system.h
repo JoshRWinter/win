@@ -19,7 +19,7 @@ public:
 	void operator=(const system&) = delete;
 	system &operator=(system&&);
 
-	display make_display(const char*, int, int, int = 0, window_handle = NULL);
+	display make_display(const char*, int, int, int = 0, window_handle = 0);
 
 	static system &get();
 
