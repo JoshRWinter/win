@@ -31,6 +31,7 @@ namespace win
 }
 
 #include "system.h"
+#include "utility.h"
 #include "event.h"
 #include "display.h"
 #include "audio.h"

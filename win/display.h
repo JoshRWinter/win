@@ -18,6 +18,7 @@ public:
 	display &operator=(display&&);
 
 	event poll();
+	void swap() const;
 
 private:
 	void finalize();

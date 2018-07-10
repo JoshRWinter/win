@@ -70,6 +70,8 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	if(xdisplay == NULL)
 		throw exception("Could not connect to the X server");
 
+	load_extensions();
+
 	int attributes[] = {
 		GLX_RGBA,
 		GLX_RED_SIZE, 8,
@@ -119,6 +121,11 @@ win::event win::display::poll()
 	}
 
 	return event::NONE;
+}
+
+void win::display::swap() const
+{
+	glXSwapBuffers(xdisplay, window_);
 }
 
 void win::display::finalize()
