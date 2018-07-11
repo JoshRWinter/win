@@ -21,6 +21,7 @@ public:
 	void swap() const;
 
 private:
+	void move(display&);
 	void finalize();
 
 #if defined WINPLAT_LINUX

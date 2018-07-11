@@ -9,28 +9,14 @@ win::display::display()
 
 win::display::display(display &&rhs)
 {
-#if defined WINPLAT_LINUX
-	window_ = rhs.window_;
-	context_ = rhs.context_;
-
-	rhs.window_ = 0;
-	rhs.context_ = NULL;
-#endif
+	move(rhs);
 }
 
 win::display &win::display::operator=(display &&rhs)
 {
 	finalize();
-
-#if defined WINPLAT_LINUX
-	window_ = rhs.window_;
-	context_ = rhs.context_;
-
-	rhs.window_ = 0;
-	rhs.context_ = NULL;
-
+	move(rhs);
 	return *this;
-#endif
 }
 
 win::display::~display()
@@ -152,6 +138,15 @@ win::event win::display::poll()
 void win::display::swap() const
 {
 	glXSwapBuffers(xdisplay, window_);
+}
+
+void win::display::move(display &rhs)
+{
+	window_ = rhs.window_;
+	context_ = rhs.context_;
+
+	rhs.window_ = None;
+	rhs.context_ = NULL;
 }
 
 void win::display::finalize()
