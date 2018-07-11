@@ -104,6 +104,9 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	// set up delete window protocol
 	wm_delete_window = XInternAtom(xdisplay, "WM_DELETE_WINDOW", False);
 	XSetWMProtocols(xdisplay, window_, &wm_delete_window, 1);
+
+	// vsync
+	glXSwapIntervalEXT(xdisplay, window_, 1);
 }
 
 win::event win::display::poll()

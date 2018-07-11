@@ -31,6 +31,10 @@ void win::load_extensions()
 	glUniform1f = (decltype(glUniform1f))getproc("glUniform1f");
 	glDrawElementsInstanced = (decltype(glDrawElementsInstanced))getproc("glDrawElementsInstanced");
 	glBufferSubData = (decltype(glBufferSubData))getproc("glBufferSubData");
+
+#if defined WINPLAT_LINUX
+	glXSwapIntervalEXT = (decltype(glXSwapIntervalEXT))getproc("glXSwapIntervalEXT");
+#endif
 }
 
 unsigned win::load_shaders(const char *vertex_source, const char *fragment_source)
