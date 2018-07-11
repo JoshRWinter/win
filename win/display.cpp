@@ -12,11 +12,9 @@ win::display::display(display &&rhs)
 #if defined WINPLAT_LINUX
 	window_ = rhs.window_;
 	context_ = rhs.context_;
-	xvi_ = rhs.xvi_;
 
 	rhs.window_ = 0;
 	rhs.context_ = NULL;
-	rhs.xvi_ = NULL;
 #endif
 }
 
@@ -27,11 +25,9 @@ win::display &win::display::operator=(display &&rhs)
 #if defined WINPLAT_LINUX
 	window_ = rhs.window_;
 	context_ = rhs.context_;
-	xvi_ = rhs.xvi_;
 
 	rhs.window_ = 0;
 	rhs.context_ = NULL;
-	rhs.xvi_ = NULL;
 
 	return *this;
 #endif
@@ -49,6 +45,8 @@ win::display::~display()
 /* ------------------------------------*/
 
 #if defined WINPLAT_LINUX
+
+typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
 static Display *xdisplay;
 static Atom wm_delete_window;
@@ -72,33 +70,55 @@ win::display::display(const char *caption, int width, int height, int flags, win
 
 	load_extensions();
 
-	int attributes[] = {
-		GLX_RGBA,
+	int visual_attributes[] =
+	{
+		GLX_RENDER_TYPE, GLX_RGBA_BIT,
+		GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+		GLX_DOUBLEBUFFER, True,
 		GLX_RED_SIZE, 8,
 		GLX_GREEN_SIZE, 8,
 		GLX_BLUE_SIZE, 8,
 		GLX_ALPHA_SIZE, 8,
 		GLX_DEPTH_SIZE, 24,
-	None };
+		None
+	};
 
-	xvi_ = glXChooseVisual(xdisplay, 0, attributes);
-	if(xvi_ == NULL)
-		throw exception("no appropriate X visuals could be found");
+	// get a frame buffer config
+	int fb_count = 0;
+	GLXFBConfig *fbconfig = glXChooseFBConfig(xdisplay, DefaultScreen(xdisplay), visual_attributes, &fb_count);
+	if(fbconfig == NULL)
+		throw exception("Could not find a suitable frame buffer configuration");
 
-	Window root = DefaultRootWindow(xdisplay);
+	// get a X visual config
+	XVisualInfo *xvi = glXGetVisualFromFBConfig(xdisplay, fbconfig[0]);
+	if(xvi == NULL)
+		throw exception("Could not find a suitable X Visual configuration");
 
-	Colormap cmap = XCreateColormap(xdisplay, root, xvi_->visual, AllocNone);
-
+	// window settings
 	XSetWindowAttributes xswa;
-	xswa.colormap = cmap;
+	xswa.colormap = XCreateColormap(xdisplay, RootWindow(xdisplay, xvi->screen), xvi->visual, AllocNone);
 	xswa.event_mask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
 
-	window_ = XCreateWindow(xdisplay, root, 0, 0, width, height, 0, xvi_->depth, InputOutput, xvi_->visual, CWColormap | CWEventMask, &xswa);
-
+	// create da window
+	window_ = XCreateWindow(xdisplay, RootWindow(xdisplay, xvi->screen), 0, 0, width, height, 0, xvi->depth, InputOutput, xvi->visual, CWColormap | CWEventMask, &xswa);
 	XMapWindow(xdisplay, window_);
 	XStoreName(xdisplay, window_, caption);
 
-	context_ = glXCreateContext(xdisplay, xvi_, NULL, GL_TRUE);
+	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)glXGetProcAddress((unsigned char*)"glXCreateContextAttribsARB");
+	if(glXCreateContextAttribsARB == NULL)
+		throw exception("Could not find function glXCreateContextAttribsARB");
+
+	const int context_attributes[] =
+	{
+		GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+		GLX_CONTEXT_MINOR_VERSION_ARB, 3,
+		None
+	};
+
+	// create opengl context
+	context_ = glXCreateContextAttribsARB(xdisplay, fbconfig[0], NULL, true, context_attributes);
+	if(context_ == None)
+		throw exception("Could not create an OpenGL " + std::to_string(context_attributes[1]) + "." + std::to_string(context_attributes[3])  + " context");
 	glXMakeCurrent(xdisplay, window_, context_);
 
 	// set up delete window protocol
@@ -107,6 +127,9 @@ win::display::display(const char *caption, int width, int height, int flags, win
 
 	// vsync
 	glXSwapIntervalEXT(xdisplay, window_, 1);
+
+	XFree(xvi);
+	XFree(fbconfig);
 }
 
 win::event win::display::poll()
@@ -139,7 +162,6 @@ void win::display::finalize()
 	glXMakeCurrent(xdisplay, None, NULL);
 	glXDestroyContext(xdisplay, context_);
 	XDestroyWindow(xdisplay, window_);
-	XFree(xvi_);
 }
 
 /* ------------------------------------*/
