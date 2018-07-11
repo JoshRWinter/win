@@ -69,7 +69,7 @@ unsigned win::load_shaders(const char *vertex_source, const char *fragment_sourc
 	return program;
 }
 
-void win::init_ortho(float *matrix,float left,float right,float bottom,float top,float znear,float zfar)
+void win::init_ortho(float *matrix,float left,float right,float bottom,float top)
 {
 	matrix[0] = 2.0f / (right - left);
 	matrix[1] = 0.0f;
@@ -81,11 +81,11 @@ void win::init_ortho(float *matrix,float left,float right,float bottom,float top
 	matrix[7] = 0.0f;
 	matrix[8] = 0.0f;
 	matrix[9] = 0.0f;
-	matrix[10] = -2.0f / (zfar - znear);
+	matrix[10] = -2.0f / (1.0f - -1.0f);
 	matrix[11] = 0.0f;
 	matrix[12] = -((right + left) / (right - left));
 	matrix[13] = -((top + bottom)/(top - bottom));
-	matrix[14] = -((zfar + znear) / (zfar - znear));
+	matrix[14] = -((1.0f + -1.0f) / (1.0f - -1.0f));
 	matrix[15] = 1.0f;
 }
 

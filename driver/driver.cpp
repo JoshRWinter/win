@@ -30,7 +30,7 @@ int main()
 	glUseProgram(program);
 	int uniform_projection, uniform_size;
 	float ortho_matrix[16];
-	win::init_ortho(ortho_matrix, -8.0f, 8.0f, 4.5f, -4.5f, -1.0f, 1.0f);
+	win::init_ortho(ortho_matrix, -8.0f, 8.0f, 4.5f, -4.5f);
 	uniform_projection = glGetUniformLocation(program, "projection");
 	uniform_size = glGetUniformLocation(program, "size");
 	glUniformMatrix4fv(uniform_projection, 1, false, ortho_matrix);
