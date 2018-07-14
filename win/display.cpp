@@ -2,9 +2,17 @@
 
 #include "win.h"
 
+// default event handlers
+static void handler_keyboard(int, int, bool) {}
+static void handler_mouse_move(int, int) {}
+static void handler_mouse_click(win::mouse, bool) {}
+
 win::display::display()
 {
-	memset(this, 0, sizeof(*this));
+#if defined WINPLAT_LINUX
+	window_ = None;
+	context_ = NULL;
+#endif
 }
 
 win::display::display(display &&rhs)
@@ -49,8 +57,22 @@ struct x_display_helper
 	}
 } xdisp;
 
+static int x_get_key(int keycode)
+{
+	int count = 0;
+	KeySym *sym = XGetKeyboardMapping(xdisplay, keycode, 1, &count);
+	const int result = sym[0];
+	XFree(sym);
+
+	return result > 127 ? 0 : result;
+}
+
 win::display::display(const char *caption, int width, int height, int flags, window_handle parent)
 {
+	handler.keyboard = handler_keyboard;
+	handler.mouse_move = handler_mouse_move;
+	handler.mouse_click = handler_mouse_click;
+
 	if(xdisplay == NULL)
 		throw exception("Could not connect to the X server");
 
@@ -118,21 +140,40 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	XFree(fbconfig);
 }
 
-win::event win::display::poll()
+// return false if application is to exit
+bool win::display::process()
 {
-	if(!XPending(xdisplay))
-		return event::NONE;
-
-	XEvent xevent;
-	XNextEvent(xdisplay, &xevent);
-
-	switch(xevent.type)
+	while(XPending(xdisplay))
 	{
-		case ClientMessage: return event::CLOSE;
-		default: return event::NONE;
+		XEvent xevent;
+		XPeekEvent(xdisplay, &xevent);
+		if(xevent.xany.window != window_)
+			return true;
+		XNextEvent(xdisplay, &xevent);
+
+		switch(xevent.type)
+		{
+			case ClientMessage: return false;
+
+			case KeyPress:
+				handler.keyboard(xevent.xkey.keycode, x_get_key(xevent.xkey.keycode), true);
+				break;
+			case KeyRelease:
+			{
+				XEvent e;
+				if(XPending(xdisplay))
+				{
+					XPeekEvent(xdisplay, &e);
+					if(xevent.xkey.keycode == e.xkey.keycode && e.type == KeyPress)
+						break;
+				}
+				handler.keyboard(xevent.xkey.keycode, x_get_key(xevent.xkey.keycode), false);
+				break;
+			}
+		}
 	}
 
-	return event::NONE;
+	return true;
 }
 
 void win::display::swap() const
@@ -140,8 +181,27 @@ void win::display::swap() const
 	glXSwapBuffers(xdisplay, window_);
 }
 
+void win::display::event_keyboard(fn_event_keyboard f)
+{
+	handler.keyboard = std::move(f);
+}
+
+void win::display::event_mouse_move(fn_event_mouse_move f)
+{
+	handler.mouse_move = std::move(f);
+}
+
+void win::display::event_mouse_click(fn_event_mouse_click f)
+{
+	handler.mouse_click = std::move(f);
+}
+
 void win::display::move(display &rhs)
 {
+	handler.keyboard = std::move(rhs.handler.keyboard);
+	handler.mouse_move = std::move(rhs.handler.mouse_move);
+	handler.mouse_click = std::move(rhs.handler.mouse_click);
+
 	window_ = rhs.window_;
 	context_ = rhs.context_;
 

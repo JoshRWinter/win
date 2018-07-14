@@ -4,19 +4,14 @@
 namespace win
 {
 
-#if defined WINPLAT_LINUX
-
-enum class event
+// mouse buttons
+enum class mouse
 {
-	CLOSE,
-	NONE
 };
 
-#elif defined WINPLAT_WINDOWS
-
-#else
-#error "unsupported platform"
-#endif
+enum class pkey
+{
+};
 
 }
 

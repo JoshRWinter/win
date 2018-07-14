@@ -1,5 +1,6 @@
 #include <thread>
 #include <chrono>
+#include <iostream>
 
 #include "../win/win.h"
 
@@ -75,14 +76,15 @@ int main()
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	win::event event;
+	bool quit = false;
+	display.event_keyboard([&quit](int code, int ascii, bool press){ if(ascii != 0) std::cerr << "'" << (char)ascii << "'" << std::endl; });
+
 	for(;;)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
 
-		while((event = display.poll()) != win::event::NONE)
-			if(event == win::event::CLOSE)
-				goto done;
+		if(!display.process() || quit)
+			goto done;
 
 		// process entities
 		{
