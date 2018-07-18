@@ -42,8 +42,9 @@ win::display::~display()
 
 typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
-static Display *xdisplay;
 static Atom wm_delete_window;
+static Display *xdisplay;
+static XkbDescPtr xkb_desc;
 struct x_display_helper
 {
 	x_display_helper()
@@ -53,12 +54,18 @@ struct x_display_helper
 		int major_in_out = XkbMajorVersion;
 		int minor_in_out = XkbMinorVersion;
 		int reason_return = 0;
-		// XkbLibraryVersion(&)
 		xdisplay = XkbOpenDisplay(NULL, &event_return, &error_return, &major_in_out, &minor_in_out, &reason_return);
+
+		// x keyboard extension schtuff
+		xkb_desc = XkbGetMap(xdisplay, 0, XkbUseCoreKbd);
+		if(xkb_desc == NULL)
+			throw win::exception("Could not get the X keyboard map");
+		XkbGetNames(xdisplay, XkbKeyNamesMask, xkb_desc);
 	}
 
 	~x_display_helper()
 	{
+		XkbFreeKeyboard(xkb_desc, 0, True);
 		XCloseDisplay(xdisplay);
 	}
 } xdisp;
@@ -139,10 +146,6 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	// vsync
 	glXSwapIntervalEXT(xdisplay, window_, 1);
 
-	// x keyboard extension schtuff
-	xkb_desc_ = XkbGetMap(xdisplay, 0, XkbUseCoreKbd);
-	XkbGetNames(xdisplay, XkbKeyNamesMask, xkb_desc_);
-
 	XFree(xvi);
 	XFree(fbconfig);
 }
@@ -164,7 +167,7 @@ bool win::display::process()
 
 			case KeyPress:
 			{
-				handler.keyboard_raw(xkb_desc_->names->keys[xevent.xkey.keycode].name, true);
+				handler.keyboard_raw(xkb_desc->names->keys[xevent.xkey.keycode].name, true);
 				const KeySym sym = x_get_keysym(&xevent.xkey);
 				if(sym)
 					handler.keyboard_cooked(sym, true);
@@ -180,7 +183,7 @@ bool win::display::process()
 						break;
 				}
 
-				handler.keyboard_raw(xkb_desc_->names->keys[xevent.xkey.keycode].name, false);
+				handler.keyboard_raw(xkb_desc->names->keys[xevent.xkey.keycode].name, false);
 				const KeySym sym = x_get_keysym(&xevent.xkey);
 				if(sym)
 					handler.keyboard_cooked(sym, false);
@@ -226,19 +229,15 @@ void win::display::move(display &rhs)
 
 	window_ = rhs.window_;
 	context_ = rhs.context_;
-	xkb_desc_ = rhs.xkb_desc_;
 
 	rhs.window_ = None;
 	rhs.context_ = NULL;
-	rhs.xkb_desc_ = NULL;
 }
 
 void win::display::finalize()
 {
 	if(window_ == 0)
 		return;
-
-	XkbFreeKeyboard(xkb_desc_, 0, True);
 
 	glXMakeCurrent(xdisplay, None, NULL);
 	glXDestroyContext(xdisplay, context_);

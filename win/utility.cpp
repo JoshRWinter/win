@@ -314,5 +314,5 @@ const char *win::key_name(const pkey key)
 	else if(key == pkey::NUM_9)
 		return "Num9";
 
-	throw exception("key name not recognized");
+	return "UndefinedKey";
 }

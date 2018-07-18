@@ -49,7 +49,6 @@ private:
 #if defined WINPLAT_LINUX
 	Window window_;
 	GLXContext context_;
-	XkbDescPtr xkb_desc_;
 #elif defined WINPLAT_WINDOWS
 #else
 #error "unsupported platform"
