@@ -45,6 +45,7 @@ namespace win
 	void load_extensions();
 	unsigned load_shaders(const char*, const char*);
 	void init_ortho(float *matrix, float, float, float, float);
+	const char *key_name(pkey);
 }
 
 #endif

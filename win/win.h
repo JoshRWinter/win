@@ -5,6 +5,7 @@
 #if defined __linux__
 #define WINPLAT_LINUX
 #include <X11/Xlib.h>
+#include <X11/XKBlib.h>
 #include <GL/glx.h>
 
 #elif defined _WIN32
@@ -31,8 +32,8 @@ namespace win
 }
 
 #include "system.h"
-#include "utility.h"
 #include "event.h"
+#include "utility.h"
 #include "display.h"
 #include "audio.h"
 
