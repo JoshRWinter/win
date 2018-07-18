@@ -16,6 +16,8 @@ class display
 	typedef std::function<void(mouse, bool)> fn_event_mouse_click;
 
 public:
+	static constexpr int FULLSCREEN = 1;
+
 	display();
 	display(const char*, int, int, int, window_handle);
 	display(const display&) = delete;

@@ -1,5 +1,7 @@
 #include <string.h>
 
+#include <X11/Xatom.h>
+
 #include "win.h"
 
 // default event handlers
@@ -42,12 +44,13 @@ win::display::~display()
 
 typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
-static Atom wm_delete_window;
+static Atom atom_delete_window;
+static Atom atom_fullscreen;
 static Display *xdisplay;
 static XkbDescPtr xkb_desc;
-struct x_display_helper
+struct x_init_helper
 {
-	x_display_helper()
+	x_init_helper()
 	{
 		int event_return = 0;
 		int error_return = 0;
@@ -61,14 +64,21 @@ struct x_display_helper
 		if(xkb_desc == NULL)
 			throw win::exception("Could not get the X keyboard map");
 		XkbGetNames(xdisplay, XkbKeyNamesMask, xkb_desc);
+
+		// window close message
+		atom_delete_window = XInternAtom(xdisplay, "WM_DELETE_WINDOW", False);
+
+		// fullscreen atom
+		atom_fullscreen = XInternAtom(xdisplay, "_NET_WM_STATE_FULLSCREEN", False);
+
 	}
 
-	~x_display_helper()
+	~x_init_helper()
 	{
 		XkbFreeKeyboard(xkb_desc, 0, True);
 		XCloseDisplay(xdisplay);
 	}
-} xdisp;
+} xinit_helper;
 
 static int x_get_keysym(XKeyEvent *event)
 {
@@ -122,6 +132,10 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	XMapWindow(xdisplay, window_);
 	XStoreName(xdisplay, window_, caption);
 
+	// fullscreen
+	if(flags & FULLSCREEN)
+		XChangeProperty(xdisplay, window_, XInternAtom(xdisplay, "_NET_WM_STATE", False), XA_ATOM, 32, PropModeReplace, (const unsigned char*)&atom_fullscreen, 1);
+
 	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)glXGetProcAddress((unsigned char*)"glXCreateContextAttribsARB");
 	if(glXCreateContextAttribsARB == NULL)
 		throw exception("Could not find function glXCreateContextAttribsARB");
@@ -140,8 +154,7 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	glXMakeCurrent(xdisplay, window_, context_);
 
 	// set up delete window protocol
-	wm_delete_window = XInternAtom(xdisplay, "WM_DELETE_WINDOW", False);
-	XSetWMProtocols(xdisplay, window_, &wm_delete_window, 1);
+	XSetWMProtocols(xdisplay, window_, &atom_delete_window, 1);
 
 	// vsync
 	glXSwapIntervalEXT(xdisplay, window_, 1);
