@@ -82,8 +82,12 @@ struct x_init_helper
 
 static int x_get_keysym(XKeyEvent *event)
 {
-	const int sym = XLookupKeysym(event, 0);
-	return sym > 127 || sym < 0 ? 0 : sym;
+	char buffer[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	KeySym sym = 0;
+	if(!XLookupString(event, buffer, sizeof(buffer), &sym, NULL))
+		return 0;
+
+	return sym < ' ' || sym > '~' ? 0 : sym;
 }
 
 win::display::display(const char *caption, int width, int height, int flags, window_handle parent)

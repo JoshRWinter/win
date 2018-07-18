@@ -77,17 +77,17 @@ int main()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	bool quit = false;
-	// display.event_keyboard_cooked([](int key, bool press)
-	// {
-	// 	if(press)
-	// 		fprintf(stderr, "%c", key);
-	// });
-
-	display.event_keyboard_raw([](win::pkey key, bool press)
+	display.event_keyboard_cooked([](int key, bool press)
 	{
 		if(press)
-			std::cerr << win::key_name(key) << std::endl;
+			fprintf(stderr, "%c (%x) ", key, key);
 	});
+
+	// display.event_keyboard_raw([](win::pkey key, bool press)
+	// {
+	// 	if(press)
+	// 		std::cerr << win::key_name(key) << std::endl;
+	// });
 
 	for(;;)
 	{
