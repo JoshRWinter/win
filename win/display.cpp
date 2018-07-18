@@ -5,10 +5,9 @@
 #include "win.h"
 
 // default event handlers
-static void handler_keyboard_raw(win::pkey, bool) {}
+static void handler_keyboard_raw(win::button, bool) {}
 static void handler_keyboard_cooked(int, bool) {}
 static void handler_mouse_move(int, int) {}
-static void handler_mouse_click(win::mouse, bool) {}
 
 win::display::display()
 {
@@ -95,11 +94,6 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	handler.keyboard_raw = handler_keyboard_raw;
 	handler.keyboard_cooked = handler_keyboard_cooked;
 	handler.mouse_move = handler_mouse_move;
-	handler.mouse_click = handler_mouse_click;
-
-	if(xdisplay == NULL)
-		throw exception("Could not connect to the X server");
-
 	load_extensions();
 
 	int visual_attributes[] =
@@ -206,6 +200,24 @@ bool win::display::process()
 					handler.keyboard_cooked(sym, false);
 				break;
 			}
+			case MotionNotify:
+				handler.mouse_move(xevent.xmotion.x, xevent.xmotion.y);
+				break;
+			case ButtonPress:
+			case ButtonRelease:
+				switch(xevent.xbutton.button)
+				{
+					case 1:
+						handler.keyboard_raw(button::MOUSE_LEFT, xevent.type == ButtonPress);
+						break;
+					case 2:
+						handler.keyboard_raw(button::MOUSE_MIDDLE, xevent.type == ButtonPress);
+						break;
+					case 3:
+						handler.keyboard_raw(button::MOUSE_RIGHT, xevent.type == ButtonPress);
+						break;
+				}
+				break;
 		}
 	}
 
@@ -232,17 +244,11 @@ void win::display::event_mouse_move(fn_event_mouse_move f)
 	handler.mouse_move = std::move(f);
 }
 
-void win::display::event_mouse_click(fn_event_mouse_click f)
-{
-	handler.mouse_click = std::move(f);
-}
-
 void win::display::move(display &rhs)
 {
 	handler.keyboard_cooked = std::move(rhs.handler.keyboard_cooked);
 	handler.keyboard_raw = std::move(rhs.handler.keyboard_raw);
 	handler.mouse_move = std::move(rhs.handler.mouse_move);
-	handler.mouse_click = std::move(rhs.handler.mouse_click);
 
 	window_ = rhs.window_;
 	context_ = rhs.context_;

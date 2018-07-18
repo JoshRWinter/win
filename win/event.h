@@ -6,15 +6,20 @@
 namespace win
 {
 
-// mouse buttons
-enum class mouse
-{
-};
-
 #if defined WINPLAT_LINUX
-class pkey
+class button
 {
 public:
+	// mice
+	static constexpr const char *MOUSE_LEFT = "MS1\0";
+	static constexpr const char *MOUSE_RIGHT = "MS2\0";
+	static constexpr const char *MOUSE_MIDDLE = "MS3\0";
+	static constexpr const char *MOUSE4 = "MS4\0";
+	static constexpr const char *MOUSE5 = "MS5\0";
+	static constexpr const char *MOUSE6 = "MS6\0";
+	static constexpr const char *MOUSE7 = "MS7\0";
+
+	// letters
 	static constexpr const char *A = "AC01";
 	static constexpr const char *B = "AB05";
 	static constexpr const char *C = "AB03";
@@ -128,7 +133,7 @@ public:
 	static constexpr const char *NUM_8 = "KP8";
 	static constexpr const char *NUM_9 = "KP9";
 
-	pkey(const char *const n) : name(n) {}
+	button(const char *const n) : name(n) {}
 
 	void print() const
 	{

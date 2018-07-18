@@ -102,216 +102,228 @@ void *getproc(const char *name)
 #error "unsupported platform"
 #endif
 
-const char *win::key_name(const pkey key)
+const char *win::key_name(const button key)
 {
-	if(key == pkey::A)
+	if(key == button::MOUSE_LEFT)
+		return "LeftMouse";
+	else if(key == button::MOUSE_RIGHT)
+		return "RightMouse";
+	else if(key == button::MOUSE_MIDDLE)
+		return "MiddleMouse";
+	else if(key == button::MOUSE_LEFT)
+		return "LeftMouse";
+	else if(key == button::MOUSE4)
+		return "Mouse4";
+	else if(key == button::MOUSE5)
+		return "Mouse5";
+	else if(key == button::A)
 		return "A";
-	else if(key == pkey::B)
+	else if(key == button::B)
 		return "B";
-	else if(key == pkey::C)
+	else if(key == button::C)
 		return "C";
-	else if(key == pkey::D)
+	else if(key == button::D)
 		return "D";
-	else if(key == pkey::E)
+	else if(key == button::E)
 		return "E";
-	else if(key == pkey::F)
+	else if(key == button::F)
 		return "F";
-	else if(key == pkey::G)
+	else if(key == button::G)
 		return "G";
-	else if(key == pkey::H)
+	else if(key == button::H)
 		return "H";
-	else if(key == pkey::I)
+	else if(key == button::I)
 		return "I";
-	else if(key == pkey::J)
+	else if(key == button::J)
 		return "J";
-	else if(key == pkey::K)
+	else if(key == button::K)
 		return "K";
-	else if(key == pkey::L)
+	else if(key == button::L)
 		return "L";
-	else if(key == pkey::M)
+	else if(key == button::M)
 		return "M";
-	else if(key == pkey::N)
+	else if(key == button::N)
 		return "N";
-	else if(key == pkey::O)
+	else if(key == button::O)
 		return "O";
-	else if(key == pkey::P)
+	else if(key == button::P)
 		return "P";
-	else if(key == pkey::Q)
+	else if(key == button::Q)
 		return "Q";
-	else if(key == pkey::R)
+	else if(key == button::R)
 		return "R";
-	else if(key == pkey::S)
+	else if(key == button::S)
 		return "S";
-	else if(key == pkey::T)
+	else if(key == button::T)
 		return "T";
-	else if(key == pkey::U)
+	else if(key == button::U)
 		return "U";
-	else if(key == pkey::V)
+	else if(key == button::V)
 		return "V";
-	else if(key == pkey::W)
+	else if(key == button::W)
 		return "W";
-	else if(key == pkey::X)
+	else if(key == button::X)
 		return "X";
-	else if(key == pkey::Y)
+	else if(key == button::Y)
 		return "Y";
-	else if(key == pkey::Z)
+	else if(key == button::Z)
 		return "Z";
 
-	else if(key == pkey::D0)
+	else if(key == button::D0)
 		return "0";
-	else if(key == pkey::D1)
+	else if(key == button::D1)
 		return "1";
-	else if(key == pkey::D2)
+	else if(key == button::D2)
 		return "2";
-	else if(key == pkey::D3)
+	else if(key == button::D3)
 		return "3";
-	else if(key == pkey::D4)
+	else if(key == button::D4)
 		return "4";
-	else if(key == pkey::D5)
+	else if(key == button::D5)
 		return "5";
-	else if(key == pkey::D6)
+	else if(key == button::D6)
 		return "6";
-	else if(key == pkey::D7)
+	else if(key == button::D7)
 		return "7";
-	else if(key == pkey::D8)
+	else if(key == button::D8)
 		return "8";
-	else if(key == pkey::D9)
+	else if(key == button::D9)
 		return "9";
 
-	else if(key == pkey::TILDE)
+	else if(key == button::TILDE)
 		return "Tilde";
-	else if(key == pkey::DASH)
+	else if(key == button::DASH)
 		return "Dash";
-	else if(key == pkey::EQUALS)
+	else if(key == button::EQUALS)
 		return "Equals";
-	else if(key == pkey::LBRACKET)
+	else if(key == button::LBRACKET)
 		return "LeftBracket";
-	else if(key == pkey::RBRACKET)
+	else if(key == button::RBRACKET)
 		return "RightBracket";
-	else if(key == pkey::SEMICOLON)
+	else if(key == button::SEMICOLON)
 		return "Semicolon";
-	else if(key == pkey::APOSTROPHE)
+	else if(key == button::APOSTROPHE)
 		return "Apostrophe";
-	else if(key == pkey::COMMA)
+	else if(key == button::COMMA)
 		return "Comma";
-	else if(key == pkey::PERIOD)
+	else if(key == button::PERIOD)
 		return "Period";
-	else if(key == pkey::SLASH)
+	else if(key == button::SLASH)
 		return "Slash";
-	else if(key == pkey::BACKSLASH)
+	else if(key == button::BACKSLASH)
 		return "BackSlash";
 
-	else if(key == pkey::F1)
+	else if(key == button::F1)
 		return "Function1";
-	else if(key == pkey::F2)
+	else if(key == button::F2)
 		return "Function2";
-	else if(key == pkey::F3)
+	else if(key == button::F3)
 		return "Function3";
-	else if(key == pkey::F4)
+	else if(key == button::F4)
 		return "Function4";
-	else if(key == pkey::F5)
+	else if(key == button::F5)
 		return "Function5";
-	else if(key == pkey::F6)
+	else if(key == button::F6)
 		return "Function6";
-	else if(key == pkey::F7)
+	else if(key == button::F7)
 		return "Function7";
-	else if(key == pkey::F8)
+	else if(key == button::F8)
 		return "Function8";
-	else if(key == pkey::F9)
+	else if(key == button::F9)
 		return "Function9";
-	else if(key == pkey::F10)
+	else if(key == button::F10)
 		return "Function10";
-	else if(key == pkey::F11)
+	else if(key == button::F11)
 		return "Function11";
-	else if(key == pkey::F12)
+	else if(key == button::F12)
 		return "Function12";
 
-	else if(key == pkey::ESC)
+	else if(key == button::ESC)
 		return "Escape";
-	else if(key == pkey::PRINT_SCR)
+	else if(key == button::PRINT_SCR)
 		return "PrintScreen";
-	else if(key == pkey::PAUSE_BREAK)
+	else if(key == button::PAUSE_BREAK)
 		return "PauseBreak";
-	else if(key == pkey::INSERT)
+	else if(key == button::INSERT)
 		return "Insert";
-	else if(key == pkey::DELETE)
+	else if(key == button::DELETE)
 		return "Delete";
-	else if(key == pkey::HOME)
+	else if(key == button::HOME)
 		return "Home";
-	else if(key == pkey::PAGE_UP)
+	else if(key == button::PAGE_UP)
 		return "PageUp";
-	else if(key == pkey::PAGE_DOWN)
+	else if(key == button::PAGE_DOWN)
 		return "PageDown";
-	else if(key == pkey::END)
+	else if(key == button::END)
 		return "End";
-	else if(key == pkey::BACKSPACE)
+	else if(key == button::BACKSPACE)
 		return "Backspace";
-	else if(key == pkey::RETURN)
+	else if(key == button::RETURN)
 		return "Return";
-	else if(key == pkey::ENTER)
+	else if(key == button::ENTER)
 		return "Enter";
-	else if(key == pkey::LSHIFT)
+	else if(key == button::LSHIFT)
 		return "LeftShift";
-	else if(key == pkey::RSHIFT)
+	else if(key == button::RSHIFT)
 		return "RightShift";
-	else if(key == pkey::LCTRL)
+	else if(key == button::LCTRL)
 		return "LeftControl";
-	else if(key == pkey::RCTRL)
+	else if(key == button::RCTRL)
 		return "RightControl";
-	else if(key == pkey::LALT)
+	else if(key == button::LALT)
 		return "LeftAlt";
-	else if(key == pkey::RALT)
+	else if(key == button::RALT)
 		return "RightAlt";
-	else if(key == pkey::SPACE)
+	else if(key == button::SPACE)
 		return "Spacebar";
-	else if(key == pkey::MENU)
+	else if(key == button::MENU)
 		return "Menu";
-	else if(key == pkey::LMETA)
+	else if(key == button::LMETA)
 		return "LeftMeta";
-	else if(key == pkey::UP)
+	else if(key == button::UP)
 		return "UpArrow";
-	else if(key == pkey::LEFT)
+	else if(key == button::LEFT)
 		return "LeftArrow";
-	else if(key == pkey::RIGHT)
+	else if(key == button::RIGHT)
 		return "RightArrow";
-	else if(key == pkey::DOWN)
+	else if(key == button::DOWN)
 		return "DownArrow";
-	else if(key == pkey::CAPSLOCK)
+	else if(key == button::CAPSLOCK)
 		return "CapsLock";
-	else if(key == pkey::TAB)
+	else if(key == button::TAB)
 		return "Tab";
 
-	else if(key == pkey::NUM_LOCK)
+	else if(key == button::NUM_LOCK)
 		return "NumLock";
-	else if(key == pkey::NUM_SLASH)
+	else if(key == button::NUM_SLASH)
 		return "NumSlash";
-	else if(key == pkey::NUM_MULTIPLY)
+	else if(key == button::NUM_MULTIPLY)
 		return "NumMultiply";
-	else if(key == pkey::NUM_MINUS)
+	else if(key == button::NUM_MINUS)
 		return "NumMinus";
-	else if(key == pkey::NUM_PLUS)
+	else if(key == button::NUM_PLUS)
 		return "NumPlus";
-	else if(key == pkey::NUM_DEL)
+	else if(key == button::NUM_DEL)
 		return "NumDelete";
-	else if(key == pkey::NUM_0)
+	else if(key == button::NUM_0)
 		return "Num0";
-	else if(key == pkey::NUM_1)
+	else if(key == button::NUM_1)
 		return "Num1";
-	else if(key == pkey::NUM_2)
+	else if(key == button::NUM_2)
 		return "Num2";
-	else if(key == pkey::NUM_3)
+	else if(key == button::NUM_3)
 		return "Num3";
-	else if(key == pkey::NUM_4)
+	else if(key == button::NUM_4)
 		return "Num4";
-	else if(key == pkey::NUM_5)
+	else if(key == button::NUM_5)
 		return "Num5";
-	else if(key == pkey::NUM_6)
+	else if(key == button::NUM_6)
 		return "Num6";
-	else if(key == pkey::NUM_7)
+	else if(key == button::NUM_7)
 		return "Num7";
-	else if(key == pkey::NUM_8)
+	else if(key == button::NUM_8)
 		return "Num8";
-	else if(key == pkey::NUM_9)
+	else if(key == button::NUM_9)
 		return "Num9";
 
 	return "UndefinedKey";
