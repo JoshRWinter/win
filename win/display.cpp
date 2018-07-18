@@ -5,9 +5,9 @@
 #include "win.h"
 
 // default event handlers
-static void handler_keyboard_raw(win::button, bool) {}
-static void handler_keyboard_cooked(int, bool) {}
-static void handler_mouse_move(int, int) {}
+static void handler_button(win::button, bool) {}
+static void handler_character(int, bool) {}
+static void handler_mouse(int, int) {}
 
 win::display::display()
 {
@@ -91,9 +91,9 @@ static int x_get_keysym(XKeyEvent *event)
 
 win::display::display(const char *caption, int width, int height, int flags, window_handle parent)
 {
-	handler.keyboard_raw = handler_keyboard_raw;
-	handler.keyboard_cooked = handler_keyboard_cooked;
-	handler.mouse_move = handler_mouse_move;
+	handler.key_button = handler_button;
+	handler.character = handler_character;
+	handler.mouse = handler_mouse;
 	load_extensions();
 
 	int visual_attributes[] =
@@ -178,10 +178,10 @@ bool win::display::process()
 
 			case KeyPress:
 			{
-				handler.keyboard_raw(xkb_desc->names->keys[xevent.xkey.keycode].name, true);
+				handler.key_button(xkb_desc->names->keys[xevent.xkey.keycode].name, true);
 				const KeySym sym = x_get_keysym(&xevent.xkey);
 				if(sym)
-					handler.keyboard_cooked(sym, true);
+					handler.character(sym, true);
 				break;
 			}
 			case KeyRelease:
@@ -194,27 +194,27 @@ bool win::display::process()
 						break;
 				}
 
-				handler.keyboard_raw(xkb_desc->names->keys[xevent.xkey.keycode].name, false);
+				handler.key_button(xkb_desc->names->keys[xevent.xkey.keycode].name, false);
 				const KeySym sym = x_get_keysym(&xevent.xkey);
 				if(sym)
-					handler.keyboard_cooked(sym, false);
+					handler.character(sym, false);
 				break;
 			}
 			case MotionNotify:
-				handler.mouse_move(xevent.xmotion.x, xevent.xmotion.y);
+				handler.mouse(xevent.xmotion.x, xevent.xmotion.y);
 				break;
 			case ButtonPress:
 			case ButtonRelease:
 				switch(xevent.xbutton.button)
 				{
 					case 1:
-						handler.keyboard_raw(button::MOUSE_LEFT, xevent.type == ButtonPress);
+						handler.key_button(button::MOUSE_LEFT, xevent.type == ButtonPress);
 						break;
 					case 2:
-						handler.keyboard_raw(button::MOUSE_MIDDLE, xevent.type == ButtonPress);
+						handler.key_button(button::MOUSE_MIDDLE, xevent.type == ButtonPress);
 						break;
 					case 3:
-						handler.keyboard_raw(button::MOUSE_RIGHT, xevent.type == ButtonPress);
+						handler.key_button(button::MOUSE_RIGHT, xevent.type == ButtonPress);
 						break;
 				}
 				break;
@@ -229,26 +229,26 @@ void win::display::swap() const
 	glXSwapBuffers(xdisplay, window_);
 }
 
-void win::display::event_keyboard_raw(fn_event_keyboard_raw f)
+void win::display::event_button(fn_event_button f)
 {
-	handler.keyboard_raw = std::move(f);
+	handler.key_button = std::move(f);
 }
 
-void win::display::event_keyboard_cooked(fn_event_keyboard_cooked f)
+void win::display::event_character(fn_event_character f)
 {
-	handler.keyboard_cooked = std::move(f);
+	handler.character = std::move(f);
 }
 
-void win::display::event_mouse_move(fn_event_mouse_move f)
+void win::display::event_mouse(fn_event_mouse f)
 {
-	handler.mouse_move = std::move(f);
+	handler.mouse = std::move(f);
 }
 
 void win::display::move(display &rhs)
 {
-	handler.keyboard_cooked = std::move(rhs.handler.keyboard_cooked);
-	handler.keyboard_raw = std::move(rhs.handler.keyboard_raw);
-	handler.mouse_move = std::move(rhs.handler.mouse_move);
+	handler.key_button = std::move(rhs.handler.key_button);
+	handler.character = std::move(rhs.handler.character);
+	handler.mouse = std::move(rhs.handler.mouse);
 
 	window_ = rhs.window_;
 	context_ = rhs.context_;

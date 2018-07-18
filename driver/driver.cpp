@@ -77,13 +77,13 @@ int main()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	bool quit = false;
-	display.event_keyboard_raw([&quit](win::button, bool press)
+	display.event_button([&quit](win::button, bool press)
 	{
 		if(press)
 			quit = true;
 	});
 
-	// display.event_mouse_move([&quit](int x, int y)
+	// display.event_mouse([&quit](int x, int y)
 	// {
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });

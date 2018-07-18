@@ -10,9 +10,9 @@ class display
 {
 	friend class system;
 
-	typedef std::function<void(button, bool)> fn_event_keyboard_raw;
-	typedef std::function<void(int, bool)> fn_event_keyboard_cooked;
-	typedef std::function<void(int x, int y)> fn_event_mouse_move;
+	typedef std::function<void(button, bool)> fn_event_button;
+	typedef std::function<void(int, bool)> fn_event_character;
+	typedef std::function<void(int x, int y)> fn_event_mouse;
 
 public:
 	static constexpr int FULLSCREEN = 1;
@@ -27,9 +27,9 @@ public:
 
 	bool process();
 	void swap() const;
-	void event_keyboard_raw(fn_event_keyboard_raw);
-	void event_keyboard_cooked(fn_event_keyboard_cooked);
-	void event_mouse_move(fn_event_mouse_move);
+	void event_button(fn_event_button);
+	void event_character(fn_event_character);
+	void event_mouse(fn_event_mouse);
 
 private:
 	void move(display&);
@@ -38,11 +38,11 @@ private:
 	struct
 	{
 		// keyboard
-		fn_event_keyboard_raw keyboard_raw;
-		fn_event_keyboard_cooked keyboard_cooked;
+		fn_event_button key_button;
+		fn_event_character character;
 
 		// mouse
-		fn_event_mouse_move mouse_move;
+		fn_event_mouse mouse;
 	}handler;
 
 #if defined WINPLAT_LINUX
