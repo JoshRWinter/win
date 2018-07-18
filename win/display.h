@@ -27,9 +27,15 @@ public:
 
 	bool process();
 	void swap() const;
+	int width() const;
+	int height() const;
+
 	void event_button(fn_event_button);
 	void event_character(fn_event_character);
 	void event_mouse(fn_event_mouse);
+
+	static int screen_width();
+	static int screen_height();
 
 private:
 	void move(display&);

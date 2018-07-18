@@ -229,6 +229,36 @@ void win::display::swap() const
 	glXSwapBuffers(xdisplay, window_);
 }
 
+int win::display::width() const
+{
+	Window root;
+	int xpos;
+	int ypos;
+	unsigned width = 0;
+	unsigned height;
+	unsigned border;
+	unsigned depth;
+
+	XGetGeometry(xdisplay, window_, &root, &xpos, &ypos, &width, &height, &border, &depth);
+
+	return width;
+}
+
+int win::display::height() const
+{
+	Window root;
+	int xpos;
+	int ypos;
+	unsigned width;
+	unsigned height = 0;
+	unsigned border;
+	unsigned depth;
+
+	XGetGeometry(xdisplay, window_, &root, &xpos, &ypos, &width, &height, &border, &depth);
+
+	return height;
+}
+
 void win::display::event_button(fn_event_button f)
 {
 	handler.key_button = std::move(f);
@@ -242,6 +272,16 @@ void win::display::event_character(fn_event_character f)
 void win::display::event_mouse(fn_event_mouse f)
 {
 	handler.mouse = std::move(f);
+}
+
+int win::display::screen_width()
+{
+	return WidthOfScreen(ScreenOfDisplay(xdisplay, 0));
+}
+
+int win::display::screen_height()
+{
+	return HeightOfScreen(ScreenOfDisplay(xdisplay, 0));
 }
 
 void win::display::move(display &rhs)

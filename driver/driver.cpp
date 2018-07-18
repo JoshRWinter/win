@@ -18,6 +18,9 @@ int main()
 	win::system system;
 	win::display display = system.make_display("window caption", 800, 600);
 
+	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
+	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;
+
 	const float verts[] =
 	{
 		-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f
