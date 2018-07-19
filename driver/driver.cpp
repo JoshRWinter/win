@@ -92,6 +92,9 @@ int main()
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
 
+	win::resource rc("/home/josh/fishtank/assets/arial.ttf");
+	win::font font = display.make_font(rc, 1.0f, 16.0, 9.0f);
+
 	for(;;)
 	{
 		auto start = std::chrono::high_resolution_clock::now();

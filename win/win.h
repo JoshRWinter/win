@@ -35,6 +35,7 @@ namespace win
 #include "resource.h"
 #include "event.h"
 #include "utility.h"
+#include "font.h"
 #include "display.h"
 #include "audio.h"
 

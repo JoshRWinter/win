@@ -19,7 +19,7 @@ static long long getsize(const char *filename)
 #endif
 
 win::resource::resource(const char *filename)
-	: in_(filename)
+	: in_(filename, std::ifstream::binary)
 	, filename_(filename)
 {
 	if(!in_)
@@ -54,13 +54,19 @@ long long win::resource::read(void *buffer, long long count)
 std::vector<unsigned char> win::resource::read()
 {
 	const auto len = size();
+	std::cerr << "size is " << len;
 	std::vector<unsigned char> data(len);
 
-	for(long long i = 0; i < len; ++i)
+	in_.seekg(0);
+
+	int sofar = 0;
+	while(sofar != len)
 	{
-		in_.read((std::ifstream::char_type*)&data[i], 1);
-		if(in_.gcount() != 1)
-			throw exception("could not read 1 byte");
+		in_.read((std::ifstream::char_type*)(data.data() + sofar), len - sofar);
+		const int got = in_.gcount();
+		if(got < 0)
+			throw exception("could not read from file");
+		sofar += got;
 	}
 
 	return data;

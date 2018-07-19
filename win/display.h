@@ -35,6 +35,8 @@ public:
 	void event_character(fn_event_character);
 	void event_mouse(fn_event_mouse);
 
+	font make_font(resource&, float, float, float);
+
 	static int screen_width();
 	static int screen_height();
 

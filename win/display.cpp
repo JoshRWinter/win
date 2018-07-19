@@ -295,6 +295,13 @@ void win::display::event_mouse(fn_event_mouse f)
 	handler.mouse = std::move(f);
 }
 
+win::font win::display::make_font(resource &rc, float size, float width, float height)
+{
+	font f(*this, rc, size, screen_width(), screen_width(), width, height);
+
+	return std::move(f);
+}
+
 int win::display::screen_width()
 {
 	return WidthOfScreen(ScreenOfDisplay(xdisplay, 0));
