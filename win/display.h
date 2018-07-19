@@ -29,6 +29,7 @@ public:
 	void swap() const;
 	int width() const;
 	int height() const;
+	void cursor(bool);
 
 	void event_button(fn_event_button);
 	void event_character(fn_event_character);

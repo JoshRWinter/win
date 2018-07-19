@@ -17,6 +17,7 @@ int main()
 {
 	win::system system;
 	win::display display = system.make_display("window caption", 800, 600);
+	display.cursor(false);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;

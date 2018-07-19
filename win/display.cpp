@@ -259,6 +259,27 @@ int win::display::height() const
 	return height;
 }
 
+void win::display::cursor(bool show)
+{
+	if(show)
+	{
+		XUndefineCursor(xdisplay, window_);
+	}
+	else
+	{
+		Pixmap pm;
+		XColor dummy;
+		char data[2] = {0, 0};
+		Cursor cursor;
+
+		pm = XCreateBitmapFromData(xdisplay, window_, data, 1, 1);
+		cursor = XCreatePixmapCursor(xdisplay, pm, pm, &dummy, &dummy, 0, 0);
+		XFreePixmap(xdisplay, pm);
+
+		XDefineCursor(xdisplay, window_, cursor);
+	}
+}
+
 void win::display::event_button(fn_event_button f)
 {
 	handler.key_button = std::move(f);
