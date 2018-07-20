@@ -1,0 +1,49 @@
+{
+   X11 xgetdefault
+   Memcheck:Leak
+   ...
+   fun:XGetDefault
+   ...
+}
+{
+   X11 xcreatebitmap
+   Memcheck:Leak
+   ...
+   fun:XCreateBitmapFromData
+   ...
+}
+{
+   more X bitmap crap
+   Memcheck:Leak
+   ...
+   fun:_XNoticeCreateBitmap
+   ...
+}
+{
+   X11 XrmGetStringDatabase
+   Memcheck:Leak
+   ...
+   fun:XrmGetStringDatabase
+   ...
+}
+{
+   X11 more X grunge
+   Memcheck:Leak
+   ...
+   fun:_XrmInitParseInfo
+   ...
+}
+{
+   glX frambuffer config
+   Memcheck:Leak
+   ...
+   fun:glXChooseFBConfig
+   ...
+}
+{
+   ld false positives
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/ld-2.27.so
+   ...
+}
