@@ -21,12 +21,16 @@ public:
 
 	font &operator=(font&&);
 
+	void draw(const char*, float, float, float, float, float, float);
+	void draw(const std::string &s, float x, float y, float r, float g, float b, float a) { draw(s.c_str(), x, y, r, g, b, a); }
+
 private:
 	font(const font_renderer &parent, resource&, float);
 	void finalize();
 
 	unsigned atlas_;
 	std::array<kernvector, 96> kern_;
+	const font_renderer *parent_;
 	float size_;
 };
 
@@ -56,8 +60,9 @@ private:
 	// opengl objects
 	unsigned program_;
 	unsigned vao_;
-	unsigned vbo_vertex_, vbo_position_, vbo_color_, vbo_texcoord_;
+	unsigned vbo_vertex_, vbo_position_, vbo_texcoord_;
 	unsigned ebo_;
+	int uniform_size_, uniform_color_;
 };
 
 }

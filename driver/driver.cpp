@@ -20,8 +20,8 @@ int main()
 	display.cursor(false);
 
 	win::resource rc("/home/josh/fishtank/assets/arial.ttf");
-	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -8.0f, 8.0f, 4.5f, -4.5f);
-	win::font font1 = font_renderer.make_font(rc, 1.0f);
+	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
+	win::font font1 = font_renderer.make_font(rc, 0.5f);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;
@@ -83,6 +83,8 @@ int main()
 	unsigned char block_color[3];
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	bool quit = false;
 	display.event_button([&quit](win::button, bool press)
@@ -143,6 +145,10 @@ int main()
 			glClear(GL_COLOR_BUFFER_BIT);
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL, 1);
 		}
+
+		font1.draw("Today is\nTuesday, July\n20th", -3.0f, -2.8f, 1.0f, 1.0f, 0.0f, 1.0f);
+		glBindVertexArray(vao);
+		glUseProgram(program);
 
 		display.swap();
 
