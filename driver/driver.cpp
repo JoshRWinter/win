@@ -39,7 +39,7 @@ int main()
 	glUseProgram(program);
 	int uniform_projection, uniform_size;
 	float ortho_matrix[16];
-	win::init_ortho(ortho_matrix, -8.0f, 8.0f, 4.5f, -4.5f);
+	win::init_ortho(ortho_matrix, -4.0f, 4.0f, 3.0f, -3.0f);
 	uniform_projection = glGetUniformLocation(program, "projection");
 	uniform_size = glGetUniformLocation(program, "size");
 	glUniformMatrix4fv(uniform_projection, 1, false, ortho_matrix);
@@ -110,24 +110,24 @@ int main()
 			block.x += block.xv;
 			block.y += block.yv;
 
-			if(block.x + Block::SIZE > 8.0f)
+			if(block.x + Block::SIZE > 4.0f)
 			{
-				block.x = 8.0f - Block::SIZE;
+				block.x = 4.0f - Block::SIZE;
 				block.xv = -block.xv;
 			}
-			else if(block.x < -8.0f)
+			else if(block.x < -4.0f)
 			{
-				block.x = -8.0f;
+				block.x = -4.0f;
 				block.xv = -block.xv;
 			}
-			if(block.y + Block::SIZE > 4.5f)
+			if(block.y + Block::SIZE > 3.0f)
 			{
-				block.y = 4.5f - Block::SIZE;
+				block.y = 3.0f - Block::SIZE;
 				block.yv = -block.yv;
 			}
-			else if(block.y < -4.5f)
+			else if(block.y < -3.0f)
 			{
-				block.y = -4.5f;
+				block.y = -3.0f;
 				block.yv = -block.yv;
 			}
 
