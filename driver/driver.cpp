@@ -19,6 +19,10 @@ int main()
 	win::display display = system.make_display("window caption", 800, 600);
 	display.cursor(false);
 
+	win::resource rc("/home/josh/fishtank/assets/arial.ttf");
+	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -8.0f, 8.0f, 4.5f, -4.5f);
+	win::font font1 = font_renderer.make_font(rc, 1.0f);
+
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;
 
@@ -91,9 +95,6 @@ int main()
 	// {
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
-
-	win::resource rc("/home/josh/fishtank/assets/arial.ttf");
-	win::font font = display.make_font(rc, 1.0f, 16.0, 9.0f);
 
 	for(;;)
 	{

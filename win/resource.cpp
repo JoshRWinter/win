@@ -54,7 +54,6 @@ long long win::resource::read(void *buffer, long long count)
 std::vector<unsigned char> win::resource::read()
 {
 	const auto len = size();
-	std::cerr << "size is " << len;
 	std::vector<unsigned char> data(len);
 
 	in_.seekg(0);

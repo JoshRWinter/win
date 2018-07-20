@@ -33,6 +33,11 @@ win::display::~display()
 	finalize();
 }
 
+win::font_renderer win::display::make_font_renderer(int iwidth, int iheight, float left, float right, float bottom, float top)
+{
+	return font_renderer(iwidth, iheight, left, right, bottom, top);
+}
+
 /* ------------------------------------*/
 /////////////////////////////////////////
 ///// LINUX /////////////////////////////
@@ -293,13 +298,6 @@ void win::display::event_character(fn_event_character f)
 void win::display::event_mouse(fn_event_mouse f)
 {
 	handler.mouse = std::move(f);
-}
-
-win::font win::display::make_font(resource &rc, float size, float width, float height)
-{
-	font f(*this, rc, size, screen_width(), screen_width(), width, height);
-
-	return std::move(f);
 }
 
 int win::display::screen_width()
