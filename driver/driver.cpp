@@ -1,6 +1,7 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <sstream>
 
 #include "../win/win.h"
 
@@ -146,7 +147,9 @@ int main()
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL, 1);
 		}
 
-		font1.draw("Today is\nTuesday, July\n20th", -3.0f, -2.8f, 1.0f, 1.0f, 0.0f, 1.0f);
+		std::ostringstream say;
+		say << "Today is\nTuesday, July\n20th, unix time:\n" << time(NULL);
+		font1.draw(say.str().c_str(), -3.0f, -2.8f, 1.0f, 1.0f, 0.0f, 1.0f);
 		glBindVertexArray(vao);
 		glUseProgram(program);
 

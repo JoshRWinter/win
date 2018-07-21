@@ -149,6 +149,7 @@ void win::font::draw(const char *text, float xpos, float ypos, float r, float g,
 	// fill vbos
 	float xoffset = xpos;
 	float yoffset = ypos;
+	int charcount = 0;
 	for(int i = 0; i < textlen; ++i)
 	{
 		if(text[i] == '\n')
@@ -162,19 +163,21 @@ void win::font::draw(const char *text, float xpos, float ypos, float r, float g,
 			throw exception("non printing ascii character: " + std::to_string((int)text[i]) + " found in text string");
 
 		// pos vbo
-		pos_buffer[(i * 2) + 0] = alignx(parent_->display_width_, parent_->right_ - parent_->left_, xoffset);
-		pos_buffer[(i * 2) + 1] = aligny(parent_->display_height_, parent_->bottom_ - parent_->top_, yoffset);
+		pos_buffer[(charcount * 2) + 0] = alignx(parent_->display_width_, parent_->right_ - parent_->left_, xoffset);
+		pos_buffer[(charcount * 2) + 1] = aligny(parent_->display_height_, parent_->bottom_ - parent_->top_, yoffset);
 
 		// texcoord vbo
 		const float xnormal = 1.0f / cols;
 		const float ynormal = 1.0f / rows;
 		const unsigned short xcoord = ((float)((text[i] - ' ') % 16) * xnormal) * USHRT_MAX;
 		const unsigned short ycoord = ((float)((text[i] - ' ') / 16) * ynormal) * USHRT_MAX;
-		texcoord_buffer[(i * 2) + 0] = xcoord;
-		texcoord_buffer[(i * 2) + 1] = 1.0 - ycoord;
+		texcoord_buffer[(charcount * 2) + 0] = xcoord;
+		texcoord_buffer[(charcount * 2) + 1] = 1.0 - ycoord;
 
 		const float bitmap_left = alignx(parent_->display_width_, parent_->right_ - parent_->left_, kern_[text[i] - ' '].bitmap_left);
 		xoffset += alignx(parent_->display_width_, parent_->right_ - parent_->left_, kern_[text[i] - ' '].advance) - bitmap_left;
+
+		++charcount;
 	}
 
 	glBindVertexArray(parent_->vao_);
@@ -184,14 +187,14 @@ void win::font::draw(const char *text, float xpos, float ypos, float r, float g,
 	glUniform4f(parent_->uniform_color_, r, g, b, a);
 
 	glBindBuffer(GL_ARRAY_BUFFER, parent_->vbo_position_);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * textlen * 2, pos_buffer.get(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * charcount * 2, pos_buffer.get(), GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, parent_->vbo_texcoord_);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned short) * 2 * textlen, texcoord_buffer.get(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned short) * 2 * charcount, texcoord_buffer.get(), GL_DYNAMIC_DRAW);
 
 	glBindTexture(GL_TEXTURE_2D, atlas_);
 
-	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, textlen);
+	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, charcount);
 }
 
 void win::font::finalize()
