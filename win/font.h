@@ -8,30 +8,33 @@ namespace win
 
 class font_renderer;
 
-class font
+struct metric
+{
+	float advance;
+	float bearing_y;
+	float bitmap_left;
+};
+
+struct font
 {
 	friend font_renderer;
 
-	struct kernvector { float advance, bitmap_left; };
-
-public:
 	font(const font&) = delete;
 	font(font&&);
 	~font();
 
 	font &operator=(font&&);
 
-	void draw(const char*, float, float, float, float, float, float);
-	void draw(const std::string &s, float x, float y, float r, float g, float b, float a) { draw(s.c_str(), x, y, r, g, b, a); }
+	unsigned atlas;
+	std::array<metric, 95> metrics;
+	float box_width; // width of each tile in the atlas
+	float box_height; // height of each tile in the atlas
+	float max_bearing_y; // greatest y bearing
+	float vertical; // vertical advance
 
 private:
 	font(const font_renderer &parent, resource&, float);
 	void finalize();
-
-	unsigned atlas_;
-	std::array<kernvector, 96> kern_;
-	const font_renderer *parent_;
-	float size_;
 };
 
 class font_renderer
@@ -46,6 +49,8 @@ public:
 
 	font_renderer &operator=(const font_renderer&) = delete;
 	font_renderer &operator=(font_renderer&&);
+
+	void draw(const font&, const char *, float, float, float, float, float, float);
 
 	font make_font(resource&, float);
 

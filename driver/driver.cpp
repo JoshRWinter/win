@@ -20,9 +20,9 @@ int main()
 	win::display display = system.make_display("window caption", 800, 600);
 	display.cursor(false);
 
-	win::resource rc("/home/josh/fishtank/assets/arial.ttf");
+	win::resource rc("/usr/share/fonts/noto/NotoSansMono-Regular.ttf");
 	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
-	win::font font1 = font_renderer.make_font(rc, 0.5f);
+	win::font font1 = font_renderer.make_font(rc, 0.3f);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;
@@ -147,9 +147,13 @@ int main()
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL, 1);
 		}
 
-		std::ostringstream say;
-		say << "Today is\nTuesday, July\n20th, unix time:\n" << time(NULL);
-		font1.draw(say.str().c_str(), -3.0f, -2.8f, 1.0f, 1.0f, 0.0f, 1.0f);
+		const time_t now = time(NULL);
+		struct tm *tm = localtime(&now);
+		char formatted[50];
+		if(0 == strftime(formatted, sizeof(formatted), "Today is %A, %B %d\n%I:%M:%S %p", tm))
+			strcpy(formatted, "null");
+
+		font_renderer.draw(font1, formatted, -3.9f, -2.9f, 1.0f, 1.0f, 0.0f, 1.0f);
 		glBindVertexArray(vao);
 		glUseProgram(program);
 

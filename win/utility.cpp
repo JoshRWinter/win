@@ -29,6 +29,7 @@ void win::load_extensions()
 	glUniformMatrix4fv = (decltype(glUniformMatrix4fv))getproc("glUniformMatrix4fv");
 	glVertexAttribDivisor = (decltype(glVertexAttribDivisor))getproc("glVertexAttribDivisor");
 	glUniform1f = (decltype(glUniform1f))getproc("glUniform1f");
+	glUniform2f = (decltype(glUniform2f))getproc("glUniform2f");
 	glUniform4f = (decltype(glUniform4f))getproc("glUniform4f");
 	glDrawElementsInstanced = (decltype(glDrawElementsInstanced))getproc("glDrawElementsInstanced");
 	glBufferSubData = (decltype(glBufferSubData))getproc("glBufferSubData");
