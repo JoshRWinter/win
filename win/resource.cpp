@@ -51,9 +51,9 @@ long long win::resource::read(void *buffer, long long count)
 	return in_.gcount();
 }
 
-std::vector<unsigned char> win::resource::read()
+std::vector<unsigned char> win::resource::read(const long long amount)
 {
-	const auto len = size();
+	const auto len = amount == -1 ? size() : amount;
 	std::vector<unsigned char> data(len);
 
 	in_.seekg(0);

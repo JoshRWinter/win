@@ -22,7 +22,7 @@ public:
 
 	long long size() const;
 	long long read(void*, long long);
-	std::vector<unsigned char> read();
+	std::vector<unsigned char> read(long long = -1);
 
 private:
 	std::ifstream in_;
