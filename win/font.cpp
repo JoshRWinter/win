@@ -343,7 +343,7 @@ win::font_renderer &win::font_renderer::operator=(font_renderer &&rhs)
 	return *this;
 }
 
-void win::font_renderer::draw(const font &fnt, const char *text, float xpos, float ypos, float r, float g, float b, float a, int flags)
+void win::font_renderer::draw(const font &fnt, const char *text, float xpos, float ypos, const color &clr, int flags)
 {
 	const int textlen = strlen(text);
 
@@ -401,7 +401,7 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 	glUseProgram(program_);
 
 	glUniform2f(uniform_size_, fnt.box_width, fnt.box_height);
-	glUniform4f(uniform_color_, r, g, b, a);
+	glUniform4f(uniform_color_, clr.red, clr.green, clr.blue, clr.alpha);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_position_);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * charcount * 2, pos_buffer.get(), GL_DYNAMIC_DRAW);

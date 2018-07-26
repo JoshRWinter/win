@@ -52,7 +52,7 @@ public:
 	font_renderer &operator=(const font_renderer&) = delete;
 	font_renderer &operator=(font_renderer&&);
 
-	void draw(const font&, const char *, float, float, float, float, float, float, int = 0);
+	void draw(const font&, const char *, float, float, const color&, int = 0);
 
 	font make_font(resource&, float);
 

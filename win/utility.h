@@ -44,6 +44,16 @@ WIN_EXTERN PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
 
 namespace win
 {
+	struct color
+	{
+		constexpr color(float r, float g, float b, float a = 1.0f)
+			: red(r), green(g), blue(b), alpha(a) {}
+		constexpr color(int r, int g, int b, int a = 255.0f)
+			: red(r / 255.0f), green(g / 255.0f), blue(b / 255.0f), alpha(a / 255.0f) {}
+
+		float red, green, blue, alpha;
+	};
+
 	void load_extensions();
 	unsigned load_shaders(const char*, const char*);
 	void init_ortho(float *matrix, float, float, float, float);

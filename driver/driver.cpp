@@ -153,7 +153,7 @@ int main()
 		if(0 == strftime(formatted, sizeof(formatted), "Today is %A, %B %d\n%I:%M:%S %p", tm))
 			strcpy(formatted, "null");
 
-		font_renderer.draw(font1, formatted, 0.0f, -2.9f, 1.0f, 1.0f, 0.0f, 1.0f, win::font_renderer::CENTERED);
+		font_renderer.draw(font1, formatted, 0.0f, -2.9f, win::color(1.0f, 1.0f, 0.0f), win::font_renderer::CENTERED);
 		glBindVertexArray(vao);
 		glUseProgram(program);
 
