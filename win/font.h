@@ -43,6 +43,8 @@ class font_renderer
 	friend display;
 
 public:
+	static constexpr int CENTERED = 1;
+
 	font_renderer(const font_renderer&) = delete;
 	font_renderer(font_renderer&&);
 	~font_renderer();
@@ -50,12 +52,13 @@ public:
 	font_renderer &operator=(const font_renderer&) = delete;
 	font_renderer &operator=(font_renderer&&);
 
-	void draw(const font&, const char *, float, float, float, float, float, float);
+	void draw(const font&, const char *, float, float, float, float, float, float, int = 0);
 
 	font make_font(resource&, float);
 
 private:
 	font_renderer(int, int, float, float, float, float);
+	float line_length(const font&, const char*, int) const;
 	void finalize();
 
 	// renderer settings

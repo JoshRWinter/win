@@ -343,7 +343,7 @@ win::font_renderer &win::font_renderer::operator=(font_renderer &&rhs)
 	return *this;
 }
 
-void win::font_renderer::draw(const font &fnt, const char *text, float xpos, float ypos, float r, float g, float b, float a)
+void win::font_renderer::draw(const font &fnt, const char *text, float xpos, float ypos, float r, float g, float b, float a, int flags)
 {
 	const int textlen = strlen(text);
 
@@ -351,7 +351,11 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 	std::unique_ptr<unsigned short[]> texcoord_buffer(new unsigned short[2 * textlen]);
 
 	// fill vbos
-	float xoffset = xpos;
+	float xoffset;
+	if(flags & CENTERED)
+		xoffset = xpos - (line_length(fnt, text, 0) / 2.0f);
+	else
+		xoffset = xpos;
 	float yoffset = ypos - fnt.max_bearing_y;
 	int charcount = 0;
 	for(int i = 0; i < textlen; ++i)
@@ -361,7 +365,10 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 		if(text[i] == '\n')
 		{
 			yoffset += fnt.vertical;
-			xoffset = xpos;
+			if(flags & CENTERED)
+				xoffset = xpos - (line_length(fnt, text, i + 1) / 2.0f);
+			else
+				xoffset = xpos;
 			continue;
 		}
 		else if(text[i] == ' ')
@@ -410,6 +417,23 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 win::font win::font_renderer::make_font(resource &rc, float size)
 {
 	return font(*this, rc, size);
+}
+
+// calculate line length, only up to the first newline after <start>
+float win::font_renderer::line_length(const font &fnt, const char *text, int start) const
+{
+	const int len = strlen(text);
+	float length = 0.0f;
+
+	for(int i = start; i < len; ++i)
+	{
+		if(text[i] == '\n')
+			break;
+
+		length += fnt.metrics[text[i] - ' '].advance - fnt.metrics[text[i] - ' '].bitmap_left;
+	}
+
+	return length;
 }
 
 void win::font_renderer::finalize()
