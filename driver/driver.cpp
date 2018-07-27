@@ -20,6 +20,9 @@ int main()
 	win::display display = system.make_display("window caption", 800, 600);
 	display.cursor(false);
 
+	win::resource apack_rsrc("/home/josh/fishtank/assets/aassets");
+	win::apack apack(apack_rsrc);
+
 	win::resource rc("/usr/share/fonts/noto/NotoSansMono-Regular.ttf");
 	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::font font1 = font_renderer.make_font(rc, 0.3f);

@@ -17,7 +17,6 @@
 #endif
 
 #include <exception>
-#include <string>
 #include <iostream>
 #include <cstdlib>
 
@@ -37,6 +36,7 @@ namespace win
 #include "utility.h"
 #include "font.h"
 #include "display.h"
+#include "apack.h"
 #include "audio.h"
 
 namespace win
