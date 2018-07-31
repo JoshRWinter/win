@@ -219,6 +219,16 @@ void win::audio_engine::cleanup(bool all)
 
 		snd.cancel = true;
 
+		if(!snd.done)
+		{
+			std::atomic<bool> flushed(false);
+			auto callback = [](pa_stream*, int, void *data) { ((std::atomic<bool>*)data)->store(true); };
+			pa_operation_unref(pa_stream_flush(snd.stream, callback, &flushed));
+			pa_threaded_mainloop_unlock(loop_);
+			while(!flushed);
+			pa_threaded_mainloop_lock(loop_);
+		}
+
 		pa_threaded_mainloop_unlock(loop_);
 		while(!snd.done);
 		pa_threaded_mainloop_lock(loop_);
