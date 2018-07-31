@@ -191,6 +191,41 @@ void win::audio_engine::play(const apack &ap, int id)
 	pa_threaded_mainloop_unlock(loop_);
 }
 
+void win::audio_engine::pause_all()
+{
+	auto callback = [](pa_stream*, int, void*) {};
+	sound_list::node *current = sounds_.head;
+	while(current != NULL)
+	{
+		pa_operation *op = pa_stream_cork(current->snd.stream, 1, callback, NULL);
+		if(op)
+		{
+			while(pa_operation_get_state(op) != PA_OPERATION_DONE);
+			pa_operation_unref(op);
+		}
+
+		current = current->next;
+	}
+}
+
+void win::audio_engine::resume_all()
+{
+	auto callback = [](pa_stream*, int, void*) {};
+
+	sound_list::node *current = sounds_.head;
+	while(current != NULL)
+	{
+		pa_operation *op = pa_stream_cork(current->snd.stream, 0, callback, NULL);
+		if(op)
+		{
+			while(pa_operation_get_state(op) != PA_OPERATION_DONE);
+			pa_operation_unref(op);
+		}
+
+		current = current->next;
+	}
+}
+
 void win::audio_engine::move(audio_engine &rhs)
 {
 	sounds_ = std::move(rhs.sounds_);

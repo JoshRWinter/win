@@ -93,10 +93,19 @@ int main()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	bool quit = false;
-	display.event_button([&quit, &apack, &audio_engine](win::button button, bool press)
+	bool paused = false;
+	display.event_button([&quit, &apack, &paused, &audio_engine](win::button button, bool press)
 	{
 		if(press && button == win::button::ESC)
 			quit = true;
+		else if(press && button == win::button::SPACE)
+		{
+			paused = !paused;
+			if(paused)
+				audio_engine.pause_all();
+			else
+				audio_engine.resume_all();
+		}
 		else if(press)
 			audio_engine.play(apack, 10);
 	});

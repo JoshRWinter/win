@@ -130,6 +130,9 @@ public:
 
 	void play(const apack&, int);
 
+	void pause_all();
+	void resume_all();
+
 private:
 	audio_engine();
 	void move(audio_engine&);
