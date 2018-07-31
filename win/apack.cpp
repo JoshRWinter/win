@@ -36,7 +36,7 @@ win::apack::apack(resource &res)
 			--index;
 		unsigned long long samplecount;
 		memcpy(&samplecount, &sounds_[i].encoded[index + 3], sizeof(samplecount));
-		sounds_[i].target_size = samplecount + sizeof(short);
+		sounds_[i].target_size = samplecount * sizeof(short);
 
 		// decode buffer
 		sounds_[i].buffer.reset(new short[samplecount]);
@@ -226,8 +226,10 @@ void decodeogg(const unsigned char *const encoded, const unsigned long long enco
 								}
 
 								if(offset + (bout * 2 * info.channels) > (long long)decoded_size)
-									raise("overflow");
-								memcpy(decoded + offset, convbuffer.get(), bout * 2 * info.channels);
+									std::cerr << ("write overflow: size = " + std::to_string(decoded_size) + ", offset =  " + std::to_string(offset) + ", " + std::to_string(bout * 2 * info.channels) + " bytes") << std::endl;
+								else
+									memcpy((char*)(decoded) + offset, convbuffer.get(), bout * 2 * info.channels);
+								offset += bout * 2 * info.channels;
 								size->store(offset);
 
 								vorbis_synthesis_read(&dsp, bout);

@@ -27,6 +27,8 @@ namespace win
 	typedef HWND window_handle;
 #elif defined WINPLAT_LINUX
 	typedef Window window_handle;
+#else
+#error "unsupported platform"
 #endif
 }
 
@@ -35,9 +37,9 @@ namespace win
 #include "event.h"
 #include "utility.h"
 #include "font.h"
-#include "display.h"
 #include "apack.h"
-#include "audio.h"
+#include "audio_engine.h"
+#include "display.h"
 
 namespace win
 {

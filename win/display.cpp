@@ -33,7 +33,12 @@ win::display::~display()
 	finalize();
 }
 
-win::font_renderer win::display::make_font_renderer(int iwidth, int iheight, float left, float right, float bottom, float top)
+win::audio_engine win::display::make_audio_engine() const
+{
+	return audio_engine();
+}
+
+win::font_renderer win::display::make_font_renderer(int iwidth, int iheight, float left, float right, float bottom, float top) const
 {
 	return font_renderer(iwidth, iheight, left, right, bottom, top);
 }

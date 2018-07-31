@@ -19,8 +19,12 @@ struct apack_sound
 	std::thread thread;
 };
 
+class audio_engine;
+
 class apack
 {
+	friend audio_engine;
+
 public:
 	apack(resource&);
 	apack(const apack&) = delete;

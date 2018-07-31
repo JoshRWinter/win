@@ -23,6 +23,8 @@ int main()
 	win::resource apack_rsrc("/home/josh/fishtank/assets/aassets");
 	win::apack apack(apack_rsrc);
 
+	win::audio_engine audio_engine = display.make_audio_engine();
+
 	win::resource rc("/usr/share/fonts/noto/NotoSansMono-Regular.ttf");
 	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::font font1 = font_renderer.make_font(rc, 0.3f);
@@ -91,10 +93,12 @@ int main()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	bool quit = false;
-	display.event_button([&quit](win::button, bool press)
+	display.event_button([&quit, &apack, &audio_engine](win::button button, bool press)
 	{
-		if(press)
+		if(press && button == win::button::ESC)
 			quit = true;
+		else if(press)
+			audio_engine.play(apack, 10);
 	});
 
 	// display.event_mouse([&quit](int x, int y)
@@ -102,6 +106,7 @@ int main()
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
 
+	audio_engine.play(apack, 3);
 	for(;;)
 	{
 		auto start = std::chrono::high_resolution_clock::now();

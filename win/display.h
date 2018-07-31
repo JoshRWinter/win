@@ -35,7 +35,8 @@ public:
 	void event_character(fn_event_character);
 	void event_mouse(fn_event_mouse);
 
-	font_renderer make_font_renderer(int, int, float, float, float, float);
+	audio_engine make_audio_engine() const;
+	font_renderer make_font_renderer(int, int, float, float, float, float) const;
 
 	static int screen_width();
 	static int screen_height();
@@ -58,8 +59,6 @@ private:
 	Window window_;
 	GLXContext context_;
 #elif defined WINPLAT_WINDOWS
-#else
-#error "unsupported platform"
 #endif
 };
 

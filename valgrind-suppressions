@@ -47,3 +47,10 @@
    obj:/usr/lib/ld-2.27.so
    ...
 }
+{
+   Pulseaudio
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/libpulse.so.0.20.3
+   ...
+}
