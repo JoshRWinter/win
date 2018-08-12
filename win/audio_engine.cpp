@@ -1,10 +1,37 @@
 #include "win.h"
 
+win::sound::sound(const sound &rhs)
+{
+	move(rhs);
+}
+
+win::sound &win::sound::operator=(const sound &rhs)
+{
+	move(rhs);
+
+	return *this;
+}
+
+void win::sound::move(const sound &rhs)
+{
+	parent = rhs.parent;
+	id = rhs.id;
+	start = rhs.start;
+	pcm = rhs.pcm;
+	size = rhs.size;
+	target_size = rhs.target_size;
+	done = rhs.done.load();
+	cancel = rhs.cancel.load();
+
+#if defined WINPLAT_LINUX
+	stream = rhs.stream;
+#endif
+}
+
 win::audio_engine::audio_engine(audio_engine &&rhs)
 {
-	next_id_ = rhs.next_id_;
-
-	move(rhs);
+	move_common(rhs);
+	move_platform(rhs);
 }
 
 win::audio_engine::~audio_engine()
@@ -16,11 +43,19 @@ win::audio_engine &win::audio_engine::operator=(audio_engine &&rhs)
 {
 	finalize();
 
-	next_id_ = rhs.next_id_;
-
-	move(rhs);
+	move_common(rhs);
+	move_platform(rhs);
 
 	return *this;
+}
+
+// move the member data that is common to all platforms
+void win::audio_engine::move_common(audio_engine &rhs)
+{
+	next_id_ = rhs.next_id_;
+	active_sounds_ = rhs.active_sounds_;
+	listener_x_ = rhs.listener_x_;
+	listener_y_ = rhs.listener_y_;
 }
 
 /* ------------------------------------*/
@@ -226,13 +261,13 @@ void win::audio_engine::resume_all()
 	}
 }
 
-void win::audio_engine::move(audio_engine &rhs)
+// move the platform specific (pulseaudio) data members
+void win::audio_engine::move_platform(audio_engine &rhs)
 {
 	sounds_ = std::move(rhs.sounds_);
 
 	context_ = rhs.context_;
 	loop_ = rhs.loop_;
-	active_sounds_ = rhs.active_sounds_;
 
 	rhs.context_ = NULL;
 	rhs.loop_ = NULL;
@@ -245,11 +280,11 @@ void win::audio_engine::cleanup(bool all)
 	{
 		sound &snd = current->snd;
 
-		if(!all)
+		if(!all) // only cleaning up sounds that have finished
 			if(!snd.done)
 			{
 				current = current->next;
-				continue;
+				continue; // skip it if it's not done playing
 			}
 
 		snd.cancel = true;

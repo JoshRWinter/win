@@ -9,29 +9,9 @@ namespace win
 struct sound
 {
 	sound() = default;
-	sound(const sound &rhs)
-		: parent(rhs.parent), id(rhs.id),
-		start(rhs.start), pcm(rhs.pcm),
-		size(rhs.size),
-		target_size(rhs.target_size),
-		done(rhs.done.load()),
-		cancel(rhs.cancel.load()),
-		stream(rhs.stream)
-	{}
-	sound &operator=(const sound &rhs)
-	{
-		parent = rhs.parent;
-		id = rhs.id;
-		start = rhs.start;
-		pcm = rhs.pcm;
-		size = rhs.size;
-		target_size = rhs.target_size;
-		done = rhs.done.load();
-		cancel = rhs.cancel.load();
-		stream = rhs.stream;
-
-		return *this;
-	}
+	sound(const sound&);
+	sound &operator=(const sound&);
+	void move(const sound&);
 
 	audio_engine *parent;
 	int id; // unique sound instance id
@@ -39,9 +19,12 @@ struct sound
 	short *pcm; // audio data
 	std::atomic<unsigned long long> *size; // how much has been decoded
 	unsigned long long target_size; // how big entire pcm buffer is
-	std::atomic<bool> done;
-	std::atomic<bool> cancel;
+	std::atomic<bool> done; // sound has completed
+	std::atomic<bool> cancel; // cancel flag
+
+#if defined WINPLAT_LINUX
 	pa_stream *stream;
+#endif
 };
 
 struct sound_list
@@ -129,17 +112,20 @@ public:
 	audio_engine &operator=(audio_engine&&);
 
 	void play(const apack&, int);
-
 	void pause_all();
 	void resume_all();
 
 private:
 	audio_engine();
-	void move(audio_engine&);
+	void move_platform(audio_engine&);
+	void move_common(audio_engine&);
 	void finalize();
 
 	int next_id_;
 	int active_sounds_;
+
+	float listener_x_;
+	float listener_y_;
 
 #if defined WINPLAT_LINUX
 	void cleanup(bool);
