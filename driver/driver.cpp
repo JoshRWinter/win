@@ -102,9 +102,9 @@ int main()
 		{
 			paused = !paused;
 			if(paused)
-				audio_engine.pause_all();
+				audio_engine.pause();
 			else
-				audio_engine.resume_all();
+				audio_engine.resume();
 		}
 		else if(press)
 			audio_engine.play(apack, 10);

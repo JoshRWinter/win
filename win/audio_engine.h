@@ -1,6 +1,8 @@
 #ifndef WIN_AUDIO_ENGINE_H
 #define WIN_AUDIO_ENGINE_H
 
+#include <list>
+
 #include <pulse/pulseaudio.h>
 
 namespace win
@@ -8,93 +10,22 @@ namespace win
 
 struct sound
 {
-	sound() = default;
-	sound(const sound&);
-	sound &operator=(const sound&);
-	void move(const sound&);
-
+#if defined WINPLAT_LINUX
+	sound(audio_engine *parent_, int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, pa_stream *stream_)
+		: parent(parent_), id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), drained(false), stream(stream_) {}
+#endif
 	audio_engine *parent;
 	int id; // unique sound instance id
-	long long start; // start here next write
+	bool looping;
+	std::atomic<unsigned long long> start; // start here next write
 	short *pcm; // audio data
 	std::atomic<unsigned long long> *size; // how much has been decoded
 	unsigned long long target_size; // how big entire pcm buffer is
-	std::atomic<bool> done; // sound has completed
-	std::atomic<bool> cancel; // cancel flag
 
 #if defined WINPLAT_LINUX
+	std::atomic<bool> drained;
 	pa_stream *stream;
 #endif
-};
-
-struct sound_list
-{
-	struct node { sound snd; node *next; };
-
-	sound_list() { head = NULL; }
-	sound_list(const sound_list&) = delete;
-	sound_list(sound_list &&rhs)
-	{
-		head = rhs.head;
-		rhs.head = NULL;
-	}
-	~sound_list()
-	{
-		node *current = head;
-		while(current != NULL)
-		{
-			node *next = current->next;
-			delete current;
-			current = next;
-		}
-		head = NULL;
-	}
-	void operator=(const sound_list&) = delete;
-	sound_list &operator=(sound_list &&rhs)
-	{
-		head = rhs.head;
-		rhs.head = NULL;
-		return *this;
-	}
-	sound *add(const sound &s)
-	{
-		node *n = new node;
-		n->snd = s;
-
-		node *tmp = head;
-		head = n;
-		n->next = tmp;
-
-		return &n->snd;
-	}
-	node *remove(node *n)
-	{
-		// find it
-		node *current = head;
-		node *prev = NULL;
-		while(current != NULL)
-		{
-			if(current == n)
-			{
-				if(prev == NULL)
-					head = current->next;
-				else
-					prev->next = current->next;
-
-				node *tmp = current->next;
-				delete current;
-				return tmp;
-			}
-
-			prev = current;
-			current = current->next;
-		}
-
-		std::cerr << "could not find the node";
-		std::abort();
-	}
-
-	node *head;
 };
 
 class audio_engine
@@ -111,9 +42,12 @@ public:
 	void operator=(const audio_engine&) = delete;
 	audio_engine &operator=(audio_engine&&);
 
-	void play(const apack&, int);
-	void pause_all();
-	void resume_all();
+	int play(const apack&, int, bool = false);
+	void pause();
+	void resume();
+	void pause(int);
+	void resume(int);
+	void listener(float, float);
 
 private:
 	audio_engine();
@@ -122,8 +56,6 @@ private:
 	void finalize();
 
 	int next_id_;
-	int active_sounds_;
-
 	float listener_x_;
 	float listener_y_;
 
@@ -132,7 +64,7 @@ private:
 
 	pa_context *context_;
 	pa_threaded_mainloop *loop_;
-	sound_list sounds_;
+	std::list<sound> sounds_;
 #endif
 };
 

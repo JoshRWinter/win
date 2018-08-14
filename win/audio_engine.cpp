@@ -1,33 +1,5 @@
 #include "win.h"
 
-win::sound::sound(const sound &rhs)
-{
-	move(rhs);
-}
-
-win::sound &win::sound::operator=(const sound &rhs)
-{
-	move(rhs);
-
-	return *this;
-}
-
-void win::sound::move(const sound &rhs)
-{
-	parent = rhs.parent;
-	id = rhs.id;
-	start = rhs.start;
-	pcm = rhs.pcm;
-	size = rhs.size;
-	target_size = rhs.target_size;
-	done = rhs.done.load();
-	cancel = rhs.cancel.load();
-
-#if defined WINPLAT_LINUX
-	stream = rhs.stream;
-#endif
-}
-
 win::audio_engine::audio_engine(audio_engine &&rhs)
 {
 	move_common(rhs);
@@ -53,7 +25,6 @@ win::audio_engine &win::audio_engine::operator=(audio_engine &&rhs)
 void win::audio_engine::move_common(audio_engine &rhs)
 {
 	next_id_ = rhs.next_id_;
-	active_sounds_ = rhs.active_sounds_;
 	listener_x_ = rhs.listener_x_;
 	listener_y_ = rhs.listener_y_;
 }
@@ -81,43 +52,46 @@ static void callback_stream(pa_stream*, void *loop)
 	pa_threaded_mainloop_signal((pa_threaded_mainloop*)loop, 0);
 }
 
-static void callback_dummy_free(void*) {}
-static void callback_stream_success(pa_stream*, int, void*) {}
-
-static void callback_stream_drain(pa_stream *stream, int, void *data)
+static void callback_stream_drained(pa_stream*, int success, void *data)
 {
-	((win::sound*)data)->done = true;
+	win::sound *snd = (win::sound*)data;
+	snd->drained.store(success == 1);
+	std::cerr << "drained id " << snd->id << " (done)" << std::endl;
 }
 
 static void callback_stream_write(pa_stream *stream, size_t bytes, void *data)
 {
 	win::sound *const snd = (win::sound*)data;
 
-	if(snd->start == (long long)snd->target_size)
+	std::cerr << "write call (" << bytes << " bytes) for id " << snd->id << std::endl;
+
+	const unsigned long long size = snd->size->load();
+	const unsigned long long start = snd->start.load();
+
+	if(snd->start == snd->target_size)
 		return;
 
-	if(snd->cancel)
+	const unsigned long long left = size - start;
+	const size_t written = std::min((long long unsigned)bytes, left);
+
+	pa_stream_write(stream, (char*)(snd->pcm) + start, written, [](void*){}, 0, PA_SEEK_RELATIVE);
+
+	if(start + written == snd->target_size)
 	{
-		snd->start = snd->target_size;
-		pa_operation_unref(pa_stream_drain(stream, callback_stream_drain, data));
+		pa_operation *op = pa_stream_drain(stream, callback_stream_drained, data);
+		if(!op)
+			raise("Couldn't drain the stream");
+		pa_operation_unref(op);
 	}
 
-	const long long left = snd->size->load() - snd->start;
-	const long long start = snd->start;
-	const size_t written = std::min((long long)bytes, left);
-
 	snd->start += written;
-
-	pa_stream_write(stream, (char*)(snd->pcm) + start, written, callback_dummy_free, 0, PA_SEEK_RELATIVE);
-
-	if(snd->start == (long long)snd->target_size)
-		pa_operation_unref(pa_stream_drain(stream, callback_stream_drain, data));
 }
 
 win::audio_engine::audio_engine()
 {
 	next_id_ = 1;
-	active_sounds_ = 0;
+	listener_x_ = 0.0f;
+	listener_y_ = 0.0f;
 
 	// loop
 	loop_ = pa_threaded_mainloop_new();
@@ -153,19 +127,17 @@ win::audio_engine::audio_engine()
 	pa_threaded_mainloop_unlock(loop_);
 }
 
-void win::audio_engine::play(const apack &ap, int id)
+int win::audio_engine::play(const apack &ap, int id, bool looping)
 {
-	if(active_sounds_ > MAX_SOUNDS)
+	if(sounds_.size() > MAX_SOUNDS)
 	{
 		pa_threaded_mainloop_lock(loop_);
 		cleanup(false);
 		pa_threaded_mainloop_unlock(loop_);
 	}
 
-	if(active_sounds_ > MAX_SOUNDS)
-		return;
-
-	++active_sounds_;
+	if(sounds_.size() > MAX_SOUNDS)
+		return -1;
 
 	const int sid = next_id_++;
 	char namestr[16];
@@ -184,36 +156,26 @@ void win::audio_engine::play(const apack &ap, int id)
 
 	const unsigned flags = PA_STREAM_START_CORKED;
 
-	sound snd;
-
 	pa_threaded_mainloop_lock(loop_);
 
 	// cleanup dead streams
 	cleanup(false);
 
-	snd.parent = this;
-	snd.id = sid;
-	snd.start = 0;
-	snd.pcm = ap.sounds_[id].buffer.get();
-	snd.size = &ap.sounds_[id].size;
-	snd.target_size = ap.sounds_[id].target_size;
-	snd.done = false;
-	snd.cancel = false;
-	snd.stream = pa_stream_new(context_, namestr, &spec, NULL);
-	if(snd.stream == NULL)
+	pa_stream *stream = pa_stream_new(context_, namestr, &spec, NULL);
+	if(stream == NULL)
 		raise("Could not create stream object");
 
-	sound *stored = sounds_.add(snd);
+	sound &stored = sounds_.emplace_front(this, sid, looping, 0, ap.sounds_[id].buffer.get(), &ap.sounds_[id].size, ap.sounds_[id].target_size, stream);
 
-	pa_stream_set_state_callback(snd.stream, callback_stream, loop_);
-	pa_stream_set_write_callback(snd.stream, callback_stream_write, stored);
+	pa_stream_set_state_callback(stream, callback_stream, loop_);
+	pa_stream_set_write_callback(stream, callback_stream_write, &stored);
 
-	if(pa_stream_connect_playback(snd.stream, NULL, &attr, (pa_stream_flags)flags, NULL, NULL))
+	if(pa_stream_connect_playback(stream, NULL, &attr, (pa_stream_flags)flags, NULL, NULL))
 		raise("Could not connect the playback stream");
 
 	for(;;)
 	{
-		pa_stream_state_t state = pa_stream_get_state(snd.stream);
+		pa_stream_state_t state = pa_stream_get_state(stream);
 		if(state == PA_STREAM_READY)
 			break;
 		else if(state == PA_STREAM_FAILED)
@@ -221,44 +183,58 @@ void win::audio_engine::play(const apack &ap, int id)
 		pa_threaded_mainloop_wait(loop_);
 	}
 
-	pa_operation_unref(pa_stream_cork(snd.stream, 0, callback_stream_success, loop_));
-	while(pa_stream_is_corked(snd.stream));
+	pa_operation_unref(pa_stream_cork(stream, 0, [](pa_stream*, int, void*){}, loop_));
+	while(pa_stream_is_corked(stream));
 	pa_threaded_mainloop_unlock(loop_);
+
+	return sid;
 }
 
-void win::audio_engine::pause_all()
-{
-	auto callback = [](pa_stream*, int, void*) {};
-	sound_list::node *current = sounds_.head;
-	while(current != NULL)
-	{
-		pa_operation *op = pa_stream_cork(current->snd.stream, 1, callback, NULL);
-		if(op)
-		{
-			while(pa_operation_get_state(op) != PA_OPERATION_DONE);
-			pa_operation_unref(op);
-		}
-
-		current = current->next;
-	}
-}
-
-void win::audio_engine::resume_all()
+void win::audio_engine::pause()
 {
 	auto callback = [](pa_stream*, int, void*) {};
 
-	sound_list::node *current = sounds_.head;
-	while(current != NULL)
+	for(sound &snd : sounds_)
 	{
-		pa_operation *op = pa_stream_cork(current->snd.stream, 0, callback, NULL);
-		if(op)
-		{
-			while(pa_operation_get_state(op) != PA_OPERATION_DONE);
-			pa_operation_unref(op);
-		}
+		pa_operation *op = pa_stream_cork(snd.stream, 1, callback, NULL);
+		if(!op)
+			raise("Couldn't pause the stream");
 
-		current = current->next;
+		while(pa_operation_get_state(op) != PA_OPERATION_DONE);
+		pa_operation_unref(op);
 	}
+}
+
+void win::audio_engine::resume()
+{
+	auto callback = [](pa_stream*, int, void*) {};
+
+	for(sound &snd : sounds_)
+	{
+		pa_operation *op = pa_stream_cork(snd.stream, 0, callback, NULL);
+		if(!op)
+			raise("Couldn't unpause the stream");
+
+		while(pa_operation_get_state(op) != PA_OPERATION_DONE);
+		pa_operation_unref(op);
+	}
+}
+
+void win::audio_engine::pause(int)
+{
+}
+
+void win::audio_engine::resume(int)
+{
+}
+
+void win::audio_engine::listener(float x, float y)
+{
+	listener_x_ = x;
+	listener_y_ = y;
+
+	// pa_threaded_mainloop_lock(loop_);
+	// pa_threaded_mainloop_unlock(loop_);
 }
 
 // move the platform specific (pulseaudio) data members
@@ -275,42 +251,53 @@ void win::audio_engine::move_platform(audio_engine &rhs)
 
 void win::audio_engine::cleanup(bool all)
 {
-	sound_list::node *current = sounds_.head;
-	while(current != NULL)
+	for(auto it = sounds_.begin(); it != sounds_.end();)
 	{
-		sound &snd = current->snd;
+		sound &snd = *it;
+
+		const bool done = snd.start == snd.target_size; // the sound is done playing
 
 		if(!all) // only cleaning up sounds that have finished
-			if(!snd.done)
+			if(!done)
 			{
-				current = current->next;
+				++it;
 				continue; // skip it if it's not done playing
 			}
 
-		snd.cancel = true;
-
-		if(!snd.done)
+		if(!done)
 		{
+			// flush pending audio data
+			pa_operation *op_flush = pa_stream_flush(snd.stream, [](pa_stream*, int, void*){}, NULL);
+			if(!op_flush)
+				raise("Couldn't flush the stream");
+
+			// tell pulse audio it's done
+			pa_operation *op_drain = pa_stream_drain(snd.stream, callback_stream_drained, (void*)&snd);
+			if(!op_drain)
+				raise("Couldn't drain the stream");
+
 			pa_threaded_mainloop_unlock(loop_);
-			pa_operation *op = pa_stream_flush(snd.stream, [](pa_stream*,int,void*){}, NULL);
-			if(op)
-			{
-				while(pa_operation_get_state(op) != PA_OPERATION_DONE);
-				pa_operation_unref(op);
-			}
+
+			// wait for flush
+			while(pa_operation_get_state(op_flush) != PA_OPERATION_DONE);
+			pa_operation_unref(op_flush);
+			std::cerr << "flushed id " << snd.id << std::endl;
+
+			// wait for drain
+			while(!snd.drained);
+			pa_operation_unref(op_drain);
+			std::cerr << "drained id " << snd.id << " prematurely" << std::endl;
+
 			pa_threaded_mainloop_lock(loop_);
 		}
-
-		pa_threaded_mainloop_unlock(loop_);
-		while(!snd.done);
-		pa_threaded_mainloop_lock(loop_);
 
 		if(pa_stream_disconnect(snd.stream))
 			raise("Couldn't disconnect stream");
 		pa_stream_unref(snd.stream);
-		--active_sounds_;
 
-		current = sounds_.remove(current);
+		std::cerr << "cleaned up id " << snd.id << std::endl;
+
+		it = sounds_.erase(it);
 	}
 }
 
