@@ -56,27 +56,23 @@ static void callback_stream_drained(pa_stream*, int success, void *data)
 {
 	win::sound *snd = (win::sound*)data;
 	snd->drained.store(success == 1);
-	std::cerr << "drained id " << snd->id << " (done)" << std::endl;
 }
 
 static void callback_stream_write(pa_stream *stream, size_t bytes, void *data)
 {
 	win::sound *const snd = (win::sound*)data;
 
-	std::cerr << "write call (" << bytes << " bytes) for id " << snd->id << std::endl;
-
 	const unsigned long long size = snd->size->load();
-	const unsigned long long start = snd->start.load();
 
 	if(snd->start == snd->target_size)
 		return;
 
-	const unsigned long long left = size - start;
+	const unsigned long long left = size - snd->start;
 	const size_t written = std::min((long long unsigned)bytes, left);
 
-	pa_stream_write(stream, (char*)(snd->pcm) + start, written, [](void*){}, 0, PA_SEEK_RELATIVE);
+	pa_stream_write(stream, (char*)(snd->pcm) + snd->start, written, [](void*){}, 0, PA_SEEK_RELATIVE);
 
-	if(start + written == snd->target_size)
+	if(snd->start + written == snd->target_size)
 	{
 		pa_operation *op = pa_stream_drain(stream, callback_stream_drained, data);
 		if(!op)
@@ -255,7 +251,7 @@ void win::audio_engine::cleanup(bool all)
 	{
 		sound &snd = *it;
 
-		const bool done = snd.start == snd.target_size; // the sound is done playing
+		const bool done = snd.drained; // the sound is done playing
 
 		if(!all) // only cleaning up sounds that have finished
 			if(!done)
@@ -281,21 +277,21 @@ void win::audio_engine::cleanup(bool all)
 			// wait for flush
 			while(pa_operation_get_state(op_flush) != PA_OPERATION_DONE);
 			pa_operation_unref(op_flush);
-			std::cerr << "flushed id " << snd.id << std::endl;
 
 			// wait for drain
 			while(!snd.drained);
 			pa_operation_unref(op_drain);
-			std::cerr << "drained id " << snd.id << " prematurely" << std::endl;
 
 			pa_threaded_mainloop_lock(loop_);
 		}
 
+		pa_threaded_mainloop_unlock(loop_);
+		while(!snd.drained);
+		pa_threaded_mainloop_lock(loop_);
+
 		if(pa_stream_disconnect(snd.stream))
 			raise("Couldn't disconnect stream");
 		pa_stream_unref(snd.stream);
-
-		std::cerr << "cleaned up id " << snd.id << std::endl;
 
 		it = sounds_.erase(it);
 	}

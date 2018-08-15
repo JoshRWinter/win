@@ -17,7 +17,7 @@ struct sound
 	audio_engine *parent;
 	int id; // unique sound instance id
 	bool looping;
-	std::atomic<unsigned long long> start; // start here next write
+	unsigned long long start; // start here next write
 	short *pcm; // audio data
 	std::atomic<unsigned long long> *size; // how much has been decoded
 	unsigned long long target_size; // how big entire pcm buffer is
