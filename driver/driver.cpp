@@ -25,6 +25,8 @@ int main()
 
 	win::audio_engine audio_engine = display.make_audio_engine();
 
+	win::roll roll = "/home/josh/assets";
+
 	win::resource rc("/usr/share/fonts/noto/NotoSansMono-Regular.ttf");
 	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::font font1 = font_renderer.make_font(rc, 0.3f);

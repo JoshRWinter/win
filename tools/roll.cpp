@@ -177,13 +177,15 @@ int go(int argc, char **argv)
 	}
 
 	// rewrite all the headers with proper info
-	out.seekp(sizeof(magic) + sizeof(std::uint16_t));
+	out.seekp(magic.length() + sizeof(std::uint16_t));
 	for(const header &h : headers)
 	{
 		out.write((const char*)&h.compressed, sizeof(h.compressed));
 		out.write((const char*)&h.uncompressed_size, sizeof(h.uncompressed_size));
 		out.write((const char*)&h.begin, sizeof(h.begin));
 		out.write((const char*)&h.size, sizeof(h.size));
+
+		out.seekp(sizeof(h.filename_length) + h.filename_length, std::ofstream::cur);
 	}
 
 	return 0;
@@ -209,8 +211,8 @@ bool is_asset_roll(const std::string &filename)
 {
 	std::ifstream in(filename, std::ifstream::binary);
 	char magic[10];
-	in.read(magic, sizeof(magic));
-	if(in.gcount() != sizeof(magic))
+	in.read(magic, sizeof(magic) - 1);
+	if(in.gcount() != sizeof(magic) - 1)
 		return false;
 	magic[9] = 0;
 	return !strcmp(magic, "ASSETROLL");
