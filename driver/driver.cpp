@@ -106,6 +106,8 @@ int main()
 			else
 				audio_engine.resume();
 		}
+		else if(press && button == win::button::LALT)
+			audio_engine.listener(0,0);
 		else if(press)
 			audio_engine.play(apack, 10);
 	});

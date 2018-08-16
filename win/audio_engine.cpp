@@ -229,8 +229,14 @@ void win::audio_engine::listener(float x, float y)
 	listener_x_ = x;
 	listener_y_ = y;
 
-	// pa_threaded_mainloop_lock(loop_);
-	// pa_threaded_mainloop_unlock(loop_);
+	pa_threaded_mainloop_lock(loop_);
+	for(sound &snd : sounds_)
+	{
+		pa_cvolume volume;
+		pa_cvolume_set(&volume, 2, PA_VOLUME_NORM);
+		pa_operation_unref(pa_context_set_sink_input_volume(context_, pa_stream_get_index(snd.stream), &volume, NULL, NULL));
+	}
+	pa_threaded_mainloop_unlock(loop_);
 }
 
 // move the platform specific (pulseaudio) data members
