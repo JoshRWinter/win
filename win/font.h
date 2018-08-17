@@ -33,7 +33,7 @@ struct font
 	float vertical; // vertical advance
 
 private:
-	font(const font_renderer &parent, resource&, float);
+	font(const font_renderer &parent, data, float);
 	void finalize();
 };
 
@@ -54,7 +54,7 @@ public:
 
 	void draw(const font&, const char *, float, float, const color&, int = 0);
 
-	font make_font(resource&, float);
+	font make_font(data, float);
 
 private:
 	font_renderer(int, int, float, float, float, float);

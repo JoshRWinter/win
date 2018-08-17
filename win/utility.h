@@ -1,6 +1,9 @@
 #ifndef WIN_UTILITY_H
 #define WIN_UTILITY_H
 
+#include <vector>
+#include <string>
+
 #include <GL/glext.h>
 
 #ifdef WIN_STORAGE
@@ -52,6 +55,48 @@ namespace win
 			: red(r / 255.0f), green(g / 255.0f), blue(b / 255.0f), alpha(a / 255.0f) {}
 
 		float red, green, blue, alpha;
+	};
+
+	class data
+	{
+	public:
+		// TAKES OWNERSHIP OF MEMORY
+		data() noexcept;
+		data(unsigned char*, unsigned long long) noexcept;
+		data(const data&) = delete;
+		data(data&&) noexcept;
+		~data();
+
+		void operator=(const data&) = delete;
+		data &operator=(data&&) noexcept;
+		bool operator!() const noexcept;
+
+		const unsigned char *get() const noexcept;
+		unsigned long long size() const noexcept;
+		unsigned long long read(void*, size_t) noexcept;
+
+	private:
+		void finalize();
+
+		unsigned char *data_;
+		unsigned long long size_;
+		unsigned long long stream_position_;
+	};
+
+	class roll;
+	class data_list
+	{
+	public:
+		data_list(roll*);
+
+		void add(const std::string&);
+		data get(int) const;
+		const std::vector<std::string> &files() const;
+		int count() const;
+
+	private:
+		std::vector<std::string> filenames_;
+		roll *parent_;
 	};
 
 	void load_extensions();

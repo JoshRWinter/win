@@ -26,7 +26,7 @@ class apack
 	friend audio_engine;
 
 public:
-	apack(resource&);
+	apack(const data_list&);
 	apack(const apack&) = delete;
 	apack(apack&&);
 	~apack();

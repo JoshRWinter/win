@@ -14,9 +14,11 @@ static constexpr int rows = 6;
 
 #define isvalidchar(c) ((c>31)||c=='\n'||c=='\r')
 
-win::font::font(const font_renderer &parent, resource &rc, float fontsize)
+win::font::font(const font_renderer &parent, data file, float fontsize)
 {
-	std::vector<unsigned char> chunk = rc.read();
+	std::vector<unsigned char> chunk(file.size());
+	if(file.read(chunk.data(), file.size()) != file.size())
+		bug("Could not read entire font file");
 
 	const int pixelsize = (fontsize / (parent.right_ - parent.left_)) * parent.display_width_;
 
@@ -414,9 +416,9 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, charcount);
 }
 
-win::font win::font_renderer::make_font(resource &rc, float size)
+win::font win::font_renderer::make_font(data file, float size)
 {
-	return font(*this, rc, size);
+	return font(*this, std::move(file), size);
 }
 
 // calculate line length, only up to the first newline after <start>

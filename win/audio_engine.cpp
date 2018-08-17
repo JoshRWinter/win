@@ -125,6 +125,9 @@ win::audio_engine::audio_engine()
 
 int win::audio_engine::play(const apack &ap, int id, bool looping)
 {
+	if(id >= ap.count_ || id < 0)
+		bug("Apack id out of bounds");
+
 	if(sounds_.size() > MAX_SOUNDS)
 	{
 		pa_threaded_mainloop_lock(loop_);

@@ -1,3 +1,5 @@
+#include <vector>
+
 #include <math.h>
 
 #include <ogg/ogg.h>
@@ -7,18 +9,16 @@
 
 static void decodeogg(const unsigned char*, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
 
-win::apack::apack(resource &res)
+win::apack::apack(const data_list &files)
 {
-	if(res.read(&count_, sizeof(count_)) != sizeof(count_))
-		throw exception("Corrupt apack file");
-
+	count_ = files.count();
 	sounds_.reset(new apack_sound[count_]);
 
 	for(int i = 0; i < count_; ++i)
 	{
-		std::uint32_t file_size;
-		if(res.read(&file_size, sizeof(file_size)) != sizeof(file_size))
-			throw exception("Corrupt apack file");
+		data file = files.get(i);
+
+		const std::uint32_t file_size = file.size();
 
 		sounds_[i].parent = this;
 
@@ -27,11 +27,11 @@ win::apack::apack(resource &res)
 
 		// the vorbis-encoded audio data
 		sounds_[i].encoded.reset(new unsigned char[file_size]);
-		if(res.read(sounds_[i].encoded.get(), file_size) != file_size)
-			throw exception("Corrupt apack file");
+		if(file.read(sounds_[i].encoded.get(), file_size) != file_size)
+			bug("Could not read audio file");
 
 		// eventual size of decoded data
-		unsigned long long index=file_size-1;
+		unsigned long long index = file_size - 1;
 		while(!(sounds_[i].encoded[index] == 'S' && sounds_[i].encoded[index - 1] == 'g' && sounds_[i].encoded[index - 2] == 'g' && sounds_[i].encoded[index - 3] == 'O'))
 			--index;
 		unsigned long long samplecount;

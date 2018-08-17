@@ -2,6 +2,8 @@
 #define WIN_ROLL_H
 
 #include <vector>
+#include <fstream>
+#include <string>
 
 namespace win
 {
@@ -26,8 +28,15 @@ public:
 	void operator=(const roll&) = delete;
 	roll &operator=(roll&&);
 
+	data operator[](const char*);
+	data operator[](const std::string&);
+
+	data_list all(const char*);
+	data_list all();
+
 private:
-	std::vector<roll_header> files;
+	std::vector<roll_header> files_;
+	std::ifstream stream_;
 };
 
 }

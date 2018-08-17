@@ -20,16 +20,14 @@ int main()
 	win::display display = system.make_display("window caption", 800, 600);
 	display.cursor(false);
 
-	win::resource apack_rsrc("/home/josh/fishtank/assets/aassets");
-	win::apack apack(apack_rsrc);
+	win::roll roll = "/home/josh/win/driver/assets.roll";
+
+	win::apack apack(roll.all("ogg"));
 
 	win::audio_engine audio_engine = display.make_audio_engine();
 
-	win::roll roll = "/home/josh/assets";
-
-	win::resource rc("/usr/share/fonts/noto/NotoSansMono-Regular.ttf");
 	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
-	win::font font1 = font_renderer.make_font(rc, 0.3f);
+	win::font font1 = font_renderer.make_font(roll["/usr/share/fonts/noto/NotoSansMono-Regular.ttf"], 0.3f);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;
@@ -111,7 +109,7 @@ int main()
 		else if(press && button == win::button::LALT)
 			audio_engine.listener(0,0);
 		else if(press)
-			audio_engine.play(apack, 10);
+			audio_engine.play(apack, 1);
 	});
 
 	// display.event_mouse([&quit](int x, int y)
@@ -119,7 +117,7 @@ int main()
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
 
-	audio_engine.play(apack, 3);
+	audio_engine.play(apack, 0);
 	for(;;)
 	{
 		auto start = std::chrono::high_resolution_clock::now();

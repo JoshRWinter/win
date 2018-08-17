@@ -1,8 +1,115 @@
+#include <string.h>
+
 #define WIN_STORAGE
 #include "win.h"
 
-static void *getproc(const char*);
+win::data::data() noexcept
+	: data_(NULL)
+	, size_(0)
+	, stream_position_(0)
+{
+}
 
+win::data::data(unsigned char *d, unsigned long long size) noexcept
+	: data_(d)
+	, size_(size)
+	, stream_position_(0)
+{
+}
+
+win::data::data(data &&rhs) noexcept
+	: data_(rhs.data_)
+	, size_(rhs.size_)
+	, stream_position_(rhs.stream_position_)
+{
+	rhs.data_ = NULL;
+}
+
+win::data::~data()
+{
+	finalize();
+}
+
+win::data &win::data::operator=(data &&rhs) noexcept
+{
+	finalize();
+
+	data_ = rhs.data_;
+	size_ = rhs.size_;
+	stream_position_ = rhs.stream_position_;
+
+	rhs.data_ = NULL;
+
+	return *this;
+}
+
+bool win::data::operator!() const noexcept
+{
+	return data_ == NULL;
+}
+
+const unsigned char *win::data::get() const noexcept
+{
+	if(data_ == NULL)
+		bug("Null filedata");
+
+	return data_;
+}
+
+unsigned long long win::data::size() const noexcept
+{
+	return size_;
+}
+
+unsigned long long win::data::read(void *userbuffer, size_t amount) noexcept
+{
+	if(data_ == NULL)
+		bug("Null filedata");
+
+	const long long to_read = std::min((long long)amount, (long long)(size_ - stream_position_));
+	if(to_read < 0)
+		bug("Negative read amount");
+
+	memcpy(userbuffer, data_ + stream_position_, to_read);
+	stream_position_ += to_read;
+
+	return to_read;
+}
+
+void win::data::finalize()
+{
+	delete[] data_;
+}
+
+win::data_list::data_list(roll *parent)
+	: parent_(parent)
+{
+}
+
+void win::data_list::add(const std::string &name)
+{
+	filenames_.emplace_back(name);
+}
+
+win::data win::data_list::get(int index) const
+{
+	if((long unsigned int)index >= filenames_.size())
+		bug("Index out of bounds");
+
+	return parent_->operator[](filenames_[index]);
+}
+
+const std::vector<std::string> &win::data_list::files() const
+{
+	return filenames_;
+}
+
+int win::data_list::count() const
+{
+	return filenames_.size();
+}
+
+static void *getproc(const char*);
 void win::load_extensions()
 {
 	glCreateShader = (decltype(glCreateShader))getproc("glCreateShader");

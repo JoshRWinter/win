@@ -1,5 +1,9 @@
 #include <fstream>
 #include <memory>
+#include <string>
+
+#include <string.h>
+#include <zlib.h>
 
 #include "win.h"
 
@@ -12,69 +16,135 @@ static void corrupt()
 
 win::roll::roll(const char *file)
 {
-	std::ifstream in(file, std::ifstream::binary);
-	if(!in)
+	stream_.open(file, std::ifstream::binary);
+	if(!stream_)
 		throw exception("Could not open roll file \""s + file + "\"");
 
 	// read the headers
-	char magic[9];
-	in.read(magic, sizeof(magic));
-	if(in.gcount() != sizeof(magic))
+	char magic[10];
+	stream_.read(magic, sizeof(magic) - 1);
+	if(stream_.gcount() != sizeof(magic) - 1)
 		corrupt();
+	magic[9] = 0;
+	if(strcmp(magic, "ASSETROLL"))
+		throw exception("File \""s + file + "\" is not an asset roll");
 
 	// number of files stored within
 	std::uint16_t file_count;
-	in.read((char*)&file_count, sizeof(file_count));
-	if(in.gcount() != sizeof(file_count))
+	stream_.read((char*)&file_count, sizeof(file_count));
+	if(stream_.gcount() != sizeof(file_count))
 		corrupt();
 
 	for(int i = 0; i < file_count; ++i)
 	{
 		roll_header rh;
 
-		in.read((char*)&rh.compressed, sizeof(rh.compressed));
-		if(in.gcount() != sizeof(rh.compressed))
+		stream_.read((char*)&rh.compressed, sizeof(rh.compressed));
+		if(stream_.gcount() != sizeof(rh.compressed))
 			corrupt();
 
-		in.read((char*)&rh.uncompressed_size, sizeof(rh.uncompressed_size));
-		if(in.gcount() != sizeof(rh.uncompressed_size))
+		stream_.read((char*)&rh.uncompressed_size, sizeof(rh.uncompressed_size));
+		if(stream_.gcount() != sizeof(rh.uncompressed_size))
 			corrupt();
 
-		in.read((char*)&rh.begin, sizeof(rh.begin));
-		if(in.gcount() != sizeof(rh.begin))
+		stream_.read((char*)&rh.begin, sizeof(rh.begin));
+		if(stream_.gcount() != sizeof(rh.begin))
 			corrupt();
 
-		in.read((char*)&rh.size, sizeof(rh.size));
-		if(in.gcount() != sizeof(rh.size))
+		stream_.read((char*)&rh.size, sizeof(rh.size));
+		if(stream_.gcount() != sizeof(rh.size))
 			corrupt();
 
-		in.read((char*)&rh.filename_length, sizeof(rh.filename_length));
-		if(in.gcount() != sizeof(rh.filename_length))
+		stream_.read((char*)&rh.filename_length, sizeof(rh.filename_length));
+		if(stream_.gcount() != sizeof(rh.filename_length))
 			corrupt();
 
 		std::unique_ptr<char[]> fname = std::make_unique<char[]>(rh.filename_length + 1);
-		in.read((char*)fname.get(), rh.filename_length);
-		if(in.gcount() != rh.filename_length)
+		stream_.read((char*)fname.get(), rh.filename_length);
+		if(stream_.gcount() != rh.filename_length)
 			corrupt();
 		fname[rh.filename_length] = 0;
 		rh.filename = fname.get();
 
-		files.push_back(rh);
+		files_.push_back(rh);
+	}
+}
+
+win::roll::roll(roll &&rhs)
+{
+	files_ = std::move(rhs.files_);
+	stream_ = std::move(rhs.stream_);
+}
+
+win::data win::roll::operator[](const char *filename)
+{
+	// make sure the file exists
+	int index = -1;
+	for(int i = 0; i < (int)files_.size(); ++i)
+	{
+		if(files_[i].filename == filename)
+		{
+			index = i;
+			break;
+		}
 	}
 
-	std::cerr << "read " << file_count << " files:" << std::endl;
-	int index = 1;
-	for(const roll_header &rh : files)
+	if(index == -1)
+		return data();
+
+	// read and return
+	std::unique_ptr<unsigned char[]> contents = std::make_unique<unsigned char[]>(files_[index].size);
+	stream_.seekg(files_[index].begin);
+	stream_.read((char*)contents.get(), files_[index].size);
+	if((long unsigned int)stream_.gcount() != files_[index].size)
+		corrupt();
+
+	if(files_[index].compressed)
 	{
-		std::cerr << "file " << index << std::endl;
-		std::cerr << "\"" << rh.filename << "\" (" << rh.filename_length << ")" << std::endl;
-		std::cerr << "compressed: " << (rh.compressed ? "yes" : "no") << std::endl;
-		std::cerr << "uncompressed_size: " << rh.uncompressed_size << std::endl;
-		std::cerr << "size: " << rh.size << std::endl;
-		std::unique_ptr<char[]> contents = std::make_unique<char[]>(rh.size + 1);
-		in.seekg(rh.begin);
-		in.read(contents.get(), rh.size);
-		contents[rh.size] = 0;
-		++index;
+		unsigned long uncompressed_size = files_[index].uncompressed_size;
+		unsigned char *rawdata = new unsigned char[uncompressed_size];
+		if(uncompress(rawdata, &uncompressed_size, contents.get(), files_[index].size) != Z_OK)
+		{
+			delete[] rawdata;
+			throw exception("Zlib: could not uncompress the file data");
+		}
+
+		return data(rawdata, uncompressed_size);
 	}
+	else
+	{
+		return data(contents.release(), files_[index].size);
+	}
+}
+
+win::data win::roll::operator[](const std::string &filename)
+{
+	return this->operator[](filename.c_str());
+}
+
+// find all files ending with extension (should not include the dot)
+win::data_list win::roll::all(const char *ext)
+{
+	data_list list(this);
+
+	for(const roll_header &header : files_)
+	{
+		if(header.filename.rfind("."s + ext) == std::string::npos)
+			continue;
+
+		list.add(header.filename);
+	}
+
+	return list;
+}
+
+// return a list of all the filenames in the roll
+win::data_list win::roll::all()
+{
+	data_list list(this);
+
+	for(const roll_header &header : files_)
+		list.add(header.filename);
+
+	return list;
 }

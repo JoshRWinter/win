@@ -33,10 +33,9 @@ namespace win
 }
 
 #include "system.h"
-#include "roll.h"
-#include "resource.h"
 #include "event.h"
 #include "utility.h"
+#include "roll.h"
 #include "font.h"
 #include "apack.h"
 #include "audio_engine.h"
