@@ -104,29 +104,82 @@ static void callback_stream_drained(pa_stream*, int success, void *data)
 	snd->drained.store(success == 1);
 }
 
-static void callback_stream_write(pa_stream *stream, size_t bytes, void *data)
+static size_t channel_dupe(void *d, const void *s, size_t len)
+{
+	if(len % 4 != 0)
+		win::bug("len not divisible by 4: " + std::to_string(len));
+
+	char *const dest = (char*)d;
+	const char *const source = (const char*)s;
+
+	for(size_t i = 0; i < len; i += 4)
+	{
+		dest[i + 0] = source[(i / 2) + 0];
+		dest[i + 1] = source[(i / 2) + 1];
+		dest[i + 2] = source[(i / 2) + 0];
+		dest[i + 3] = source[(i / 2) + 1];
+	}
+
+	return len;
+}
+
+static void callback_stream_write(pa_stream *stream, const size_t bytes, void *data)
 {
 	win::sound *const snd = (win::sound*)data;
-
-	const unsigned long long size = snd->size->load();
 
 	if(snd->start == snd->target_size)
 		return;
 
-	const unsigned long long left = size - snd->start;
-	const size_t written = std::min((long long unsigned)bytes, left);
-
-	pa_stream_write(stream, (char*)(snd->pcm) + snd->start, written, [](void*){}, 0, PA_SEEK_RELATIVE);
-
-	if(snd->start + written == snd->target_size)
+	size_t total_written = 0;
+	while(total_written != bytes)
 	{
+		// see if there even is any more data in the source buffer
+		if(snd->start == snd->target_size)
+			break;
+
+		// spinlock until more data is ready
+		while(snd->size->load() - snd->start == 0);
+
+		const size_t left_to_write = bytes - total_written; // how many more bytes i owe pulseaudio
+		const size_t total_size = snd->size->load(); // total size of the source buffer
+		const size_t i_have = total_size - snd->start; // i have this many bytes from the source buffer ready to write
+		size_t take = left_to_write / 2; // i want to give pulseaudio this much data taken from the source buffer
+		if(take > i_have)
+			take = i_have; // i must readjust how much i want to take from source buffer
+		size_t give = take * 2; // how much data pulseaudio will get from me
+		char *dest = NULL;
+
+		if(pa_stream_begin_write(snd->stream, (void**)&dest, &give) || dest == NULL)
+			win::bug("pa_stream_begin_write() failure");
+
+		take = give / 2; // pulseaudio has changed its mind about how much it wants
+		channel_dupe(dest, ((char*)snd->pcm) + snd->start, give);
+
+		if(pa_stream_write(snd->stream, dest, give, NULL, 0, PA_SEEK_RELATIVE))
+			win::bug("pa_stream_write() failure");
+
+		// update
+		snd->start += take;
+		total_written += give;
+	}
+
+	if(total_written == bytes)
+		std::cerr << "wrote " << bytes << std::endl;
+	else
+	{
+		std::cerr << "SHORT WRITE: wrote " << total_written << " of " << bytes << std::endl;
+		std::cerr << "total size was " << snd->target_size << std::endl;
+	}
+
+	// see if the stream is done
+	if(snd->start == snd->target_size)
+	{
+		std::cerr << "draining" << std::endl;
 		pa_operation *op = pa_stream_drain(stream, callback_stream_drained, data);
 		if(!op)
 			raise("Couldn't drain the stream");
 		pa_operation_unref(op);
 	}
-
-	snd->start += written;
 }
 
 win::audio_engine::audio_engine()
@@ -192,7 +245,7 @@ int win::audio_engine::play(int id, bool looping, int apackno)
 
 	pa_sample_spec spec;
 	spec.format = PA_SAMPLE_S16LE;
-	spec.channels = 1;
+	spec.channels = 2;
 	spec.rate = 44100;
 
 	pa_buffer_attr attr;
