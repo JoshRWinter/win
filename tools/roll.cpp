@@ -7,6 +7,7 @@
 #include <memory>
 
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <zlib.h>
@@ -24,6 +25,7 @@ static bool request_compression(const std::string&);
 static bool is_asset_roll(const std::string&);
 static long long filesize(const std::string&);
 static bool exists(const std::string&);
+static std::string format(size_t);
 static int go(int, char**);
 
 int main(int argc, char **argv)
@@ -188,7 +190,24 @@ int go(int argc, char **argv)
 		out.seekp(sizeof(h.filename_length) + h.filename_length, std::ofstream::cur);
 	}
 
+	out.close();
+
+	std::cout << file_count << " files written to \"" << argv[1] << "\" (" << format(filesize(argv[1])) << ")" << std::endl;
+
 	return 0;
+}
+
+std::string format(size_t size)
+{
+	char convert[26];
+	if(size < 1000)
+		snprintf(convert, sizeof(convert), "%.2fB", (double)size);
+	else if(size < 1000 * 1000)
+		snprintf(convert, sizeof(convert), "%.2fKB", (double)size / 1000);
+	else
+		snprintf(convert, sizeof(convert), "%.2fMB", (double)size / 1000 / 1000);
+
+	return convert;
 }
 
 // strip the suffix options on filename (e.g. "image1.png:z" -> "image1.png")
