@@ -5,7 +5,7 @@
 
 #include "win.h"
 
-static void decodeogg(const unsigned char*, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
+static void decodeogg(std::unique_ptr<unsigned char[]>, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
 
 win::audio_engine::audio_engine(audio_engine &&rhs)
 {
@@ -61,7 +61,7 @@ void win::audio_engine::import(const data_list &list)
 		apack.stored[i].buffer = std::make_unique<short[]>(samplecount);
 
 		// decode
-		std::thread thread(decodeogg, apack.stored[i].encoded.get(), file_size, apack.stored[i].buffer.get(), apack.stored[i].target_size, &apack.stored[i].size);
+		std::thread thread(decodeogg, std::move(apack.stored[i].encoded), file_size, apack.stored[i].buffer.get(), apack.stored[i].target_size, &apack.stored[i].size);
 		apack.stored[i].thread = std::move(thread);
 	}
 }
@@ -374,7 +374,9 @@ void win::audio_engine::finalize()
 
 #endif
 
-void decodeogg(const unsigned char *const encoded, const unsigned long long encoded_size, short *const decoded, const unsigned long long decoded_size, std::atomic<unsigned long long> *const size){
+void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long long encoded_size, short *const decoded, const unsigned long long decoded_size, std::atomic<unsigned long long> *const size){
+	const unsigned char *const encoded = encoded_ptr.get();
+
 	ogg_sync_state state; // oy
 	ogg_stream_state stream; // os
 	ogg_page page; // og
