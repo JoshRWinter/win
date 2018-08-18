@@ -74,10 +74,9 @@ namespace win
 		const unsigned char *get() const noexcept;
 		unsigned long long size() const noexcept;
 		unsigned long long read(void*, size_t) noexcept;
-
-	private:
 		void finalize();
 
+	private:
 		unsigned char *data_;
 		unsigned long long size_;
 		unsigned long long stream_position_;

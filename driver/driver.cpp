@@ -22,9 +22,8 @@ int main()
 
 	win::roll roll = "/home/josh/win/driver/assets.roll";
 
-	win::apack apack(roll.all("ogg"));
-
 	win::audio_engine audio_engine = display.make_audio_engine();
+	audio_engine.import(roll.all("ogg"));
 
 	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::font font1 = font_renderer.make_font(roll["/usr/share/fonts/noto/NotoSansMono-Regular.ttf"], 0.3f);
@@ -94,7 +93,7 @@ int main()
 
 	bool quit = false;
 	bool paused = false;
-	display.event_button([&quit, &apack, &paused, &audio_engine](win::button button, bool press)
+	display.event_button([&quit, &paused, &audio_engine](win::button button, bool press)
 	{
 		if(press && button == win::button::ESC)
 			quit = true;
@@ -107,9 +106,9 @@ int main()
 				audio_engine.resume();
 		}
 		else if(press && button == win::button::LALT)
-			audio_engine.listener(0,0);
+			audio_engine.listener(0, 0);
 		else if(press)
-			audio_engine.play(apack, 1);
+			audio_engine.play(1);
 	});
 
 	// display.event_mouse([&quit](int x, int y)
@@ -117,7 +116,7 @@ int main()
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
 
-	audio_engine.play(apack, 0);
+	audio_engine.play(0);
 	for(;;)
 	{
 		auto start = std::chrono::high_resolution_clock::now();

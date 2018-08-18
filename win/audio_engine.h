@@ -2,12 +2,17 @@
 #define WIN_AUDIO_ENGINE_H
 
 #include <list>
+#include <vector>
+#include <atomic>
+#include <memory>
+#include <thread>
 
 #include <pulse/pulseaudio.h>
 
 namespace win
 {
 
+class audio_engine;
 struct sound
 {
 #if defined WINPLAT_LINUX
@@ -28,6 +33,21 @@ struct sound
 #endif
 };
 
+struct stored_sound
+{
+	std::atomic<unsigned long long> size;
+	std::unique_ptr<short[]> buffer;
+	std::unique_ptr<unsigned char[]> encoded;
+	unsigned long long target_size;
+	std::thread thread;
+};
+
+struct apack
+{
+	std::unique_ptr<stored_sound[]> stored;
+	int count;
+};
+
 class audio_engine
 {
 	friend display;
@@ -42,7 +62,8 @@ public:
 	void operator=(const audio_engine&) = delete;
 	audio_engine &operator=(audio_engine&&);
 
-	int play(const apack&, int, bool = false);
+	void import(const data_list&);
+	int play(int, bool = false, int = 0);
 	void pause();
 	void resume();
 	void pause(int);
@@ -58,6 +79,7 @@ private:
 	int next_id_;
 	float listener_x_;
 	float listener_y_;
+	std::vector<apack> imported_;
 
 #if defined WINPLAT_LINUX
 	void cleanup(bool);

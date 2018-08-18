@@ -37,7 +37,6 @@ namespace win
 #include "utility.h"
 #include "roll.h"
 #include "font.h"
-#include "apack.h"
 #include "audio_engine.h"
 #include "display.h"
 

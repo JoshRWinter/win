@@ -79,6 +79,7 @@ unsigned long long win::data::read(void *userbuffer, size_t amount) noexcept
 void win::data::finalize()
 {
 	delete[] data_;
+	data_ = NULL;
 }
 
 win::data_list::data_list(roll *parent)
