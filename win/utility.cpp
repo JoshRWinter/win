@@ -147,12 +147,12 @@ void win::load_extensions()
 #endif
 }
 
-unsigned win::load_shaders(const char *vertex_source, const char *fragment_source)
+unsigned win::load_shaders(const char *vertex_source, int vertex_length, const char *fragment_source, int fragment_length)
 {
 	const unsigned vshader = glCreateShader(GL_VERTEX_SHADER);
 	const unsigned fshader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(vshader, 1, &vertex_source, NULL);
-	glShaderSource(fshader, 1, &fragment_source, NULL);
+	glShaderSource(vshader, 1, &vertex_source, &vertex_length);
+	glShaderSource(fshader, 1, &fragment_source, &fragment_length);
 	glCompileShader(vshader);
 	glCompileShader(fshader);
 	int success = 0;
@@ -177,6 +177,16 @@ unsigned win::load_shaders(const char *vertex_source, const char *fragment_sourc
 	glDeleteShader(fshader);
 
 	return program;
+}
+
+unsigned win::load_shaders(const char *vertex, const char *fragment)
+{
+	return load_shaders(vertex, strlen(vertex), fragment, strlen(fragment));
+}
+
+unsigned win::load_shaders(const data &vertex, const data &fragment)
+{
+	return load_shaders((char*)vertex.get(), vertex.size(), (char*)fragment.get(), fragment.size());
 }
 
 void win::init_ortho(float *matrix,float left,float right,float bottom,float top)

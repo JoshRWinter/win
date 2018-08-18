@@ -99,7 +99,9 @@ namespace win
 	};
 
 	void load_extensions();
+	unsigned load_shaders(const char*, int, const char*, int);
 	unsigned load_shaders(const char*, const char*);
+	unsigned load_shaders(const data&, const data&);
 	void init_ortho(float *matrix, float, float, float, float);
 	const char *key_name(button);
 }

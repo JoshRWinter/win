@@ -40,7 +40,7 @@ int main()
 		0, 1, 2, 0, 2, 3
 	};
 
-	unsigned program = win::load_shaders(vertexshader, fragmentshader);
+	unsigned program = win::load_shaders(roll["vertex.vert"], roll["fragment.frag"]);
 	glUseProgram(program);
 	int uniform_projection, uniform_size;
 	float ortho_matrix[16];
@@ -192,25 +192,3 @@ done:
 
 	return 0;
 }
-
-const char *vertexshader =
-"#version 330 core\n"
-"layout (location = 0) in vec2 verts;"
-"layout (location = 1) in vec2 position;"
-"layout (location = 2) in vec3 color;"
-"uniform mat4 projection;"
-"uniform float size;"
-"out vec3 fcolor;"
-"void main(){"
-"mat4 translate = mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, position.x + (size / 2.0), position.y + (size / 2.0), 0.0, 1.0);"
-"fcolor = color;"
-"gl_Position = projection * translate * vec4(verts.x * size, verts.y * size, 0.0, 1.0);"
-"}"
-,*fragmentshader =
-"#version 330 core\n"
-"in vec3 fcolor;"
-"out vec4 color;"
-"void main(){"
-"color = vec4(fcolor.rgb, 1.0);"
-"}"
-;
