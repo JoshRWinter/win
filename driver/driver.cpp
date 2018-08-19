@@ -2,6 +2,7 @@
 #include <chrono>
 #include <iostream>
 #include <sstream>
+#include <cmath>
 
 #include "../win/win.h"
 
@@ -10,9 +11,20 @@ extern const char *vertexshader,*fragmentshader;
 struct Block
 {
 	static constexpr float SIZE = 1.0f;
-	Block() : x(0.0f), y(0.0f), xv(0.1f), yv(0.0f) {}
+	Block() : x(0.0f), y(0.0f), xv(0.06f), yv(0.0f) {}
 	float x, y, xv, yv;
 };
+
+static float distance(float x1, float y1, float x2, float y2)
+{
+	return std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));;
+}
+
+static void sound_config(float listenerx, float listenery, float sourcex, float sourcey, float *volume, float *balance)
+{
+	*volume = 1.0f;// - (distance(listenerx, listenery, sourcex, sourcey) / 38.0f);
+	*balance = (sourcex - listenerx) / 15.0f;
+}
 
 int main()
 {
@@ -22,7 +34,7 @@ int main()
 
 	win::roll roll = "/home/josh/win/driver/assets.roll";
 
-	win::audio_engine audio_engine = display.make_audio_engine();
+	win::audio_engine audio_engine = display.make_audio_engine(sound_config);
 	audio_engine.import(roll.all("ogg"));
 
 	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
@@ -116,7 +128,7 @@ int main()
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
 
-	audio_engine.play(0);
+	const int block_sid = audio_engine.play(0, block.x, block.y);
 	for(;;)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
@@ -149,6 +161,8 @@ int main()
 				block.y = -3.0f;
 				block.yv = -block.yv;
 			}
+
+			audio_engine.source(block_sid, block.x, block.y);
 
 			block_position[0] = block.x;
 			block_position[1] = block.y;

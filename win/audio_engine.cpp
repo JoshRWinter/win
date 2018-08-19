@@ -7,6 +7,32 @@
 
 static void decodeogg(std::unique_ptr<unsigned char[]>, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
 
+static void default_sound_config_fn(float, float, float, float, float *volume, float *balance)
+{
+	*volume = 1.0f;
+	*balance = 0.0f;
+}
+
+static float clamp_volume(float v)
+{
+	if(v > 1.0f)
+		return 1.0f;
+	else if(v < 0.0f)
+		return 0.0f;
+
+	return v;
+}
+
+static float clamp_balance(float bal)
+{
+	if(bal > 1.0f)
+		return 1.0f;
+	else if(bal < -1.0f)
+		return -1.0f;
+
+	return bal;
+}
+
 win::audio_engine::audio_engine(audio_engine &&rhs)
 {
 	move_common(rhs);
@@ -66,12 +92,39 @@ void win::audio_engine::import(const data_list &list)
 	}
 }
 
+void win::audio_engine::get_config(float listenerx, float listenery, float sourcex, float sourcey, float *volume_l, float *volume_r)
+{
+	float volume = 0.0f, balance = 0.0f;
+
+	config_fn_(listenerx, listenery, sourcex, sourcey, &volume, &balance);
+
+	// clamp [0.0, 1.0f]
+	volume = clamp_volume(volume);
+
+	// clamp [-1.0f, 1.0f]
+	balance = clamp_balance(balance);
+
+	// convert to volumes
+	*volume_l = volume;
+	*volume_r = volume;
+
+	if(balance > 0.0f)
+		*volume_l -= balance;
+	else if(balance < 0.0f)
+		*volume_r += balance;
+
+	// reclamp
+	*volume_l = clamp_volume(*volume_l);
+	*volume_r = clamp_volume(*volume_r);
+}
+
 // move the member data that is common to all platforms
 void win::audio_engine::move_common(audio_engine &rhs)
 {
 	next_id_ = rhs.next_id_;
 	listener_x_ = rhs.listener_x_;
 	listener_y_ = rhs.listener_y_;
+	config_fn_ = rhs.config_fn_;
 	imported_ = std::move(rhs.imported_);
 }
 
@@ -175,9 +228,18 @@ static void callback_stream_write(pa_stream *stream, const size_t bytes, void *d
 
 win::audio_engine::audio_engine()
 {
+	context_ = NULL;
+}
+
+win::audio_engine::audio_engine(sound_config_fn fn)
+{
 	next_id_ = 1;
 	listener_x_ = 0.0f;
 	listener_y_ = 0.0f;
+	if(fn == NULL)
+		config_fn_ = default_sound_config_fn;
+	else
+		config_fn_ = fn;
 
 	// loop
 	loop_ = pa_threaded_mainloop_new();
@@ -213,7 +275,19 @@ win::audio_engine::audio_engine()
 	pa_threaded_mainloop_unlock(loop_);
 }
 
+// ambient (for music)
 int win::audio_engine::play(int id, bool looping, int apackno)
+{
+	return play(id, apackno, true, looping, 0.0f, 0.0f);
+}
+
+// stero (for in-world sounds)
+int win::audio_engine::play(int id, float x, float y, bool looping, int apackno)
+{
+	return play(id, apackno, false, looping, x, y);
+}
+
+int win::audio_engine::play(int id, int apackno, bool ambient, bool looping, float x, float y)
 {
 	if(apackno >= (int)imported_.size() || apackno < 0)
 		bug("Apack id out of bounds");
@@ -256,7 +330,7 @@ int win::audio_engine::play(int id, bool looping, int apackno)
 	if(stream == NULL)
 		raise("Could not create stream object");
 
-	sound &stored = sounds_.emplace_front(this, sid, looping, 0, imported_[apackno].stored[id].buffer.get(), &imported_[apackno].stored[id].size, imported_[apackno].stored[id].target_size, stream);
+	sound &stored = sounds_.emplace_front(this, sid, looping, 0, imported_[apackno].stored[id].buffer.get(), &imported_[apackno].stored[id].size, imported_[apackno].stored[id].target_size, stream, ambient, x, y);
 
 	pa_stream_set_state_callback(stream, callback_stream, loop_);
 	pa_stream_set_write_callback(stream, callback_stream_write, &stored);
@@ -290,6 +364,7 @@ void win::audio_engine::pause()
 {
 	auto callback = [](pa_stream*, int, void*) {};
 
+	pa_threaded_mainloop_lock(loop_);
 	for(sound &snd : sounds_)
 	{
 		pa_operation *op = pa_stream_cork(snd.stream, 1, callback, NULL);
@@ -299,6 +374,7 @@ void win::audio_engine::pause()
 		while(pa_operation_get_state(op) != PA_OPERATION_DONE);
 		pa_operation_unref(op);
 	}
+	pa_threaded_mainloop_unlock(loop_);
 }
 
 void win::audio_engine::resume()
@@ -324,6 +400,32 @@ void win::audio_engine::resume(int)
 {
 }
 
+void win::audio_engine::source(int id, float x, float y)
+{
+	pa_threaded_mainloop_lock(loop_);
+	for(sound &snd : sounds_)
+	{
+		if(snd.id != id)
+			continue;
+
+		snd.x = x;
+		snd.y = y;
+
+		float volume_left;
+		float volume_right;
+		get_config(listener_x_, listener_y_, x, y, &volume_left, &volume_right);
+
+		pa_cvolume volume;
+		volume.channels = 2;
+		volume.values[0] = PA_VOLUME_NORM * volume_left;
+		volume.values[1] = PA_VOLUME_NORM * volume_right;
+
+		pa_operation_unref(pa_context_set_sink_input_volume(context_, pa_stream_get_index(snd.stream), &volume, NULL, NULL));
+		break;
+	}
+	pa_threaded_mainloop_unlock(loop_);
+}
+
 void win::audio_engine::listener(float x, float y)
 {
 	listener_x_ = x;
@@ -332,10 +434,15 @@ void win::audio_engine::listener(float x, float y)
 	pa_threaded_mainloop_lock(loop_);
 	for(sound &snd : sounds_)
 	{
+		float volume_left;
+		float volume_right;
+		get_config(x, y, snd.x, snd.y, &volume_left, &volume_right);
+
 		pa_cvolume volume;
 		volume.channels = 2;
-		volume.values[0] = PA_VOLUME_NORM;
-		volume.values[1] = PA_VOLUME_MUTED;
+		volume.values[0] = PA_VOLUME_NORM * volume_left;
+		volume.values[1] = PA_VOLUME_NORM * volume_right;
+
 		pa_operation_unref(pa_context_set_sink_input_volume(context_, pa_stream_get_index(snd.stream), &volume, NULL, NULL));
 	}
 	pa_threaded_mainloop_unlock(loop_);
@@ -418,6 +525,8 @@ void win::audio_engine::finalize()
 	pa_context_disconnect(context_);
 	pa_threaded_mainloop_free(loop_);
 	pa_context_unref(context_);
+
+	context_ = NULL;
 }
 
 #elif defined WINPLAT_WINDOWS

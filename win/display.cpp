@@ -33,9 +33,9 @@ win::display::~display()
 	finalize();
 }
 
-win::audio_engine win::display::make_audio_engine() const
+win::audio_engine win::display::make_audio_engine(audio_engine::sound_config_fn fn) const
 {
-	return audio_engine();
+	return audio_engine(fn);
 }
 
 win::font_renderer win::display::make_font_renderer(int iwidth, int iheight, float left, float right, float bottom, float top) const

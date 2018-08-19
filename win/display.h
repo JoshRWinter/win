@@ -35,7 +35,7 @@ public:
 	void event_character(fn_event_character);
 	void event_mouse(fn_event_mouse);
 
-	audio_engine make_audio_engine() const;
+	audio_engine make_audio_engine(audio_engine::sound_config_fn) const;
 	font_renderer make_font_renderer(int, int, float, float, float, float) const;
 
 	static int screen_width();
