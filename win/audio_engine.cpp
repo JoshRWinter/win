@@ -163,18 +163,9 @@ static void callback_stream_write(pa_stream *stream, const size_t bytes, void *d
 		total_written += give;
 	}
 
-	if(total_written == bytes)
-		std::cerr << "wrote " << bytes << std::endl;
-	else
-	{
-		std::cerr << "SHORT WRITE: wrote " << total_written << " of " << bytes << std::endl;
-		std::cerr << "total size was " << snd->target_size << std::endl;
-	}
-
 	// see if the stream is done
 	if(snd->start == snd->target_size)
 	{
-		std::cerr << "draining" << std::endl;
 		pa_operation *op = pa_stream_drain(stream, callback_stream_drained, data);
 		if(!op)
 			raise("Couldn't drain the stream");
@@ -285,7 +276,7 @@ int win::audio_engine::play(int id, bool looping, int apackno)
 
 	pa_cvolume volume;
 	pa_cvolume_init(&volume);
-	pa_cvolume_set(&volume, 1, PA_VOLUME_NORM);
+	pa_cvolume_set(&volume, 2, PA_VOLUME_NORM);
 	pa_operation_unref(pa_context_set_sink_input_volume(context_, pa_stream_get_index(stream), &volume, NULL, NULL));
 
 	pa_operation_unref(pa_stream_cork(stream, 0, [](pa_stream*, int, void*){}, loop_));
@@ -342,8 +333,9 @@ void win::audio_engine::listener(float x, float y)
 	for(sound &snd : sounds_)
 	{
 		pa_cvolume volume;
-		pa_cvolume_init(&volume);
-		pa_cvolume_set(&volume, 1, PA_VOLUME_NORM / 2);
+		volume.channels = 2;
+		volume.values[0] = PA_VOLUME_NORM;
+		volume.values[1] = PA_VOLUME_MUTED;
 		pa_operation_unref(pa_context_set_sink_input_volume(context_, pa_stream_get_index(snd.stream), &volume, NULL, NULL));
 	}
 	pa_threaded_mainloop_unlock(loop_);
