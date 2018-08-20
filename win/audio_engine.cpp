@@ -276,22 +276,22 @@ win::audio_engine::audio_engine(sound_config_fn fn)
 }
 
 // ambient (for music)
-int win::audio_engine::play(int id, bool looping, int apackno)
+int win::audio_engine::play(sound_key id, bool looping)
 {
-	return play(id, apackno, true, looping, 0.0f, 0.0f);
+	return play(id, true, looping, 0.0f, 0.0f);
 }
 
 // stero (for in-world sounds)
-int win::audio_engine::play(int id, float x, float y, bool looping, int apackno)
+int win::audio_engine::play(sound_key id, float x, float y, bool looping)
 {
-	return play(id, apackno, false, looping, x, y);
+	return play(id, false, looping, x, y);
 }
 
-int win::audio_engine::play(int id, int apackno, bool ambient, bool looping, float x, float y)
+int win::audio_engine::play(sound_key id, bool ambient, bool looping, float x, float y)
 {
-	if(apackno >= (int)imported_.size() || apackno < 0)
+	if(id.apackno >= (int)imported_.size() || id.apackno < 0)
 		bug("Apack id out of bounds");
-	if(id >= imported_[apackno].count || id < 0)
+	if(id.id >= imported_[id.apackno].count || id.id < 0)
 		bug("Sound id out of bounds");
 
 	if(sounds_.size() > MAX_SOUNDS)
@@ -330,7 +330,7 @@ int win::audio_engine::play(int id, int apackno, bool ambient, bool looping, flo
 	if(stream == NULL)
 		raise("Could not create stream object");
 
-	sound &stored = sounds_.emplace_front(this, sid, looping, 0, imported_[apackno].stored[id].buffer.get(), &imported_[apackno].stored[id].size, imported_[apackno].stored[id].target_size, stream, ambient, x, y);
+	sound &stored = sounds_.emplace_front(this, sid, looping, 0, imported_[id.apackno].stored[id.id].buffer.get(), &imported_[id.apackno].stored[id.id].size, imported_[id.apackno].stored[id.id].target_size, stream, ambient, x, y);
 
 	pa_stream_set_state_callback(stream, callback_stream, loop_);
 	pa_stream_set_write_callback(stream, callback_stream_write, &stored);

@@ -50,6 +50,14 @@ struct apack
 	int count;
 };
 
+struct sound_key
+{
+	sound_key(int id_, int apackno_ = 0) : id(id_), apackno(apackno_) {}
+
+	int id;
+	int apackno;
+};
+
 class audio_engine
 {
 	friend display;
@@ -67,9 +75,9 @@ public:
 	audio_engine &operator=(audio_engine&&);
 
 	void import(const data_list&);
-	int play(int, bool = false, int = 0); // ambient
-	int play(int, float, float, bool = false, int = 0); // stereo
-	int play(int, int, bool, bool, float, float); // fully dressed function
+	int play(sound_key, bool = false); // ambient
+	int play(sound_key, float, float, bool = false); // stereo
+	int play(sound_key, bool, bool, float, float); // fully dressed function
 	void pause();
 	void resume();
 	void pause(int);
