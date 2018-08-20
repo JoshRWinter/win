@@ -1,3 +1,4 @@
+#include <unordered_map>
 #include <string.h>
 
 #include <X11/Xatom.h>
@@ -97,6 +98,150 @@ static int x_get_keysym(XKeyEvent *event)
 		return 0;
 
 	return sym < ' ' || sym > '~' ? 0 : sym;
+}
+
+static std::string name_to_string(const char* name)
+{
+	char str[5] = {name[0], name[1], name[2], name[3], 0};
+	return str;
+}
+
+static std::unordered_map<std::string, win::button> load_physical_keys()
+{
+	std::unordered_map<std::string, win::button> map;
+
+	map.insert({name_to_string("MS1\0"), win::button::MOUSE_LEFT});
+	map.insert({name_to_string("MS2\0"), win::button::MOUSE_RIGHT});
+	map.insert({name_to_string("MS3\0"), win::button::MOUSE_MIDDLE});
+	map.insert({name_to_string("MS4\0"), win::button::MOUSE4});
+	map.insert({name_to_string("MS5\0"), win::button::MOUSE5});
+	map.insert({name_to_string("MS6\0"), win::button::MOUSE6});
+	map.insert({name_to_string("MS7\0"), win::button::MOUSE7});
+
+	map.insert({name_to_string("AC01"), win::button::A});
+	map.insert({name_to_string("AB05"), win::button::B});
+	map.insert({name_to_string("AB03"), win::button::C});
+	map.insert({name_to_string("AC03"), win::button::D});
+	map.insert({name_to_string("AD03"), win::button::E});
+	map.insert({name_to_string("AC04"), win::button::F});
+	map.insert({name_to_string("AC05"), win::button::G});
+	map.insert({name_to_string("AC06"), win::button::H});
+	map.insert({name_to_string("AD08"), win::button::I});
+	map.insert({name_to_string("AC07"), win::button::J});
+	map.insert({name_to_string("AC08"), win::button::K});
+	map.insert({name_to_string("AC09"), win::button::L});
+	map.insert({name_to_string("AB07"), win::button::M});
+	map.insert({name_to_string("AB06"), win::button::N});
+	map.insert({name_to_string("AD09"), win::button::O});
+	map.insert({name_to_string("AD10"), win::button::P});
+	map.insert({name_to_string("AD01"), win::button::Q});
+	map.insert({name_to_string("AD04"), win::button::R});
+	map.insert({name_to_string("AC02"), win::button::S});
+	map.insert({name_to_string("AD05"), win::button::T});
+	map.insert({name_to_string("AD07"), win::button::U});
+	map.insert({name_to_string("AB04"), win::button::V});
+	map.insert({name_to_string("AD02"), win::button::W});
+	map.insert({name_to_string("AB02"), win::button::X});
+	map.insert({name_to_string("AD06"), win::button::Y});
+	map.insert({name_to_string("AB01"), win::button::Z});
+
+	map.insert({name_to_string("AE10"), win::button::D0});
+	map.insert({name_to_string("AE01"), win::button::D1});
+	map.insert({name_to_string("AE02"), win::button::D2});
+	map.insert({name_to_string("AE03"), win::button::D3});
+	map.insert({name_to_string("AE04"), win::button::D4});
+	map.insert({name_to_string("AE05"), win::button::D5});
+	map.insert({name_to_string("AE06"), win::button::D6});
+	map.insert({name_to_string("AE07"), win::button::D7});
+	map.insert({name_to_string("AE08"), win::button::D8});
+	map.insert({name_to_string("AE09"), win::button::D9});
+
+	map.insert({name_to_string("TLDE"), win::button::TILDE});
+	map.insert({name_to_string("AE11"), win::button::DASH});
+	map.insert({name_to_string("AE12"), win::button::EQUALS});
+	map.insert({name_to_string("AD11"), win::button::LBRACKET});
+	map.insert({name_to_string("AD12"), win::button::RBRACKET});
+	map.insert({name_to_string("AC10"), win::button::SEMICOLON});
+	map.insert({name_to_string("AC11"), win::button::APOSTROPHE});
+	map.insert({name_to_string("AB08"), win::button::COMMA});
+	map.insert({name_to_string("AB09"), win::button::PERIOD});
+	map.insert({name_to_string("AB10"), win::button::SLASH});
+	map.insert({name_to_string("BKSL"), win::button::BACKSLASH});
+
+	map.insert({name_to_string("FK01"), win::button::F1});
+	map.insert({name_to_string("FK02"), win::button::F2});
+	map.insert({name_to_string("FK03"), win::button::F3});
+	map.insert({name_to_string("FK04"), win::button::F4});
+	map.insert({name_to_string("FK05"), win::button::F5});
+	map.insert({name_to_string("FK06"), win::button::F6});
+	map.insert({name_to_string("FK07"), win::button::F7});
+	map.insert({name_to_string("FK08"), win::button::F8});
+	map.insert({name_to_string("FK09"), win::button::F9});
+	map.insert({name_to_string("FK10"), win::button::F10});
+	map.insert({name_to_string("FK11"), win::button::F11});
+	map.insert({name_to_string("FK12"), win::button::F12});
+
+	map.insert({name_to_string("ESC\0"), win::button::ESC});
+	map.insert({name_to_string("PRSC"), win::button::PRINT_SCR});
+	map.insert({name_to_string("PAUS"), win::button::PAUSE_BREAK});
+	map.insert({name_to_string("INS\0"), win::button::INSERT});
+	map.insert({name_to_string("DELE"), win::button::DELETE});
+	map.insert({name_to_string("HOME"), win::button::HOME});
+	map.insert({name_to_string("PGUP"), win::button::PAGE_UP});
+	map.insert({name_to_string("PGDN"), win::button::PAGE_DOWN});
+	map.insert({name_to_string("END\0"), win::button::END});
+	map.insert({name_to_string("BKSP"), win::button::BACKSPACE});
+	map.insert({name_to_string("RTRN"), win::button::RETURN});
+	map.insert({name_to_string("KPEN"), win::button::ENTER});
+	map.insert({name_to_string("LFSH"), win::button::LSHIFT});
+	map.insert({name_to_string("RTSH"), win::button::RSHIFT});
+	map.insert({name_to_string("LCTL"), win::button::LCTRL});
+	map.insert({name_to_string("RCTL"), win::button::RCTRL});
+	map.insert({name_to_string("LALT"), win::button::LALT});
+	map.insert({name_to_string("RALT"), win::button::RALT});
+	map.insert({name_to_string("SPCE"), win::button::SPACE});
+	map.insert({name_to_string("COMP"), win::button::MENU});
+	map.insert({name_to_string("LWIN"), win::button::LMETA});
+	map.insert({name_to_string("RWIN"), win::button::RMETA});
+	map.insert({name_to_string("UP\0\0"), win::button::UP});
+	map.insert({name_to_string("LEFT"), win::button::LEFT});
+	map.insert({name_to_string("RGHT"), win::button::RIGHT});
+	map.insert({name_to_string("DOWN"), win::button::DOWN});
+	map.insert({name_to_string("CAPS"), win::button::CAPSLOCK});
+	map.insert({name_to_string("TAB\0"), win::button::TAB});
+
+	map.insert({name_to_string("NMLK"), win::button::NUM_LOCK});
+	map.insert({name_to_string("KPDV"), win::button::NUM_SLASH});
+	map.insert({name_to_string("KPMU"), win::button::NUM_MULTIPLY});
+	map.insert({name_to_string("KPSU"), win::button::NUM_MINUS});
+	map.insert({name_to_string("KPAD"), win::button::NUM_PLUS});
+	map.insert({name_to_string("KPDL"), win::button::NUM_DEL});
+	map.insert({name_to_string("KP0\0"), win::button::NUM0});
+	map.insert({name_to_string("KP1\0"), win::button::NUM1});
+	map.insert({name_to_string("KP2\0"), win::button::NUM2});
+	map.insert({name_to_string("KP3\0"), win::button::NUM3});
+	map.insert({name_to_string("KP4\0"), win::button::NUM4});
+	map.insert({name_to_string("KP5\0"), win::button::NUM5});
+	map.insert({name_to_string("KP6\0"), win::button::NUM6});
+	map.insert({name_to_string("KP7\0"), win::button::NUM7});
+	map.insert({name_to_string("KP8\0"), win::button::NUM8});
+	map.insert({name_to_string("KP9\0"), win::button::NUM9});
+
+	return map;
+}
+
+static const std::unordered_map<std::string, win::button> physical_keys = load_physical_keys();
+
+static win::button name_to_button(const char *name)
+{
+	auto iterator = physical_keys.find(name_to_string(name));
+	if(iterator == physical_keys.end())
+	{
+		std::cerr << "Unkown key \"" << name[0] << name[1] << name[2] << name[3] << "\"" << std::endl;
+		return win::button::UNDEFINED;
+	}
+
+	return iterator->second;
 }
 
 win::display::display(const char *caption, int width, int height, int flags, window_handle parent)

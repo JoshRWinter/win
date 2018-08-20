@@ -224,227 +224,127 @@ void *getproc(const char *name)
 
 const char *win::key_name(const button key)
 {
-	if(key == button::MOUSE_LEFT)
-		return "LeftMouse";
-	else if(key == button::MOUSE_RIGHT)
-		return "RightMouse";
-	else if(key == button::MOUSE_MIDDLE)
-		return "MiddleMouse";
-	else if(key == button::MOUSE_LEFT)
-		return "LeftMouse";
-	else if(key == button::MOUSE4)
-		return "Mouse4";
-	else if(key == button::MOUSE5)
-		return "Mouse5";
-	else if(key == button::A)
-		return "A";
-	else if(key == button::B)
-		return "B";
-	else if(key == button::C)
-		return "C";
-	else if(key == button::D)
-		return "D";
-	else if(key == button::E)
-		return "E";
-	else if(key == button::F)
-		return "F";
-	else if(key == button::G)
-		return "G";
-	else if(key == button::H)
-		return "H";
-	else if(key == button::I)
-		return "I";
-	else if(key == button::J)
-		return "J";
-	else if(key == button::K)
-		return "K";
-	else if(key == button::L)
-		return "L";
-	else if(key == button::M)
-		return "M";
-	else if(key == button::N)
-		return "N";
-	else if(key == button::O)
-		return "O";
-	else if(key == button::P)
-		return "P";
-	else if(key == button::Q)
-		return "Q";
-	else if(key == button::R)
-		return "R";
-	else if(key == button::S)
-		return "S";
-	else if(key == button::T)
-		return "T";
-	else if(key == button::U)
-		return "U";
-	else if(key == button::V)
-		return "V";
-	else if(key == button::W)
-		return "W";
-	else if(key == button::X)
-		return "X";
-	else if(key == button::Y)
-		return "Y";
-	else if(key == button::Z)
-		return "Z";
+	switch(key)
+	{
+		case button::MOUSE_LEFT: return "LeftMouse";
+		case button::MOUSE_RIGHT: return "RightMouse";
+		case button::MOUSE_MIDDLE: return "MiddleMouse";
+		case button::MOUSE4: return "Mouse4";
+		case button::MOUSE5: return "Mouse5";
+		case button::MOUSE6: return "Mouse6";
+		case button::MOUSE7: return "Mouse7";
 
-	else if(key == button::D0)
-		return "0";
-	else if(key == button::D1)
-		return "1";
-	else if(key == button::D2)
-		return "2";
-	else if(key == button::D3)
-		return "3";
-	else if(key == button::D4)
-		return "4";
-	else if(key == button::D5)
-		return "5";
-	else if(key == button::D6)
-		return "6";
-	else if(key == button::D7)
-		return "7";
-	else if(key == button::D8)
-		return "8";
-	else if(key == button::D9)
-		return "9";
+		case button::A: return "A";
+		case button::B: return "B";
+		case button::C: return "C";
+		case button::D: return "D";
+		case button::E: return "E";
+		case button::F: return "F";
+		case button::G: return "G";
+		case button::H: return "H";
+		case button::I: return "I";
+		case button::J: return "J";
+		case button::K: return "K";
+		case button::L: return "L";
+		case button::M: return "M";
+		case button::N: return "N";
+		case button::O: return "O";
+		case button::P: return "P";
+		case button::Q: return "Q";
+		case button::R: return "R";
+		case button::S: return "S";
+		case button::T: return "T";
+		case button::U: return "U";
+		case button::V: return "V";
+		case button::W: return "W";
+		case button::X: return "X";
+		case button::Y: return "Y";
+		case button::Z: return "Z";
 
-	else if(key == button::TILDE)
-		return "Tilde";
-	else if(key == button::DASH)
-		return "Dash";
-	else if(key == button::EQUALS)
-		return "Equals";
-	else if(key == button::LBRACKET)
-		return "LeftBracket";
-	else if(key == button::RBRACKET)
-		return "RightBracket";
-	else if(key == button::SEMICOLON)
-		return "Semicolon";
-	else if(key == button::APOSTROPHE)
-		return "Apostrophe";
-	else if(key == button::COMMA)
-		return "Comma";
-	else if(key == button::PERIOD)
-		return "Period";
-	else if(key == button::SLASH)
-		return "Slash";
-	else if(key == button::BACKSLASH)
-		return "BackSlash";
+		case button::D0: return "0";
+		case button::D1: return "1";
+		case button::D2: return "2";
+		case button::D3: return "3";
+		case button::D4: return "4";
+		case button::D5: return "5";
+		case button::D6: return "6";
+		case button::D7: return "7";
+		case button::D8: return "8";
+		case button::D9: return "9";
 
-	else if(key == button::F1)
-		return "Function1";
-	else if(key == button::F2)
-		return "Function2";
-	else if(key == button::F3)
-		return "Function3";
-	else if(key == button::F4)
-		return "Function4";
-	else if(key == button::F5)
-		return "Function5";
-	else if(key == button::F6)
-		return "Function6";
-	else if(key == button::F7)
-		return "Function7";
-	else if(key == button::F8)
-		return "Function8";
-	else if(key == button::F9)
-		return "Function9";
-	else if(key == button::F10)
-		return "Function10";
-	else if(key == button::F11)
-		return "Function11";
-	else if(key == button::F12)
-		return "Function12";
+		case button::TILDE: return "Tilde";
+		case button::DASH: return "Dash";
+		case button::EQUALS: return "Equals";
+		case button::LBRACKET: return "LeftBracket";
+		case button::RBRACKET: return "RightBracket";
+		case button::SEMICOLON: return "Semicolon";
+		case button::APOSTROPHE: return "Apostrophe";
+		case button::COMMA: return "Comma";
+		case button::PERIOD: return "Period";
+		case button::SLASH: return "Slash";
+		case button::BACKSLASH: return "BackSlash";
 
-	else if(key == button::ESC)
-		return "Escape";
-	else if(key == button::PRINT_SCR)
-		return "PrintScreen";
-	else if(key == button::PAUSE_BREAK)
-		return "PauseBreak";
-	else if(key == button::INSERT)
-		return "Insert";
-	else if(key == button::DELETE)
-		return "Delete";
-	else if(key == button::HOME)
-		return "Home";
-	else if(key == button::PAGE_UP)
-		return "PageUp";
-	else if(key == button::PAGE_DOWN)
-		return "PageDown";
-	else if(key == button::END)
-		return "End";
-	else if(key == button::BACKSPACE)
-		return "Backspace";
-	else if(key == button::RETURN)
-		return "Return";
-	else if(key == button::ENTER)
-		return "Enter";
-	else if(key == button::LSHIFT)
-		return "LeftShift";
-	else if(key == button::RSHIFT)
-		return "RightShift";
-	else if(key == button::LCTRL)
-		return "LeftControl";
-	else if(key == button::RCTRL)
-		return "RightControl";
-	else if(key == button::LALT)
-		return "LeftAlt";
-	else if(key == button::RALT)
-		return "RightAlt";
-	else if(key == button::SPACE)
-		return "Spacebar";
-	else if(key == button::MENU)
-		return "Menu";
-	else if(key == button::LMETA)
-		return "LeftMeta";
-	else if(key == button::UP)
-		return "UpArrow";
-	else if(key == button::LEFT)
-		return "LeftArrow";
-	else if(key == button::RIGHT)
-		return "RightArrow";
-	else if(key == button::DOWN)
-		return "DownArrow";
-	else if(key == button::CAPSLOCK)
-		return "CapsLock";
-	else if(key == button::TAB)
-		return "Tab";
+		case button::F1: return "Function1";
+		case button::F2: return "Function2";
+		case button::F3: return "Function3";
+		case button::F4: return "Function4";
+		case button::F5: return "Function5";
+		case button::F6: return "Function6";
+		case button::F7: return "Function7";
+		case button::F8: return "Function8";
+		case button::F9: return "Function9";
+		case button::F10: return "Function10";
+		case button::F11: return "Function11";
+		case button::F12: return "Function12";
 
-	else if(key == button::NUM_LOCK)
-		return "NumLock";
-	else if(key == button::NUM_SLASH)
-		return "NumSlash";
-	else if(key == button::NUM_MULTIPLY)
-		return "NumMultiply";
-	else if(key == button::NUM_MINUS)
-		return "NumMinus";
-	else if(key == button::NUM_PLUS)
-		return "NumPlus";
-	else if(key == button::NUM_DEL)
-		return "NumDelete";
-	else if(key == button::NUM_0)
-		return "Num0";
-	else if(key == button::NUM_1)
-		return "Num1";
-	else if(key == button::NUM_2)
-		return "Num2";
-	else if(key == button::NUM_3)
-		return "Num3";
-	else if(key == button::NUM_4)
-		return "Num4";
-	else if(key == button::NUM_5)
-		return "Num5";
-	else if(key == button::NUM_6)
-		return "Num6";
-	else if(key == button::NUM_7)
-		return "Num7";
-	else if(key == button::NUM_8)
-		return "Num8";
-	else if(key == button::NUM_9)
-		return "Num9";
+		case button::ESC: return "Escape";
+		case button::PRINT_SCR: return "PrintScreen";
+		case button::PAUSE_BREAK: return "PauseBreak";
+		case button::INSERT: return "Insert";
+		case button::DELETE: return "Delete";
+		case button::HOME: return "Home";
+		case button::PAGE_UP: return "PageUp";
+		case button::PAGE_DOWN: return "PageDown";
+		case button::END: return "End";
+		case button::BACKSPACE: return "Backspace";
+		case button::RETURN: return "Return";
+		case button::ENTER: return "Enter";
+		case button::LSHIFT: return "LeftShift";
+		case button::RSHIFT: return "RightShift";
+		case button::LCTRL: return "LeftControl";
+		case button::RCTRL: return "RightControl";
+		case button::LALT: return "LeftAlt";
+		case button::RALT: return "RightAlt";
+		case button::SPACE: return "Spacebar";
+		case button::MENU: return "Menu";
+		case button::LMETA: return "LeftMeta";
+		case button::RMETA: return "RightMeta";
+		case button::UP: return "UpArrow";
+		case button::LEFT: return "LeftArrow";
+		case button::RIGHT: return "RightArrow";
+		case button::DOWN: return "DownArrow";
+		case button::CAPSLOCK: return "CapsLock";
+		case button::TAB: return "Tab";
+
+		case button::NUM_LOCK: return "NumLock";
+		case button::NUM_SLASH: return "NumSlash";
+		case button::NUM_MULTIPLY: return "NumMultiply";
+		case button::NUM_MINUS: return "NumMinus";
+		case button::NUM_PLUS: return "NumPlus";
+		case button::NUM_DEL: return "NumDelete";
+		case button::NUM0: return "Num0";
+		case button::NUM1: return "Num1";
+		case button::NUM2: return "Num2";
+		case button::NUM3: return "Num3";
+		case button::NUM4: return "Num4";
+		case button::NUM5: return "Num5";
+		case button::NUM6: return "Num6";
+		case button::NUM7: return "Num7";
+		case button::NUM8: return "Num8";
+		case button::NUM9: return "Num9";
+
+		case button::UNDEFINED: return "Unkown";
+	}
 
 	return "UndefinedKey";
 }
