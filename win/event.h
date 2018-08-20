@@ -7,6 +7,51 @@ namespace win
 {
 
 #if defined WINPLAT_LINUX
+enum class button
+{
+	// mice
+	MOUSE_LEFT,
+	MOUSE_RIGHT,
+	MOUSE_MIDDLE,
+	MOUSE4,
+	MOUSE5,
+	MOUSE6,
+	MOUSE7,
+
+	// letters
+	A, B, C, D,
+	E, F, G, H,
+	I, J, K, L,
+	M, N, O, P,
+	Q, R, S, T,
+	U, V, W, X,
+	Y, Z,
+
+	// numbers (top row)
+	D0, D1, D2, D3, D4, D5, D6, D7, D8, D9
+
+	// symbols
+	TILDE, DASH, EQUALS, LBRACKET,
+	RBRACKET, SEMICOLON, APOSTROPHE,
+	COMMA, PERIOD, SLASH, BACKSLASH,
+
+	// function keys
+	F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+
+	// misc
+	ESC, PRINT_SCR, PAUSE_BREAK, INSERT, DELETE,
+	HOME, PAGE_UP, PAGE_DOWN, END, BACKSPACE,
+	RETURN, ENTER, LSHIFT, RSHIFT, LCTRL, RCTRL,
+	LALT, RALT, SPACE, MENU, LMETA, UP, LEFT,
+	RIGHT, DOWN, CAPSLOCK, TAB,
+
+	// numpad
+	NUM_LOCK, NUM_SLASH, NUM_MULTIPLY, NUM_MINUS,
+	NUM_PLUS, NUM_DEL,
+	NUM_0, NUM_1, NUM_2, NUM_3, NUM_4, NUM_5,
+	NUM_6, NUM_7, NUM_8, NUM_9
+};
+
 class button
 {
 public:

@@ -188,7 +188,7 @@ bool win::display::process()
 
 			case KeyPress:
 			{
-				handler.key_button(xkb_desc->names->keys[xevent.xkey.keycode].name, true);
+				handler.key_button(name_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), true);
 				const KeySym sym = x_get_keysym(&xevent.xkey);
 				if(sym)
 					handler.character(sym, true);
@@ -204,7 +204,7 @@ bool win::display::process()
 						break;
 				}
 
-				handler.key_button(xkb_desc->names->keys[xevent.xkey.keycode].name, false);
+				handler.key_button(name_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), false);
 				const KeySym sym = x_get_keysym(&xevent.xkey);
 				if(sym)
 					handler.character(sym, false);
