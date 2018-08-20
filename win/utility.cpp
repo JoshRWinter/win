@@ -110,6 +110,178 @@ int win::data_list::count() const
 	return filenames_.size();
 }
 
+// shader program wrapper
+win::program::program(GLuint prog, bool bind)
+{
+	program_ = prog;
+	if(bind)
+		glUseProgram(prog);
+}
+
+win::program::program(program &&rhs)
+{
+	program_ = rhs.program_;
+	rhs.program_ = 0;
+}
+
+win::program::~program()
+{
+	finalize();
+}
+
+win::program &win::program::operator=(program &&rhs)
+{
+	finalize();
+
+	program_ = rhs.program_;
+	rhs.program_ = 0;
+
+	return *this;
+}
+
+win::program::operator GLuint()
+{
+	return program_;
+}
+
+void win::program::finalize()
+{
+	if(program_ != 0)
+	{
+		glDeleteProgram(program_);
+		program_ = 0;
+	}
+}
+
+// vao wrappper
+win::vao::vao(bool bind)
+{
+	glGenVertexArrays(1, &vao_);
+	if(bind)
+		glBindVertexArray(vao_);
+}
+
+win::vao::vao(vao &&rhs)
+{
+	vao_ = rhs.vao_;
+	rhs.vao_ = (GLuint)-1;
+}
+
+win::vao::~vao()
+{
+	finalize();
+}
+
+win::vao &win::vao::operator=(vao &&rhs)
+{
+	finalize();
+
+	vao_ = rhs.vao_;
+	rhs.vao_ = (GLuint)-1;
+
+	return *this;
+}
+
+win::vao::operator GLuint()
+{
+	return vao_;
+}
+
+void win::vao::finalize()
+{
+	if(vao_ != (GLuint)-1)
+	{
+		glDeleteVertexArrays(1, &vao_);
+		vao_ = (GLuint)-1;
+	}
+}
+
+// vbo wrapper
+win::vbo::vbo(bool bind)
+{
+	glGenBuffers(1, &vbo_);
+	if(bind)
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+}
+
+win::vbo::vbo(vbo &&rhs)
+{
+	vbo_ = rhs.vbo_;
+	rhs.vbo_ = (GLuint)-1;
+}
+
+win::vbo::~vbo()
+{
+	finalize();
+}
+
+win::vbo &win::vbo::operator=(vbo &&rhs)
+{
+	finalize();
+
+	vbo_ = rhs.vbo_;
+	rhs.vbo_ = (GLuint)-1;
+
+	return *this;
+}
+
+win::vbo::operator GLuint()
+{
+	return vbo_;
+}
+
+void win::vbo::finalize()
+{
+	if(vbo_ != (GLuint)-1)
+	{
+		glDeleteBuffers(1, &vbo_);
+		vbo_ = (GLuint)-1;
+	}
+}
+
+// ebo wrapper
+win::ebo::ebo(bool bind)
+{
+	glGenBuffers(1, &ebo_);
+	if(bind)
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+}
+
+win::ebo::ebo(ebo &&rhs)
+{
+	ebo_ = rhs.ebo_;
+	rhs.ebo_ = (GLuint)-1;
+}
+
+win::ebo::~ebo()
+{
+	finalize();
+}
+
+win::ebo &win::ebo::operator=(ebo &&rhs)
+{
+	finalize();
+
+	ebo_ = rhs.ebo_;
+	rhs.ebo_ = (GLuint)-1;
+
+	return *this;
+}
+
+win::ebo::operator GLuint()
+{
+	return ebo_;
+}
+
+void win::ebo::finalize()
+{
+	if(ebo_ != (GLuint)-1)
+	{
+		glDeleteBuffers(1, &ebo_);
+		ebo_ = (GLuint)-1;
+	}
+}
+
 static void *getproc(const char*);
 void win::load_extensions()
 {

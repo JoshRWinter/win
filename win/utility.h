@@ -98,6 +98,62 @@ namespace win
 		roll *parent_;
 	};
 
+	struct program
+	{
+		program(GLuint, bool = true);
+		program(const program&) = delete;
+		program(program&&);
+		~program();
+		void operator=(const program&) = delete;
+		program &operator=(program&&);
+		operator GLuint();
+		void finalize();
+
+		GLuint program_;
+	};
+
+	struct vao
+	{
+		vao(bool = true);
+		vao(const vao&) = delete;
+		vao(vao&&);
+		~vao();
+		void operator=(const vao&) = delete;
+		vao &operator=(vao&&);
+		operator GLuint();
+		void finalize();
+
+		GLuint vao_;
+	};
+
+	struct vbo
+	{
+		vbo(bool = true);
+		vbo(const vbo&) = delete;
+		vbo(vbo&&);
+		~vbo();
+		void operator=(const vbo&) = delete;
+		vbo &operator=(vbo&&);
+		operator GLuint();
+		void finalize();
+
+		GLuint vbo_;
+	};
+
+	struct ebo
+	{
+		ebo(bool = true);
+		ebo(const ebo&) = delete;
+		ebo(ebo&&);
+		~ebo();
+		void operator=(const ebo&) = delete;
+		ebo &operator=(ebo&&);
+		operator GLuint();
+		void finalize();
+
+		GLuint ebo_;
+	};
+
 	void load_extensions();
 	unsigned load_shaders(const char*, int, const char*, int);
 	unsigned load_shaders(const char*, const char*);

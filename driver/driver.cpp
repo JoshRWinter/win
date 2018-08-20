@@ -54,8 +54,7 @@ int main()
 		0, 1, 2, 0, 2, 3
 	};
 
-	unsigned program = win::load_shaders(roll["vertex.vert"], roll["fragment.frag"]);
-	glUseProgram(program);
+	win::program program = win::load_shaders(roll["vertex.vert"], roll["fragment.frag"]);
 	int uniform_projection, uniform_size;
 	float ortho_matrix[16];
 	win::init_ortho(ortho_matrix, -4.0f, 4.0f, 3.0f, -3.0f);
@@ -64,35 +63,26 @@ int main()
 	glUniformMatrix4fv(uniform_projection, 1, false, ortho_matrix);
 	glUniform1f(uniform_size, Block::SIZE);
 
-	unsigned vao;
-	unsigned vbo_vertex, vbo_position, vbo_color;
-	unsigned ebo;
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &vbo_vertex);
-	glGenBuffers(1, &vbo_position);
-	glGenBuffers(1, &vbo_color);
-	glGenBuffers(1, &ebo);
-
-	glBindVertexArray(vao);
+	win::vao vao;
 
 	// element buffer
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	win::ebo ebo;
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// vertex buffer
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex);
+	win::vbo vbo_vertex;
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, NULL);
 	glEnableVertexAttribArray(0);
 
 	// position buffer
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
+	win::vbo vbo_position;
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, NULL);
 	glVertexAttribDivisor(1, 1);
 	glEnableVertexAttribArray(1);
 
 	// color buffer
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
+	win::vbo vbo_color;
 	glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, false, 0, NULL);
 	glVertexAttribDivisor(2, 1);
 	glEnableVertexAttribArray(2);
@@ -136,7 +126,7 @@ int main()
 		auto start = std::chrono::high_resolution_clock::now();
 
 		if(!display.process() || quit)
-			goto done;
+			break;
 
 		// process entities
 		{
@@ -196,15 +186,6 @@ int main()
 		std::this_thread::sleep_for(std::chrono::milliseconds(4));
 		while(std::chrono::duration<float, std::micro>(std::chrono::high_resolution_clock::now() - start).count() < 16666.0f);
 	}
-done:
-
-	glDeleteBuffers(1, &ebo);
-	glDeleteBuffers(1, &vbo_color);
-	glDeleteBuffers(1, &vbo_position);
-	glDeleteBuffers(1, &vbo_vertex);
-	glDeleteVertexArrays(1, &vao);
-
-	glDeleteProgram(program);
 
 	return 0;
 }
