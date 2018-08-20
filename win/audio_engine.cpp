@@ -392,12 +392,36 @@ void win::audio_engine::resume()
 	}
 }
 
-void win::audio_engine::pause(int)
+void win::audio_engine::pause(int id)
 {
+	pa_threaded_mainloop_lock(loop_);
+	for(sound &snd : sounds_)
+	{
+		if(id != snd.id)
+			continue;
+
+		if(!pa_stream_is_corked(snd.stream))
+			pa_operation_unref(pa_stream_cork(snd.stream, 1, NULL, NULL));
+
+		break;
+	}
+	pa_threaded_mainloop_unlock(loop_);
 }
 
-void win::audio_engine::resume(int)
+void win::audio_engine::resume(int id)
 {
+	pa_threaded_mainloop_lock(loop_);
+	for(sound &snd : sounds_)
+	{
+		if(id != snd.id)
+			continue;
+
+		if(pa_stream_is_corked(snd.stream))
+			pa_operation_unref(pa_stream_cork(snd.stream, 0, NULL, NULL));
+
+		continue;
+	}
+	pa_threaded_mainloop_unlock(loop_);
 }
 
 void win::audio_engine::source(int id, float x, float y)
