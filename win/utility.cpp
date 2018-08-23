@@ -515,6 +515,22 @@ const char *win::key_name(const button key)
 		case button::NUM8: return "Num8";
 		case button::NUM9: return "Num9";
 
+		case button::JS_A: return "JoystickA";
+		case button::JS_B: return "JoystickB";
+		case button::JS_Y: return "JoystickY";
+		case button::JS_X: return "JoystickX";
+		case button::JS_RBUMP: return "JoystickRightBumper";
+		case button::JS_LBUMP: return "JoystickLeftBumper";
+		case button::JS_PAD_LEFT: return "JoystickDpadLeft";
+		case button::JS_PAD_RIGHT: return "JoystickDpadRight";
+		case button::JS_PAD_DOWN: return "JoystickDpadDown";
+		case button::JS_PAD_UP: return "JoystickDpadUp";
+		case button::JS_RSTICK: return "JoystickRightStick";
+		case button::JS_LSTICK: return "JoystickLeftStick";
+		case button::JS_SELECT: return "JoystickSelect";
+		case button::JS_START: return "JoystickStart";
+		case button::JS_GAMEPAD: return "JoystickGamepad";
+
 		case button::UNDEFINED: return "Unkown";
 	}
 

@@ -22,9 +22,6 @@ public:
 	display make_display(const char*, int, int, int = 0, window_handle = 0);
 
 	static system &get();
-
-private:
-	void remove_display(const display&);
 };
 
 }

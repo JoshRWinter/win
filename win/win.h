@@ -38,6 +38,7 @@ namespace win
 #include "roll.h"
 #include "font.h"
 #include "audio_engine.h"
+#include "joystick.h"
 #include "display.h"
 
 namespace win

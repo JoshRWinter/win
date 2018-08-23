@@ -11,6 +11,7 @@ class display
 	friend class system;
 
 	typedef std::function<void(button, bool)> fn_event_button;
+	typedef std::function<void(joystick_axis, int)> fn_event_joystick;
 	typedef std::function<void(int, bool)> fn_event_character;
 	typedef std::function<void(int x, int y)> fn_event_mouse;
 
@@ -32,6 +33,7 @@ public:
 	void cursor(bool);
 
 	void event_button(fn_event_button);
+	void event_joystick(fn_event_joystick);
 	void event_character(fn_event_character);
 	void event_mouse(fn_event_mouse);
 
@@ -42,6 +44,7 @@ public:
 	static int screen_height();
 
 private:
+	void process_joystick();
 	void move(display&);
 	void finalize();
 
@@ -58,6 +61,7 @@ private:
 #if defined WINPLAT_LINUX
 	Window window_;
 	GLXContext context_;
+	evdev_joystick joystick_;
 #elif defined WINPLAT_WINDOWS
 #endif
 };

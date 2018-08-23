@@ -319,6 +319,9 @@ win::display::display(const char *caption, int width, int height, int flags, win
 // return false if application is to exit
 bool win::display::process()
 {
+	// handle evdev event-joystick
+	process_joystick();
+
 	while(XPending(xdisplay))
 	{
 		XEvent xevent;
@@ -437,7 +440,13 @@ void win::display::cursor(bool show)
 
 void win::display::event_button(fn_event_button f)
 {
-	handler.key_button = std::move(f);
+	handler.key_button = f;
+	joystick_.event_button(f);
+}
+
+void win::display::event_joystick(fn_event_joystick f)
+{
+	joystick_.event_joystick(std::move(f));
 }
 
 void win::display::event_character(fn_event_character f)
@@ -460,11 +469,17 @@ int win::display::screen_height()
 	return HeightOfScreen(ScreenOfDisplay(xdisplay, 0));
 }
 
+void win::display::process_joystick()
+{
+	joystick_.process();
+}
+
 void win::display::move(display &rhs)
 {
 	handler.key_button = std::move(rhs.handler.key_button);
 	handler.character = std::move(rhs.handler.character);
 	handler.mouse = std::move(rhs.handler.mouse);
+	joystick_ = std::move(rhs.joystick_);
 
 	window_ = rhs.window_;
 	context_ = rhs.context_;

@@ -99,6 +99,8 @@ int main()
 	bool paused = false;
 	display.event_button([&quit, &paused, &audio_engine](win::button button, bool press)
 	{
+		if(press)
+			std::cerr << "key: " << win::key_name(button) << std::endl;
 		if(press && button == win::button::ESC)
 			quit = true;
 		else if(press && button == win::button::SPACE)
@@ -114,6 +116,31 @@ int main()
 		else if(press)
 			audio_engine.play(1);
 	});
+
+	// display.event_joystick([](win::joystick_axis axis, int value)
+	// {
+	// 	switch(axis)
+	// 	{
+	// 		case win::joystick_axis::RIGHT_X:
+	// 			std::cerr << "axis right x, value " << value << std::endl;
+	// 			break;
+	// 		case win::joystick_axis::RIGHT_Y:
+	// 			std::cerr << "axis right y, value " << value << std::endl;
+	// 			break;
+	// 		case win::joystick_axis::LEFT_X:
+	// 			std::cerr << "axis left x, value " << value << std::endl;
+	// 			break;
+	// 		case win::joystick_axis::LEFT_Y:
+	// 			std::cerr << "axis left y, value " << value << std::endl;
+	// 			break;
+	// 		case win::joystick_axis::RIGHT_TRIGGER:
+	// 			std::cerr << "axis right trigger, value " << value << std::endl;
+	// 			break;
+	// 		case win::joystick_axis::LEFT_TRIGGER:
+	// 			std::cerr << "axis left trigger, value " << value << std::endl;
+	// 			break;
+	// 	}
+	// });
 
 	// display.event_mouse([&quit](int x, int y)
 	// {
