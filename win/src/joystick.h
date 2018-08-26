@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <dirent.h>
 constexpr int INPUT_SIZE = sizeof(timeval::tv_sec) + sizeof(timeval::tv_usec) + sizeof(input_event::type) + sizeof(input_event::code) + sizeof(input_event::value);
-#endif
 
 namespace win
 {
@@ -52,5 +51,6 @@ private:
 };
 
 }
+#endif
 
 #endif

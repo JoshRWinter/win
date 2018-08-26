@@ -10,6 +10,7 @@
 
 #elif defined _WIN32
 #define WINPLAT_WINDOWS
+#define NOMINMAX
 #include <windows.h>
 
 #else
@@ -32,14 +33,14 @@ namespace win
 #endif
 }
 
-#include "system.h"
-#include "event.h"
-#include "utility.h"
-#include "roll.h"
-#include "font.h"
-#include "audio_engine.h"
-#include "joystick.h"
-#include "display.h"
+#include "../src/system.h"
+#include "../src/event.h"
+#include "../src/utility.h"
+#include "../src/roll.h"
+#include "../src/font.h"
+#include "../src/audio_engine.h"
+#include "../src/joystick.h"
+#include "../src/display.h"
 
 namespace win
 {

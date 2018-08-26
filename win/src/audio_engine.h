@@ -7,7 +7,9 @@
 #include <memory>
 #include <thread>
 
+#if defined WINPLAT_LINUX
 #include <pulse/pulseaudio.h>
+#endif
 
 namespace win
 {

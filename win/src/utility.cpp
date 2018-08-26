@@ -391,7 +391,14 @@ void *getproc(const char *name)
 	return address;
 }
 #else
-#error "unsupported platform"
+void *getproc(const char *name)
+{
+	void *address = (void*)wglGetProcAddress(name);
+	if(name == NULL)
+		throw win::exception(std::string("Could not get extension \"") + name + "\"");
+
+	return address;
+}
 #endif
 
 const char *win::key_name(const button key)

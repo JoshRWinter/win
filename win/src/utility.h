@@ -4,7 +4,13 @@
 #include <vector>
 #include <string>
 
+#if defined WINPLAT_LINUX
 #include <GL/glext.h>
+#elif defined WINPLAT_WINDOWS
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <GL/wglext.h>
+#endif
 
 #ifdef WIN_STORAGE
 #define WIN_EXTERN
@@ -47,119 +53,121 @@ WIN_EXTERN PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
 
 namespace win
 {
-	struct color
-	{
-		constexpr color(float r, float g, float b, float a = 1.0f)
-			: red(r), green(g), blue(b), alpha(a) {}
-		constexpr color(int r, int g, int b, int a = 255.0f)
-			: red(r / 255.0f), green(g / 255.0f), blue(b / 255.0f), alpha(a / 255.0f) {}
 
-		float red, green, blue, alpha;
-	};
+struct color
+{
+	constexpr color(float r, float g, float b, float a = 1.0f)
+		: red(r), green(g), blue(b), alpha(a) {}
+	constexpr color(int r, int g, int b, int a = 255.0f)
+		: red(r / 255.0f), green(g / 255.0f), blue(b / 255.0f), alpha(a / 255.0f) {}
 
-	class data
-	{
-	public:
-		// TAKES OWNERSHIP OF MEMORY
-		data() noexcept;
-		data(unsigned char*, unsigned long long) noexcept;
-		data(const data&) = delete;
-		data(data&&) noexcept;
-		~data();
+	float red, green, blue, alpha;
+};
 
-		void operator=(const data&) = delete;
-		data &operator=(data&&) noexcept;
-		bool operator!() const noexcept;
+class data
+{
+public:
+	// TAKES OWNERSHIP OF MEMORY
+	data() noexcept;
+	data(unsigned char*, unsigned long long) noexcept;
+	data(const data&) = delete;
+	data(data&&) noexcept;
+	~data();
 
-		const unsigned char *get() const noexcept;
-		unsigned long long size() const noexcept;
-		unsigned long long read(void*, size_t) noexcept;
-		void finalize();
+	void operator=(const data&) = delete;
+	data &operator=(data&&) noexcept;
+	bool operator!() const noexcept;
 
-	private:
-		unsigned char *data_;
-		unsigned long long size_;
-		unsigned long long stream_position_;
-	};
+	const unsigned char *get() const noexcept;
+	unsigned long long size() const noexcept;
+	unsigned long long read(void*, size_t) noexcept;
+	void finalize();
 
-	class roll;
-	class data_list
-	{
-	public:
-		data_list(roll*);
+private:
+	unsigned char *data_;
+	unsigned long long size_;
+	unsigned long long stream_position_;
+};
 
-		void add(const std::string&);
-		data get(int) const;
-		const std::vector<std::string> &files() const;
-		int count() const;
+class roll;
+class data_list
+{
+public:
+	data_list(roll*);
 
-	private:
-		std::vector<std::string> filenames_;
-		roll *parent_;
-	};
+	void add(const std::string&);
+	data get(int) const;
+	const std::vector<std::string> &files() const;
+	int count() const;
 
-	struct program
-	{
-		program(GLuint, bool = true);
-		program(const program&) = delete;
-		program(program&&);
-		~program();
-		void operator=(const program&) = delete;
-		program &operator=(program&&);
-		operator GLuint();
-		void finalize();
+private:
+	std::vector<std::string> filenames_;
+	roll *parent_;
+};
 
-		GLuint program_;
-	};
+struct program
+{
+	program(GLuint, bool = true);
+	program(const program&) = delete;
+	program(program&&);
+	~program();
+	void operator=(const program&) = delete;
+	program &operator=(program&&);
+	operator GLuint();
+	void finalize();
 
-	struct vao
-	{
-		vao(bool = true);
-		vao(const vao&) = delete;
-		vao(vao&&);
-		~vao();
-		void operator=(const vao&) = delete;
-		vao &operator=(vao&&);
-		operator GLuint();
-		void finalize();
+	GLuint program_;
+};
 
-		GLuint vao_;
-	};
+struct vao
+{
+	vao(bool = true);
+	vao(const vao&) = delete;
+	vao(vao&&);
+	~vao();
+	void operator=(const vao&) = delete;
+	vao &operator=(vao&&);
+	operator GLuint();
+	void finalize();
 
-	struct vbo
-	{
-		vbo(bool = true);
-		vbo(const vbo&) = delete;
-		vbo(vbo&&);
-		~vbo();
-		void operator=(const vbo&) = delete;
-		vbo &operator=(vbo&&);
-		operator GLuint();
-		void finalize();
+	GLuint vao_;
+};
 
-		GLuint vbo_;
-	};
+struct vbo
+{
+	vbo(bool = true);
+	vbo(const vbo&) = delete;
+	vbo(vbo&&);
+	~vbo();
+	void operator=(const vbo&) = delete;
+	vbo &operator=(vbo&&);
+	operator GLuint();
+	void finalize();
 
-	struct ebo
-	{
-		ebo(bool = true);
-		ebo(const ebo&) = delete;
-		ebo(ebo&&);
-		~ebo();
-		void operator=(const ebo&) = delete;
-		ebo &operator=(ebo&&);
-		operator GLuint();
-		void finalize();
+	GLuint vbo_;
+};
 
-		GLuint ebo_;
-	};
+struct ebo
+{
+	ebo(bool = true);
+	ebo(const ebo&) = delete;
+	ebo(ebo&&);
+	~ebo();
+	void operator=(const ebo&) = delete;
+	ebo &operator=(ebo&&);
+	operator GLuint();
+	void finalize();
 
-	void load_extensions();
-	unsigned load_shaders(const char*, int, const char*, int);
-	unsigned load_shaders(const char*, const char*);
-	unsigned load_shaders(const data&, const data&);
-	void init_ortho(float *matrix, float, float, float, float);
-	const char *key_name(button);
+	GLuint ebo_;
+};
+
+void load_extensions();
+unsigned load_shaders(const char*, int, const char*, int);
+unsigned load_shaders(const char*, const char*);
+unsigned load_shaders(const data&, const data&);
+void init_ortho(float *matrix, float, float, float, float);
+const char *key_name(button);
+
 }
 
 #endif

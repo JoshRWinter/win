@@ -19,7 +19,6 @@ public:
 	static constexpr int FULLSCREEN = 1;
 
 	display();
-	display(const char*, int, int, int, window_handle);
 	display(const display&) = delete;
 	display(display&&);
 	~display();
@@ -44,6 +43,7 @@ public:
 	static int screen_height();
 
 private:
+	display(const char*, int, int, int, window_handle);
 	void process_joystick();
 	void move(display&);
 	void finalize();
@@ -63,6 +63,7 @@ private:
 	GLXContext context_;
 	evdev_joystick joystick_;
 #elif defined WINPLAT_WINDOWS
+	HWND window_;
 #endif
 };
 

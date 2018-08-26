@@ -555,7 +555,80 @@ void win::audio_engine::finalize()
 
 #elif defined WINPLAT_WINDOWS
 
+/* ------------------------------------*/
+/////////////////////////////////////////
+///// WINDOWS ///////////////////////////
+/////////////////////////////////////////
+/* ------------------------------------*/
+
+win::audio_engine::audio_engine()
+{
+}
+
+win::audio_engine::audio_engine(sound_config_fn fn)
+{
+	next_id_ = 1;
+	listener_x_ = 0.0f;
+	listener_y_ = 0.0f;
+	config_fn_ = fn;
+}
+
+int win::audio_engine::play(sound_key key, bool loop)
+{
+	return play(key, true, loop, 0.0f, 0.0f);
+}
+
+int win::audio_engine::play(sound_key key, float x, float y, bool loop)
+{
+	return play(key, false, loop, x, y);
+}
+
+int win::audio_engine::play(sound_key, bool, bool, float, float)
+{
+	return 1;
+}
+
+void win::audio_engine::pause()
+{
+}
+
+void win::audio_engine::resume()
+{
+}
+
+void win::audio_engine::pause(int)
+{
+}
+
+void win::audio_engine::resume(int)
+{
+}
+
+void win::audio_engine::source(int, float, float)
+{
+}
+
+void win::audio_engine::listener(float x, float y)
+{
+	listener_x_ = x;
+	listener_y_ = y;
+}
+
+// move platform-specific (DirectSound) data members
+void win::audio_engine::move_platform(audio_engine&)
+{
+}
+
+void win::audio_engine::finalize()
+{
+}
+
 #endif
+
+static void ogg_vorbis_error(const std::string &msg)
+{
+	throw win::exception("Ogg-Vorbis: " + msg);
+}
 
 void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long long encoded_size, short *const decoded, const unsigned long long decoded_size, std::atomic<unsigned long long> *const size){
 	const unsigned char *const encoded = encoded_ptr.get();
@@ -586,7 +659,7 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 
 	if(ogg_sync_pageout(&state, &page) != 1)
 	{
-		raise("Input does not appear to be an Ogg bitstream");
+		ogg_vorbis_error("Input does not appear to be an Ogg bitstream");
 	}
 
 	ogg_stream_init(&stream, ogg_page_serialno(&page));
@@ -594,13 +667,13 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 	vorbis_info_init(&info);
 	vorbis_comment_init(&comment);
 	if(ogg_stream_pagein(&stream, &page) < 0)
-		raise("Could not read the first page of the Ogg bitstream data");
+		ogg_vorbis_error("Could not read the first page of the Ogg bitstream data");
 
 	if(ogg_stream_packetout(&stream, &packet) != 1)
-		raise("Could not read initial header packet");
+		ogg_vorbis_error("Could not read initial header packet");
 
 	if(vorbis_synthesis_headerin(&info, &comment, &packet) < 0)
-		raise("This Ogg bitstream does not contain Vorbis audio data");
+		ogg_vorbis_error("This Ogg bitstream does not contain Vorbis audio data");
 
 	i = 0;
 	while(i < 2)
@@ -620,11 +693,11 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 					if(result == 0)
 						break;
 					if(result < 0)
-						raise("Corrupt secondary header");
+						ogg_vorbis_error("Corrupt secondary header");
 
 					result = vorbis_synthesis_headerin(&info, &comment, &packet);
 					if(result < 0)
-						raise("Corrupt secondary header");
+						ogg_vorbis_error("Corrupt secondary header");
 
 					++i;
 				}
@@ -640,13 +713,13 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 		index += bytes;
 
 		if(bytes < 4096 && i < 2)
-			raise("EOF before reading all Vorbis headers");
+			ogg_vorbis_error("EOF before reading all Vorbis headers");
 
 		ogg_sync_wrote(&state, bytes);
 	}
 
 	if(info.channels != 1)
-		raise("Only mono-channels audio is supported");
+		ogg_vorbis_error("Only mono-channels audio is supported");
 
 	const long long convsize = 4096 / info.channels;
 	std::unique_ptr<std::int16_t[]> convbuffer(new std::int16_t[4096]);
@@ -663,7 +736,7 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 				if(result == 0)
 					break;
 				if(result < 0)
-					raise("Corrupt or missing data in the bitstream");
+					ogg_vorbis_error("Corrupt or missing data in the bitstream");
 				else
 				{
 					ogg_stream_pagein(&stream, &page);
@@ -675,7 +748,7 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 						if(result == 0)
 							break;
 						if(result < 0)
-							raise("Corrupt or missing data in the bitstream");
+							ogg_vorbis_error("Corrupt or missing data in the bitstream");
 						else
 						{
 							float **pcm;
@@ -744,7 +817,7 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 		vorbis_dsp_clear(&dsp);
 	}
 	else
-		raise("Corrupt header during playback initialization");
+		ogg_vorbis_error("Corrupt header during playback initialization");
 
 	ogg_stream_clear(&stream);
 	vorbis_comment_clear(&comment);

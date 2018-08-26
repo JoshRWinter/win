@@ -4,7 +4,7 @@
 #include <sstream>
 #include <cmath>
 
-#include "../win/win.h"
+#include <win.h>
 
 extern const char *vertexshader,*fragmentshader;
 

@@ -3,10 +3,13 @@
 
 #include <string.h>
 
+#if defined WINPLAT_WINDOWS
+#undef DELETE // lol windows.h
+#endif
+
 namespace win
 {
 
-#if defined WINPLAT_LINUX
 enum class button
 {
 	UNDEFINED,
@@ -66,8 +69,6 @@ enum class joystick_axis
 {
 	RIGHT_X, RIGHT_Y, LEFT_X, LEFT_Y, RIGHT_TRIGGER, LEFT_TRIGGER
 };
-
-#endif
 
 }
 

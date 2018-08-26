@@ -1,9 +1,11 @@
 #include <unordered_map>
 #include <string.h>
 
+#if defined WINPLAT_LINUX
 #include <X11/Xatom.h>
+#endif
 
-#include "win.h"
+#include <win.h>
 
 // default event handlers
 static void handler_button(win::button, bool) {}
@@ -14,6 +16,8 @@ win::display::display()
 {
 #if defined WINPLAT_LINUX
 	window_ = None;
+#elif defined WINPLAT_WINDOWS
+	window_ = NULL;
 #endif
 }
 
@@ -504,6 +508,92 @@ void win::display::finalize()
 /////////////////////////////////////////
 /* ------------------------------------*/
 #elif defined WINPLAT_WINDOWS
+
+win::display::display(const char*, int, int, int, window_handle)
+{
+	handler.key_button = handler_button;
+	handler.character = handler_character;
+	handler.mouse = handler_mouse;
+
+	window_ = NULL;
+}
+
+// return false if application is to exit
+bool win::display::process()
+{
+	return true;
+}
+
+void win::display::swap() const
+{
+}
+
+int win::display::width() const
+{
+	return 0;
+}
+
+int win::display::height() const
+{
+	return 0;
+}
+
+void win::display::cursor(bool)
+{
+}
+
+void win::display::event_button(fn_event_button fn)
+{
+	handler.key_button = std::move(fn);
+}
+
+void win::display::event_joystick(fn_event_joystick)
+{
+}
+
+void win::display::event_character(fn_event_character fn)
+{
+	handler.character = std::move(fn);
+}
+
+void win::display::event_mouse(fn_event_mouse fn)
+{
+	handler.mouse = std::move(fn);
+}
+
+int win::display::screen_width()
+{
+	return 0;
+}
+
+int win::display::screen_height()
+{
+	return 0;
+}
+
+void win::display::process_joystick()
+{
+}
+
+void win::display::move(display &rhs)
+{
+	handler.key_button = std::move(rhs.handler.key_button);
+	handler.character = std::move(rhs.handler.character);
+	handler.mouse = std::move(rhs.handler.mouse);
+
+	window_ = rhs.window_;
+	rhs.window_ = NULL;
+}
+
+void win::display::finalize()
+{
+	if(window_ == NULL)
+		return;
+
+	// close the window
+	// CloseWindow(window_);
+	window_ = NULL;
+}
 
 #else
 #error "unsupported platform"
