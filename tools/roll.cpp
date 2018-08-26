@@ -266,4 +266,26 @@ bool exists(const std::string &filename)
 		return true;
 }
 
+#elif defined _WIN32
+#include <windows.h>
+
+long long filesize(const std::string &filename)
+{
+	HANDLE file = CreateFile(filename.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(file == INVALID_HANDLE_VALUE)
+		throw std::runtime_error("CreateFile() failed (\"" + filename + "\")");
+
+	LARGE_INTEGER li;
+	if(!GetFileSizeEx(file, &li))
+		throw std::runtime_error("GetFileSizeEx() failed (\"" + filename + "\")");
+
+	CloseHandle(file);
+	return li.QuadPart;
+}
+
+bool exists(const std::string &filename)
+{
+	return GetFileAttributes(filename.c_str()) != INVALID_FILE_ATTRIBUTES;
+}
+
 #endif
