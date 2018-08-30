@@ -291,6 +291,7 @@ void win::load_extensions()
 	glGetShaderiv = (decltype(glGetShaderiv))getproc("glGetShaderiv");
 	glGetShaderInfoLog = (decltype(glGetShaderInfoLog))getproc("glGetShaderInfoLog");
 	glAttachShader = (decltype(glAttachShader))getproc("glAttachShader");
+	glDetachShader = (decltype(glDetachShader))getproc("glDetachShader");
 	glLinkProgram = (decltype(glLinkProgram))getproc("glLinkProgram");
 	glDeleteShader = (decltype(glDeleteShader))getproc("glDeleteShader");
 	glCreateProgram = (decltype(glCreateProgram))getproc("glCreateProgram");
@@ -316,6 +317,8 @@ void win::load_extensions()
 
 #if defined WINPLAT_LINUX
 	glXSwapIntervalEXT = (decltype(glXSwapIntervalEXT))getproc("glXSwapIntervalEXT");
+#elif defined WINPLAT_WINDOWS
+	wglSwapIntervalEXT = (decltype(wglSwapIntervalEXT))getproc("wglChoosePixelFormatARB");
 #endif
 }
 
@@ -327,8 +330,8 @@ unsigned win::load_shaders(const char *vertex_source, int vertex_length, const c
 	glShaderSource(fshader, 1, &fragment_source, &fragment_length);
 	glCompileShader(vshader);
 	glCompileShader(fshader);
-	int success = 0;
-	char buffer[2000];
+	int success = 1;
+	char buffer[2000] = "";
 	glGetShaderiv(vshader, GL_COMPILE_STATUS, &success);
 	if(success == 0)
 	{
@@ -345,6 +348,8 @@ unsigned win::load_shaders(const char *vertex_source, int vertex_length, const c
 	glAttachShader(program, vshader);
 	glAttachShader(program, fshader);
 	glLinkProgram(program);
+	glDetachShader(program, vshader);
+	glDetachShader(program, fshader);
 	glDeleteShader(vshader);
 	glDeleteShader(fshader);
 
@@ -385,17 +390,20 @@ void win::init_ortho(float *matrix,float left,float right,float bottom,float top
 void *getproc(const char *name)
 {
 	void *address = (void*)glXGetProcAddress((const unsigned char*)name);
-	if(name == NULL)
+	if(address == NULL)
 		throw win::exception(std::string("") + "Could not get extension \"" + name + "\"");
 
 	return address;
 }
-#else
+#elif defined WINPLAT_WINDOWS
 void *getproc(const char *name)
 {
 	void *address = (void*)wglGetProcAddress(name);
-	if(name == NULL)
-		throw win::exception(std::string("Could not get extension \"") + name + "\"");
+	if(address == NULL)
+	{
+		MessageBox(NULL, ("This software requires support for OpenGL:" + std::string(name)).c_str(), "Missing Opengl extension", MB_ICONEXCLAMATION);
+		std::abort();
+	}
 
 	return address;
 }

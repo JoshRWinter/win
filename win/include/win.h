@@ -59,7 +59,11 @@ private:
 
 inline void bug(const std::string &msg)
 {
+#ifdef WINPLAT_WINDOWS
+	MessageBox(NULL, ("IMPLEMENTATION BUG:\n" + msg).c_str(), "BUG", MB_ICONEXCLAMATION);
+#else
 	std::cerr << "IMPLEMENTATION BUG:\n=================\n" << msg << "\n=================" << std::endl;
+#endif
 	std::abort();
 }
 

@@ -2,9 +2,20 @@
 #define WIN_DISPLAY_H
 
 #include <functional>
+#include <memory>
 
 namespace win
 {
+
+#ifdef _WIN32
+class display;
+class indirect
+{
+	friend class display;
+	indirect(display *d) : dsp(d) {}
+	win::display *dsp;
+};
+#endif
 
 class display
 {
@@ -63,7 +74,15 @@ private:
 	GLXContext context_;
 	evdev_joystick joystick_;
 #elif defined WINPLAT_WINDOWS
+	static LRESULT wndproc(HWND, UINT, WPARAM, LPARAM);
+	void win_init_gl(HWND);
+	void win_term_gl();
+
+	std::unique_ptr<indirect> indirect_;
 	HWND window_;
+	HDC hdc_;
+	HGLRC context_;
+	bool winquit_;
 #endif
 };
 

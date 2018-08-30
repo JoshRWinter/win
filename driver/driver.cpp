@@ -3,6 +3,9 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
+#include <string>
+
+using namespace std::string_literals;
 
 #include <win.h>
 
@@ -28,19 +31,46 @@ static void sound_config(float listenerx, float listenery, float sourcex, float 
 	*balance = (sourcex - listenerx) / 15.0f;
 }
 
+static int go();
+
+#ifndef _WIN32
 int main()
+#else
+int WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+#endif
+{
+	try
+	{
+		return go();
+	}
+	catch(const std::exception &e)
+	{
+		MessageBox(NULL, ("A critical error was encountered:\n"s + e.what()).c_str(), "Critical Error", MB_ICONEXCLAMATION);
+		return 1;
+	}
+}
+
+int go()
 {
 	win::system system;
 	win::display display = system.make_display("window caption", 800, 600);
 	display.cursor(false);
 
+#if defined WINPLAT_LINUX
 	win::roll roll = "/home/josh/win/driver/assets.roll";
+#elif defined WINPLAT_WINDOWS
+	win::roll roll = "c:\\users\\josh\\desktop\\win\\driver\\assets.roll";
+#endif
 
 	win::audio_engine audio_engine = display.make_audio_engine(sound_config);
 	audio_engine.import(roll.all("ogg"));
 
 	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
+#if defined WINPLAT_LINUX
 	win::font font1 = font_renderer.make_font(roll["/usr/share/fonts/noto/NotoSansMono-Regular.ttf"], 0.3f);
+#elif defined WINPLAT_WINDOWS
+	win::font font1 = font_renderer.make_font(roll["..\\..\\fishtank\\assets\\arial.ttf"], 0.3f);
+#endif
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;

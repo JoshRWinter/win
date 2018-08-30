@@ -509,33 +509,160 @@ void win::display::finalize()
 /* ------------------------------------*/
 #elif defined WINPLAT_WINDOWS
 
-win::display::display(const char*, int, int, int, window_handle)
+// this function is taller than i am
+static win::display *normal = NULL;
+static HWND normal_window = NULL;
+void win::display::win_init_gl(HWND hwnd)
 {
+	hdc_ = GetDC(hwnd);
+
+	PIXELFORMATDESCRIPTOR pfd;
+	memset(&pfd, 0, sizeof(pfd));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL|PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cDepthBits=24;
+	pfd.cStencilBits=8;
+	pfd.iLayerType=PFD_MAIN_PLANE;
+
+	const int attribs[] =
+	{
+		WGL_CONTEXT_MAJOR_VERSION_ARB, 3, WGL_CONTEXT_MINOR_VERSION_ARB, 3, 0
+	};
+
+	SetPixelFormat(hdc_, ChoosePixelFormat(hdc_, &pfd), &pfd);
+	HGLRC tmp = wglCreateContext(hdc_);
+	wglMakeCurrent(hdc_, tmp);
+	PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = (decltype(wglCreateContextAttribsARB))wglGetProcAddress("wglCreateContextAttribsARB");
+	context_ = wglCreateContextAttribsARB(hdc_, NULL, attribs);
+	wglMakeCurrent(hdc_, context_);
+	wglDeleteContext(tmp);
+	if(context_ == NULL)
+	{
+		ReleaseDC(hwnd, hdc_);
+		MessageBox(NULL, "This software requires support for at least Opengl 3.3", "Fatal Error", MB_ICONEXCLAMATION);
+		std::abort();
+	}
+	load_extensions();
+}
+
+void win::display::win_term_gl()
+{
+	wglMakeCurrent(hdc_, NULL);
+	wglDeleteContext(context_);
+	ReleaseDC(window_, hdc_);
+}
+
+LRESULT win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	if(msg == WM_NCCREATE)
+	{
+		CREATESTRUCT *cs = (CREATESTRUCT*)lp;
+		win::indirect *d = (win::indirect*)cs->lpCreateParams;
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)d);
+		SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+
+		return TRUE;
+	}
+
+	win::indirect *const ind = (win::indirect*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	if(ind == NULL)
+		return DefWindowProc(hwnd, msg, wp, lp);
+	win::display *const dsp = (win::display*)ind->dsp;
+
+
+	switch(msg)
+	{
+		case WM_CREATE:
+			dsp->win_init_gl(hwnd);
+			return 0;
+		case WM_CLOSE:
+			dsp->winquit_ = true;
+			return 0;
+		case WM_ERASEBKGND:
+			return 0;
+		default:
+			return DefWindowProc(hwnd, msg, wp, lp);
+	}
+
+	win::bug("late return from wndproc");
+}
+
+win::display::display(const char *caption, int w, int h, int flags, window_handle)
+{
+	const char *const window_class = "defWindowClass";
+
+	normal = this;
+	indirect_.reset(new indirect(this));
 	handler.key_button = handler_button;
 	handler.character = handler_character;
 	handler.mouse = handler_mouse;
 
-	window_ = NULL;
+	winquit_ = false;
+
+	WNDCLASSEX wc;
+	wc.cbSize = sizeof(wc);
+	wc.style = CS_OWNDC;
+	wc.lpfnWndProc = wndproc;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = 0;
+	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 3);
+	wc.lpszMenuName = NULL;
+	wc.lpszClassName = window_class;
+	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+
+	if(!RegisterClassEx(&wc))
+		throw exception("Could not register window class");
+
+	std::cerr << "caption: " << caption << std::endl;
+	if(flags & FULLSCREEN)
+		window_ = CreateWindowEx(0, window_class, "hello"/*caption*/, WS_POPUP, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CXSCREEN), NULL, NULL, NULL, indirect_.get());
+	else
+		window_ = CreateWindowEx(0, window_class, "hello"/*caption*/, WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, w, h, NULL, NULL, NULL, indirect_.get());
+	if(window_ == NULL)
+		throw exception("Could not create window");
+	ShowWindow(window_, SW_SHOWDEFAULT);
+	UpdateWindow(window_);
 }
 
 // return false if application is to exit
 bool win::display::process()
 {
-	return true;
+	MSG msg;
+
+	while(PeekMessage(&msg, window_, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	return !winquit_;
 }
 
 void win::display::swap() const
 {
+	SwapBuffers(hdc_);
 }
 
 int win::display::width() const
 {
-	return 0;
+	RECT rect;
+	GetClientRect(window_, &rect);
+
+	return rect.right;
 }
 
 int win::display::height() const
 {
-	return 0;
+	RECT rect;
+	GetClientRect(window_, &rect);
+
+	return rect.bottom;
 }
 
 void win::display::cursor(bool)
@@ -581,8 +708,16 @@ void win::display::move(display &rhs)
 	handler.character = std::move(rhs.handler.character);
 	handler.mouse = std::move(rhs.handler.mouse);
 
+
 	window_ = rhs.window_;
 	rhs.window_ = NULL;
+
+	indirect_ = std::move(rhs.indirect_);
+	indirect_->dsp = this;
+
+	hdc_ = rhs.hdc_;
+	context_ = rhs.context_;
+	winquit_ = rhs.winquit_;
 }
 
 void win::display::finalize()
@@ -591,7 +726,7 @@ void win::display::finalize()
 		return;
 
 	// close the window
-	// CloseWindow(window_);
+	DestroyWindow(window_);
 	window_ = NULL;
 }
 
