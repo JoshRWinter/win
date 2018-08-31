@@ -330,7 +330,7 @@ int win::audio_engine::play(sound_key id, bool ambient, bool looping, float x, f
 	if(stream == NULL)
 		raise("Could not create stream object");
 
-	sound &stored = sounds_.emplace_front(this, sid, looping, 0, imported_[id.apackno].stored[id.id].buffer.get(), &imported_[id.apackno].stored[id.id].size, imported_[id.apackno].stored[id.id].target_size, stream, ambient, x, y);
+	sound &stored = sounds_.emplace_front(sid, looping, 0, imported_[id.apackno].stored[id.id].buffer.get(), &imported_[id.apackno].stored[id.id].size, imported_[id.apackno].stored[id.id].target_size, stream, ambient, x, y);
 
 	pa_stream_set_state_callback(stream, callback_stream, loop_);
 	pa_stream_set_write_callback(stream, callback_stream_write, &stored);
@@ -475,6 +475,10 @@ void win::audio_engine::listener(float x, float y)
 // move the platform specific (pulseaudio) data members
 void win::audio_engine::move_platform(audio_engine &rhs)
 {
+	pa_threaded_mainloop_lock(rhs.loop_);
+	rhs.cleanup(true);
+	pa_threaded_mainloop_unlock(rhs.loop_);
+
 	sounds_ = std::move(rhs.sounds_);
 
 	context_ = rhs.context_;
@@ -498,6 +502,10 @@ void win::audio_engine::cleanup(bool all)
 				++it;
 				continue; // skip it if it's not done playing
 			}
+
+		// prevent pulseaudio from being a bastard
+		pa_stream_set_state_callback(snd.stream, [](pa_stream*, void*){}, NULL);
+		pa_stream_set_write_callback(snd.stream, [](pa_stream*, size_t, void*){}, NULL);
 
 		if(!done)
 		{

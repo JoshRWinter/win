@@ -18,10 +18,9 @@ class audio_engine;
 struct sound
 {
 #if defined WINPLAT_LINUX
-	sound(audio_engine *parent_, int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, pa_stream *stream_, bool ambient_, float x_, float y_)
-		: parent(parent_), id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), ambient(ambient_), x(x_), y(y_), drained(false), stream(stream_) {}
+	sound(int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, pa_stream *stream_, bool ambient_, float x_, float y_)
+		: id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), ambient(ambient_), x(x_), y(y_), drained(false), stream(stream_) {}
 #endif
-	audio_engine *parent;
 	int id; // unique sound instance id
 	bool looping;
 	unsigned long long start; // start here next write
