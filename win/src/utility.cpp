@@ -1,7 +1,7 @@
 #include <string.h>
 
 #define WIN_STORAGE
-#include "win.h"
+#include <win.h>
 
 win::data::data() noexcept
 	: data_(NULL)

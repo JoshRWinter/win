@@ -45,7 +45,11 @@ int WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	}
 	catch(const std::exception &e)
 	{
+#ifdef WINPLAT_WINDOWS
 		MessageBox(NULL, ("A critical error was encountered:\n"s + e.what()).c_str(), "Critical Error", MB_ICONEXCLAMATION);
+#else
+		std::cerr << "A critical error was encountered:\n"s + e.what() << std::endl;
+#endif
 		return 1;
 	}
 }
@@ -53,24 +57,30 @@ int WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 int go()
 {
 	win::system system;
-	win::display display = system.make_display("window caption", 800, 600);
+	win::display display2 = system.make_display("window caption", 800, 600);
+	win::display display = std::move(display2);
 	display.cursor(false);
 
 #if defined WINPLAT_LINUX
-	win::roll roll = "/home/josh/win/driver/assets.roll";
+	win::roll roll2 = "/home/josh/win/driver/assets.roll";
 #elif defined WINPLAT_WINDOWS
-	win::roll roll = "c:\\users\\josh\\desktop\\win\\driver\\assets.roll";
+	win::roll roll2 = "c:\\users\\josh\\desktop\\win\\driver\\assets.roll";
 #endif
 
-	win::audio_engine audio_engine = display.make_audio_engine(sound_config);
+	win::roll roll = std::move(roll2);
+
+	win::audio_engine audio_engine2 = display.make_audio_engine(sound_config);
+	win::audio_engine audio_engine = std::move(audio_engine2);
 	audio_engine.import(roll.all("ogg"));
 
-	win::font_renderer font_renderer = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
+	win::font_renderer font_renderer2 = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
+	win::font_renderer font_renderer = std::move(font_renderer2);
 #if defined WINPLAT_LINUX
-	win::font font1 = font_renderer.make_font(roll["/usr/share/fonts/noto/NotoSansMono-Regular.ttf"], 0.3f);
+	win::font font12 = font_renderer.make_font(roll["/usr/share/fonts/noto/NotoSansMono-Regular.ttf"], 0.3f);
 #elif defined WINPLAT_WINDOWS
-	win::font font1 = font_renderer.make_font(roll["..\\..\\fishtank\\assets\\arial.ttf"], 0.3f);
+	win::font font12 = font_renderer.make_font(roll["..\\..\\fishtank\\assets\\arial.ttf"], 0.3f);
 #endif
+	win::font font1 = std::move(font12);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <zlib.h>
 
-#include "win.h"
+#include <win.h>
 
 using namespace std::string_literals;
 

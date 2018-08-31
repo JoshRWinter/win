@@ -3,7 +3,7 @@
 #include <ogg/ogg.h>
 #include <vorbis/vorbisfile.h>
 
-#include "win.h"
+#include <win.h>
 
 static void decodeogg(std::unique_ptr<unsigned char[]>, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
 

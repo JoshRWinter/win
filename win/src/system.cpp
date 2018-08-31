@@ -1,4 +1,4 @@
-#include "win.h"
+#include <win.h>
 
 static win::system *singleton = NULL;
 
@@ -30,7 +30,7 @@ win::system &win::system::operator=(system&&)
 
 win::display win::system::make_display(const char *caption, int width, int height, int flags, window_handle parent)
 {
-	return std::move(display(caption, width, height, flags, parent));
+	return display(caption, width, height, flags, parent);
 }
 
 win::system &win::system::get()

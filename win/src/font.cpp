@@ -7,7 +7,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "win.h"
+#include <win.h>
 
 static constexpr int cols = 16;
 static constexpr int rows = 6;

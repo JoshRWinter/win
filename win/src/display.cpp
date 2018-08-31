@@ -1,11 +1,11 @@
 #include <unordered_map>
 #include <string.h>
 
+#include <win.h>
+
 #if defined WINPLAT_LINUX
 #include <X11/Xatom.h>
 #endif
-
-#include <win.h>
 
 // default event handlers
 static void handler_button(win::button, bool) {}
