@@ -1,10 +1,18 @@
 # linux
 *.o
-*.*.swp
-*.roll
+*.a
+.*.swp
 vgcore.*
 driver/driver
 
 # windows
 *.obj
 *.exe
+
+# cmake
+**/CMakeCache.txt
+**/CMakeFiles
+**/cmake_install.cmake
+
+**/Makefile
+*.roll
