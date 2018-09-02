@@ -4,9 +4,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_executable(roll roll.cpp)
 
-if(win32)
-	target_include_directories(roll include/zlib)
-	target_link_libraries(target lib/zlib.lib)
+if(WIN32)
+	target_include_directories(roll PRIVATE ../win/include/zlib)
+	target_link_libraries(roll PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../win/lib/zlib.lib)
 else()
 	find_package(ZLIB REQUIRED)
 

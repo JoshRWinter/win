@@ -36,7 +36,7 @@ static int go();
 #ifndef _WIN32
 int main()
 #else
-int WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #endif
 {
 	try

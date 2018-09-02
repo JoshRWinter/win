@@ -74,7 +74,7 @@ private:
 	GLXContext context_;
 	evdev_joystick joystick_;
 #elif defined WINPLAT_WINDOWS
-	static LRESULT wndproc(HWND, UINT, WPARAM, LPARAM);
+	static LRESULT CALLBACK wndproc(HWND, UINT, WPARAM, LPARAM);
 	void win_init_gl(HWND);
 	void win_term_gl();
 

@@ -13,16 +13,27 @@ add_library(win STATIC
 	src/utility.cpp
 )
 
-if(win32)
+if(WIN32)
+	find_package(OpenGL REQUIRED)
+
 	target_include_directories(win
 		PUBLIC
-			win
+			include
 			include/GL
 		PRIVATE
 			include/freetype
 			include/ogg
 			include/vorbis
 			include/zlib
+	)
+
+	target_link_libraries(win
+		PRIVATE
+			${OPENGL_LIBRARIES}
+			${CMAKE_CURRENT_LIST_DIR}/lib/zlib.lib
+			${CMAKE_CURRENT_LIST_DIR}/lib/freetype.lib
+			${CMAKE_CURRENT_LIST_DIR}/lib/ogg.lib
+			${CMAKE_CURRENT_LIST_DIR}/lib/vorbis.lib
 	)
 else()
 	set(OpenGL_GL_PREFERENCE LEGACY)

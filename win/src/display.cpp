@@ -555,7 +555,7 @@ void win::display::win_term_gl()
 	ReleaseDC(window_, hdc_);
 }
 
-LRESULT win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
 	if(msg == WM_NCCREATE)
 	{

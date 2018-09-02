@@ -1,1 +1,0 @@
-cl /EHsc /O2 /I../win/include /I../win/include/libogg /I../win/include/libvorbis /I../win/include/freetype /I../win/include/zlib driver.cpp opengl32.lib user32.lib gdi32.lib ../win/src/*.cpp ../win/lib/*.lib /link /out:driver.exe
