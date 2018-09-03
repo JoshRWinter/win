@@ -19,7 +19,7 @@ if(WIN32)
 	target_include_directories(win
 		PUBLIC
 			include
-			include/GL
+			${OPENGL_INCLUDE_DIRS}
 		PRIVATE
 			include/freetype
 			include/ogg
@@ -35,6 +35,10 @@ if(WIN32)
 			${CMAKE_CURRENT_LIST_DIR}/lib/ogg.lib
 			${CMAKE_CURRENT_LIST_DIR}/lib/vorbis.lib
 	)
+
+	if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+		string(REGEX REPLACE "/W[0-4]" "/W1" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+	endif()
 else()
 	set(OpenGL_GL_PREFERENCE LEGACY)
 
