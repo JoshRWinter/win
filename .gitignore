@@ -11,3 +11,5 @@ driver/driver
 
 build
 *.roll
+win.sublime-project
+win.sublime-workspace
