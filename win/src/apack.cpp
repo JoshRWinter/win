@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include <ogg/ogg.h>
 #include <vorbis/vorbisfile.h>
 
@@ -10,7 +12,7 @@ win::apack::apack()
 {
 }
 
-win::apack::apack(data_list &list)
+win::apack::apack(const data_list &list)
 {
 	count_ = list.count();
 	stored_ = std::make_unique<apack_sound[]>(5);

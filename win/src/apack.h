@@ -24,7 +24,7 @@ class apack
 
 public:
 	apack();
-	apack(data_list&);
+	apack(const data_list&);
 	apack(apack&) = delete;
 	apack(apack&&);
 	~apack();

@@ -1,5 +1,3 @@
-#include <math.h>
-
 #include <win.h>
 
 
@@ -246,7 +244,7 @@ int win::audio_engine::play(apack &ap, int id, float x, float y, bool looping)
 
 int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float x, float y)
 {
-	if(id >= (int)ap.stored_.size() || id < 0)
+	if(id >= (int)ap.count_ || id < 0)
 		bug("Apack id out of bounds");
 
 	if(sounds_.size() > MAX_SOUNDS)

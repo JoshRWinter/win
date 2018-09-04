@@ -69,7 +69,7 @@ int go()
 	win::roll roll = std::move(roll2);
 
 #if defined WINPLAT_LINUX
-	win::apack apack2(roll.select({}));
+	win::apack apack2(roll.select({"/home/josh/fishtank/assets_local/Motions.ogg", "/home/josh/fishtank/assets_local/platform_destroy.ogg"}));
 #elif defined WINPLAT_WINDOWS
 	win::apack apack2(roll.select({"../../fishtank/assets_local/Motions.ogg", "../../fishtank/assets_local/platform_destroy.ogg"}));
 #endif
