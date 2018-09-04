@@ -315,39 +315,27 @@ int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float
 
 void win::audio_engine::pause()
 {
-	auto callback = [](pa_stream*, int, void*) {};
-
 	pa_threaded_mainloop_lock(loop_);
 	for(sound &snd : sounds_)
-	{
-		pa_operation *op = pa_stream_cork(snd.stream, 1, callback, NULL);
-		if(!op)
-			raise("Couldn't pause the stream");
+		pa_operation_unref(pa_stream_cork(snd.stream, 1, NULL, NULL));
 
-		while(pa_operation_get_state(op) != PA_OPERATION_DONE);
-		pa_operation_unref(op);
-	}
 	pa_threaded_mainloop_unlock(loop_);
 }
 
 void win::audio_engine::resume()
 {
-	auto callback = [](pa_stream*, int, void*) {};
+	pa_threaded_mainloop_lock(loop_);
 
 	for(sound &snd : sounds_)
-	{
-		pa_operation *op = pa_stream_cork(snd.stream, 0, callback, NULL);
-		if(!op)
-			raise("Couldn't unpause the stream");
+		pa_operation_unref(pa_stream_cork(snd.stream, 0, NULL, NULL));
 
-		while(pa_operation_get_state(op) != PA_OPERATION_DONE);
-		pa_operation_unref(op);
-	}
+	pa_threaded_mainloop_unlock(loop_);
 }
 
 void win::audio_engine::pause(int id)
 {
 	pa_threaded_mainloop_lock(loop_);
+
 	for(sound &snd : sounds_)
 	{
 		if(id != snd.id)
@@ -358,12 +346,14 @@ void win::audio_engine::pause(int id)
 
 		break;
 	}
+
 	pa_threaded_mainloop_unlock(loop_);
 }
 
 void win::audio_engine::resume(int id)
 {
 	pa_threaded_mainloop_lock(loop_);
+
 	for(sound &snd : sounds_)
 	{
 		if(id != snd.id)
@@ -374,12 +364,14 @@ void win::audio_engine::resume(int id)
 
 		continue;
 	}
+
 	pa_threaded_mainloop_unlock(loop_);
 }
 
 void win::audio_engine::source(int id, float x, float y)
 {
 	pa_threaded_mainloop_lock(loop_);
+
 	for(sound &snd : sounds_)
 	{
 		if(snd.id != id)
@@ -400,6 +392,7 @@ void win::audio_engine::source(int id, float x, float y)
 		pa_operation_unref(pa_context_set_sink_input_volume(context_, pa_stream_get_index(snd.stream), &volume, NULL, NULL));
 		break;
 	}
+
 	pa_threaded_mainloop_unlock(loop_);
 }
 
@@ -409,6 +402,7 @@ void win::audio_engine::listener(float x, float y)
 	listener_y_ = y;
 
 	pa_threaded_mainloop_lock(loop_);
+
 	for(sound &snd : sounds_)
 	{
 		float volume_left;
@@ -422,6 +416,7 @@ void win::audio_engine::listener(float x, float y)
 
 		pa_operation_unref(pa_context_set_sink_input_volume(context_, pa_stream_get_index(snd.stream), &volume, NULL, NULL));
 	}
+
 	pa_threaded_mainloop_unlock(loop_);
 }
 
