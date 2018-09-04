@@ -84,6 +84,7 @@ public:
 	const unsigned char *get() const noexcept;
 	unsigned long long size() const noexcept;
 	unsigned long long read(void*, size_t) noexcept;
+	void seek(size_t) noexcept;
 	void finalize();
 
 private:

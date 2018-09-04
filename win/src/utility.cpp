@@ -76,6 +76,14 @@ unsigned long long win::data::read(void *userbuffer, size_t amount) noexcept
 	return to_read;
 }
 
+void win::data::seek(size_t position) noexcept
+{
+	stream_position_ = position;
+
+	if(stream_position_ > size_)
+		stream_position_ = size_;
+}
+
 void win::data::finalize()
 {
 	delete[] data_;
