@@ -32,7 +32,6 @@ public:
 	data operator[](const char*);
 	data operator[](const std::string&);
 
-	data_list all(const char*);
 	data_list all();
 	data_list select(const std::initializer_list<const char*>&);
 

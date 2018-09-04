@@ -100,7 +100,6 @@ public:
 
 	void add(const std::string&);
 	data get(int) const;
-	const std::vector<std::string> &files() const;
 	int count() const;
 
 private:

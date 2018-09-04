@@ -122,22 +122,6 @@ win::data win::roll::operator[](const std::string &filename)
 	return this->operator[](filename.c_str());
 }
 
-// find all files ending with extension (should not include the dot)
-win::data_list win::roll::all(const char *ext)
-{
-	data_list list(this);
-
-	for(const roll_header &header : files_)
-	{
-		if(header.filename.rfind("."s + ext) == std::string::npos)
-			continue;
-
-		list.add(header.filename);
-	}
-
-	return list;
-}
-
 // return a list of all the filenames in the roll
 win::data_list win::roll::all()
 {

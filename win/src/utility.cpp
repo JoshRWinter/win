@@ -100,11 +100,6 @@ win::data win::data_list::get(int index) const
 	return parent_->operator[](filenames_[index]);
 }
 
-const std::vector<std::string> &win::data_list::files() const
-{
-	return filenames_;
-}
-
 int win::data_list::count() const
 {
 	return filenames_.size();
