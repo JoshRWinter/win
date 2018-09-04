@@ -70,8 +70,8 @@ struct color
 class data
 {
 public:
-	// TAKES OWNERSHIP OF MEMORY
 	data() noexcept;
+	// TAKES OWNERSHIP OF MEMORY
 	data(unsigned char*, unsigned long long) noexcept;
 	data(const data&) = delete;
 	data(data&&) noexcept;

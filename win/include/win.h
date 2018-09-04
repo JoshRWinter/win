@@ -38,6 +38,7 @@ namespace win
 #include "../src/utility.h"
 #include "../src/roll.h"
 #include "../src/font.h"
+#include "../src/apack.h"
 #include "../src/audio_engine.h"
 #include "../src/joystick.h"
 #include "../src/display.h"

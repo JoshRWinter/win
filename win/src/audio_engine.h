@@ -2,10 +2,6 @@
 #define WIN_AUDIO_ENGINE_H
 
 #include <list>
-#include <vector>
-#include <atomic>
-#include <memory>
-#include <thread>
 
 #if defined WINPLAT_LINUX
 #include <pulse/pulseaudio.h>
@@ -24,7 +20,7 @@ struct sound
 	int id; // unique sound instance id
 	bool looping;
 	unsigned long long start; // start here next write
-	short *pcm; // audio data
+	const short *pcm; // audio data
 	std::atomic<unsigned long long> *size; // how much has been decoded
 	unsigned long long target_size; // how big entire pcm buffer is
 	bool ambient; // is not affected by world position
@@ -34,29 +30,6 @@ struct sound
 	std::atomic<bool> drained;
 	pa_stream *stream;
 #endif
-};
-
-struct stored_sound
-{
-	std::atomic<unsigned long long> size;
-	std::unique_ptr<short[]> buffer;
-	std::unique_ptr<unsigned char[]> encoded;
-	unsigned long long target_size;
-	std::thread thread;
-};
-
-struct apack
-{
-	std::unique_ptr<stored_sound[]> stored;
-	int count;
-};
-
-struct sound_key
-{
-	sound_key(int id_, int apackno_ = 0) : id(id_), apackno(apackno_) {}
-
-	int id;
-	int apackno;
 };
 
 class audio_engine
@@ -75,10 +48,9 @@ public:
 	void operator=(const audio_engine&) = delete;
 	audio_engine &operator=(audio_engine&&);
 
-	void import(const data_list&);
-	int play(sound_key, bool = false); // ambient
-	int play(sound_key, float, float, bool = false); // stereo
-	int play(sound_key, bool, bool, float, float); // fully dressed function
+	int play(apack&, int, bool = false); // ambient
+	int play(apack&, int, float, float, bool = false); // stereo
+	int play(apack&, int, bool, bool, float, float); // fully dressed function
 	void pause();
 	void resume();
 	void pause(int);
@@ -97,7 +69,6 @@ private:
 	float listener_x_;
 	float listener_y_;
 	sound_config_fn config_fn_;
-	std::vector<apack> imported_;
 
 #if defined WINPLAT_LINUX
 	void cleanup(bool);

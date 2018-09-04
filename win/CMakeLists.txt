@@ -4,6 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/CMakeModule
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(win STATIC
+	src/apack.cpp
 	src/audio_engine.cpp
 	src/display.cpp
 	src/font.cpp

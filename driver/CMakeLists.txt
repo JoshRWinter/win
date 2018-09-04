@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.0)
 
 if(WIN32)
-	add_executable(driver WIN32 driver.cpp)
+	if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+		add_executable(driver WIN32 driver.cpp)
+	else()
+		add_executable(driver driver.cpp)
+	endif()
+
+	# /w3 is too aggressive
 	if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
 		string(REGEX REPLACE "/W[0-4]" "/W1" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 	endif()

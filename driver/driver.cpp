@@ -33,10 +33,10 @@ static void sound_config(float listenerx, float listenery, float sourcex, float 
 
 static int go();
 
-#ifndef _WIN32
-int main()
-#else
+#if defined WINPLAT_WINDOWS && defined NDEBUG
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+#else
+int main()
 #endif
 {
 	try
@@ -66,19 +66,24 @@ int go()
 #elif defined WINPLAT_WINDOWS
 	win::roll roll2 = "c:\\users\\josh\\desktop\\win\\driver\\assets.roll";
 #endif
-
 	win::roll roll = std::move(roll2);
+
+#if defined WINPLAT_LINUX
+	win::apack apack2(roll.select({}));
+#elif defined WINPLAT_WINDOWS
+	win::apack apack2(roll.select({"../../fishtank/assets_local/Motions.ogg", "../../fishtank/assets_local/platform_destroy.ogg"}));
+#endif
+	win::apack apack = std::move(apack2);
 
 	win::audio_engine audio_engine2 = display.make_audio_engine(sound_config);
 	win::audio_engine audio_engine = std::move(audio_engine2);
-	audio_engine.import(roll.all("ogg"));
 
 	win::font_renderer font_renderer2 = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::font_renderer font_renderer = std::move(font_renderer2);
 #if defined WINPLAT_LINUX
 	win::font font12 = font_renderer.make_font(roll["/usr/share/fonts/noto/NotoSansMono-Regular.ttf"], 0.3f);
 #elif defined WINPLAT_WINDOWS
-	win::font font12 = font_renderer.make_font(roll["..\\..\\fishtank\\assets\\arial.ttf"], 0.3f);
+	win::font font12 = font_renderer.make_font(roll["../../fishtank/assets/arial.ttf"], 0.3f);
 #endif
 	win::font font1 = std::move(font12);
 
@@ -137,7 +142,7 @@ int go()
 
 	bool quit = false;
 	bool paused = false;
-	display.event_button([&quit, &paused, &audio_engine](win::button button, bool press)
+	display.event_button([&apack, &quit, &paused, &audio_engine](win::button button, bool press)
 	{
 		if(press)
 			std::cerr << "key: " << win::key_name(button) << std::endl;
@@ -154,7 +159,7 @@ int go()
 		else if(press && button == win::button::LALT)
 			audio_engine.listener(0, 0);
 		else if(press)
-			audio_engine.play(1);
+			audio_engine.play(apack, 1);
 	});
 
 	// display.event_joystick([](win::joystick_axis axis, int value)
@@ -187,7 +192,7 @@ int go()
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
 
-	const int block_sid = audio_engine.play(0, block.x, block.y);
+	const int block_sid = audio_engine.play(apack, 0, block.x, block.y);
 	for(;;)
 	{
 		auto start = std::chrono::high_resolution_clock::now();

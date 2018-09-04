@@ -1,11 +1,7 @@
 #include <math.h>
 
-#include <ogg/ogg.h>
-#include <vorbis/vorbisfile.h>
-
 #include <win.h>
 
-static void decodeogg(std::unique_ptr<unsigned char[]>, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
 
 static void default_sound_config_fn(float, float, float, float, float *volume, float *balance)
 {
@@ -41,10 +37,6 @@ win::audio_engine::audio_engine(audio_engine &&rhs)
 
 win::audio_engine::~audio_engine()
 {
-	for(apack &ap : imported_)
-		for(int i = 0; i < ap.count; ++i)
-			ap.stored[i].thread.join();
-
 	finalize();
 }
 
@@ -56,40 +48,6 @@ win::audio_engine &win::audio_engine::operator=(audio_engine &&rhs)
 	move_platform(rhs);
 
 	return *this;
-}
-
-void win::audio_engine::import(const data_list &list)
-{
-	imported_.push_back({});
-	apack &apack = imported_[imported_.size() - 1];
-	apack.count = list.count();
-	apack.stored = std::make_unique<stored_sound[]>(list.count());
-
-	for(int i = 0; i < list.count(); ++i)
-	{
-		data raw = list.get(i);
-		const unsigned long long file_size = raw.size();
-
-		apack.stored[i].size = 0;
-		apack.stored[i].encoded = std::make_unique<unsigned char[]>(raw.size());
-		if(raw.read(apack.stored[i].encoded.get(), file_size) != file_size)
-			bug("Could not read entire ogg file");
-		raw.finalize(); // early destruct (optional)
-
-		// eventual size of decoded data
-		unsigned long long index = file_size - 1;
-		while(!(apack.stored[i].encoded[index] == 'S' && apack.stored[i].encoded[index - 1] == 'g' && apack.stored[i].encoded[index - 2] == 'g' && apack.stored[i].encoded[index - 3] == 'O'))
-			--index;
-		unsigned long long samplecount;
-		memcpy(&samplecount, &apack.stored[i].encoded[index + 3], sizeof(samplecount));
-		apack.stored[i].target_size = samplecount * sizeof(short);
-
-		apack.stored[i].buffer = std::make_unique<short[]>(samplecount);
-
-		// decode
-		std::thread thread(decodeogg, std::move(apack.stored[i].encoded), file_size, apack.stored[i].buffer.get(), apack.stored[i].target_size, &apack.stored[i].size);
-		apack.stored[i].thread = std::move(thread);
-	}
 }
 
 void win::audio_engine::get_config(float listenerx, float listenery, float sourcex, float sourcey, float *volume_l, float *volume_r)
@@ -125,7 +83,6 @@ void win::audio_engine::move_common(audio_engine &rhs)
 	listener_x_ = rhs.listener_x_;
 	listener_y_ = rhs.listener_y_;
 	config_fn_ = rhs.config_fn_;
-	imported_ = std::move(rhs.imported_);
 }
 
 /* ------------------------------------*/
@@ -276,23 +233,21 @@ win::audio_engine::audio_engine(sound_config_fn fn)
 }
 
 // ambient (for music)
-int win::audio_engine::play(sound_key id, bool looping)
+int win::audio_engine::play(apack &ap, int id, bool looping)
 {
-	return play(id, true, looping, 0.0f, 0.0f);
+	return play(ap, id, true, looping, 0.0f, 0.0f);
 }
 
 // stero (for in-world sounds)
-int win::audio_engine::play(sound_key id, float x, float y, bool looping)
+int win::audio_engine::play(apack &ap, int id, float x, float y, bool looping)
 {
-	return play(id, false, looping, x, y);
+	return play(ap, id, false, looping, x, y);
 }
 
-int win::audio_engine::play(sound_key id, bool ambient, bool looping, float x, float y)
+int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float x, float y)
 {
-	if(id.apackno >= (int)imported_.size() || id.apackno < 0)
+	if(id >= (int)ap.stored_.size() || id < 0)
 		bug("Apack id out of bounds");
-	if(id.id >= imported_[id.apackno].count || id.id < 0)
-		bug("Sound id out of bounds");
 
 	if(sounds_.size() > MAX_SOUNDS)
 	{
@@ -330,7 +285,7 @@ int win::audio_engine::play(sound_key id, bool ambient, bool looping, float x, f
 	if(stream == NULL)
 		raise("Could not create stream object");
 
-	sound &stored = sounds_.emplace_front(sid, looping, 0, imported_[id.apackno].stored[id.id].buffer.get(), &imported_[id.apackno].stored[id.id].size, imported_[id.apackno].stored[id.id].target_size, stream, ambient, x, y);
+	sound &stored = sounds_.emplace_front(sid, looping, 0, ap.stored_[id].buffer.get(), &ap.stored_[id].size, ap.stored_[id].target_size, stream, ambient, x, y);
 
 	pa_stream_set_state_callback(stream, callback_stream, loop_);
 	pa_stream_set_write_callback(stream, callback_stream_write, &stored);
@@ -581,18 +536,21 @@ win::audio_engine::audio_engine(sound_config_fn fn)
 	config_fn_ = fn;
 }
 
-int win::audio_engine::play(sound_key key, bool loop)
+int win::audio_engine::play(apack &ap, int id, bool loop)
 {
-	return play(key, true, loop, 0.0f, 0.0f);
+	return play(ap, id, true, loop, 0.0f, 0.0f);
 }
 
-int win::audio_engine::play(sound_key key, float x, float y, bool loop)
+int win::audio_engine::play(apack &ap, int id, float x, float y, bool loop)
 {
-	return play(key, false, loop, x, y);
+	return play(ap, id, false, loop, x, y);
 }
 
-int win::audio_engine::play(sound_key, bool, bool, float, float)
+int win::audio_engine::play(apack &ap, int id, bool, bool, float, float)
 {
+	if(id >= ap.count_ || id < 0)
+		throw exception("Invalid apack index " + std::to_string(id));
+
 	return 1;
 }
 
@@ -632,203 +590,3 @@ void win::audio_engine::finalize()
 }
 
 #endif
-
-static void ogg_vorbis_error(const std::string &msg)
-{
-	throw win::exception("Ogg-Vorbis: " + msg);
-}
-
-void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long long encoded_size, short *const decoded, const unsigned long long decoded_size, std::atomic<unsigned long long> *const size){
-	const unsigned char *const encoded = encoded_ptr.get();
-
-	ogg_sync_state state; // oy
-	ogg_stream_state stream; // os
-	ogg_page page; // og
-	ogg_packet packet; // op
-	vorbis_info info; // vi
-	vorbis_comment comment; // vc
-	vorbis_dsp_state dsp; // vd
-	vorbis_block block; // vb
-
-	char *buffer;
-	int bytes;
-
-	ogg_sync_init(&state);
-
-	int eos = 0;
-	int i;
-
-	buffer = ogg_sync_buffer(&state, 4096);
-	bytes = std::min(encoded_size, (long long unsigned)4096);
-	memcpy(buffer, encoded, bytes);
-	unsigned long long index = bytes;
-
-	ogg_sync_wrote(&state, bytes);
-
-	if(ogg_sync_pageout(&state, &page) != 1)
-	{
-		ogg_vorbis_error("Input does not appear to be an Ogg bitstream");
-	}
-
-	ogg_stream_init(&stream, ogg_page_serialno(&page));
-
-	vorbis_info_init(&info);
-	vorbis_comment_init(&comment);
-	if(ogg_stream_pagein(&stream, &page) < 0)
-		ogg_vorbis_error("Could not read the first page of the Ogg bitstream data");
-
-	if(ogg_stream_packetout(&stream, &packet) != 1)
-		ogg_vorbis_error("Could not read initial header packet");
-
-	if(vorbis_synthesis_headerin(&info, &comment, &packet) < 0)
-		ogg_vorbis_error("This Ogg bitstream does not contain Vorbis audio data");
-
-	i = 0;
-	while(i < 2)
-	{
-		while(i < 2)
-		{
-			int result = ogg_sync_pageout(&state, &page);
-			if(result == 0)
-				break;
-			if(result == 1)
-			{
-				ogg_stream_pagein(&stream, &page);
-
-				while(i < 2)
-				{
-					result = ogg_stream_packetout(&stream, &packet);
-					if(result == 0)
-						break;
-					if(result < 0)
-						ogg_vorbis_error("Corrupt secondary header");
-
-					result = vorbis_synthesis_headerin(&info, &comment, &packet);
-					if(result < 0)
-						ogg_vorbis_error("Corrupt secondary header");
-
-					++i;
-				}
-			}
-		}
-
-		buffer = ogg_sync_buffer(&state, 4096);
-		if(encoded_size - index >= 4096)
-			bytes = 4096;
-		else
-			bytes = encoded_size - index;
-		memcpy(buffer, encoded + index, bytes);
-		index += bytes;
-
-		if(bytes < 4096 && i < 2)
-			ogg_vorbis_error("EOF before reading all Vorbis headers");
-
-		ogg_sync_wrote(&state, bytes);
-	}
-
-	if(info.channels != 1)
-		ogg_vorbis_error("Only mono-channels audio is supported");
-
-	const long long convsize = 4096 / info.channels;
-	std::unique_ptr<std::int16_t[]> convbuffer(new std::int16_t[4096]);
-	long long offset = 0; // offset into <decoded>
-
-	if(vorbis_synthesis_init(&dsp, &info) == 0)
-	{
-		vorbis_block_init(&dsp, &block);
-		while(!eos)
-		{
-			while(!eos)
-			{
-				int result = ogg_sync_pageout(&state, &page);
-				if(result == 0)
-					break;
-				if(result < 0)
-					ogg_vorbis_error("Corrupt or missing data in the bitstream");
-				else
-				{
-					ogg_stream_pagein(&stream, &page);
-
-					while(1)
-					{
-						result = ogg_stream_packetout(&stream, &packet);
-
-						if(result == 0)
-							break;
-						if(result < 0)
-							ogg_vorbis_error("Corrupt or missing data in the bitstream");
-						else
-						{
-							float **pcm;
-							int samples;
-
-							if(vorbis_synthesis(&block, &packet) == 0)
-								vorbis_synthesis_blockin(&dsp, &block);
-
-							while((samples = vorbis_synthesis_pcmout(&dsp, &pcm)) > 0)
-							{
-								int j;
-								int bout = samples < convsize ? samples : convsize;
-
-								for(i = 0; i < info.channels; ++i)
-								{
-									ogg_int16_t *ptr = convbuffer.get() + i;
-
-									float *mono = pcm[i];
-									for(j = 0; j < bout; ++j)
-									{
-										int val = floor(mono[j] * 32767.0f + 0.5f);
-										if(val > 32767)
-											val = 32767;
-										else if(val < -32768)
-											val = -32768;
-
-										*ptr = val;
-										ptr += info.channels;
-									}
-								}
-
-								if(offset + (bout * 2 * info.channels) > (long long)decoded_size)
-									std::cerr << ("write overflow: size = " + std::to_string(decoded_size) + ", offset =  " + std::to_string(offset) + ", " + std::to_string(bout * 2 * info.channels) + " bytes") << std::endl;
-								else
-									memcpy((char*)(decoded) + offset, convbuffer.get(), bout * 2 * info.channels);
-								offset += bout * 2 * info.channels;
-								size->store(offset);
-
-								vorbis_synthesis_read(&dsp, bout);
-							}
-						}
-					}
-
-					if(ogg_page_eos(&page))
-						eos = 1;
-				}
-			}
-
-			if(!eos)
-			{
-				buffer = ogg_sync_buffer(&state, 4096);
-				if(encoded_size - index >= 4096)
-					bytes = 4096;
-				else
-					bytes = encoded_size - index;
-
-				memcpy(buffer, encoded + index, bytes);
-				index += bytes;
-				ogg_sync_wrote(&state, bytes);
-				if(bytes == 0)
-					eos = 1;
-			}
-		}
-
-		vorbis_block_clear(&block);
-		vorbis_dsp_clear(&dsp);
-	}
-	else
-		ogg_vorbis_error("Corrupt header during playback initialization");
-
-	ogg_stream_clear(&stream);
-	vorbis_comment_clear(&comment);
-	vorbis_info_clear(&info);
-	ogg_sync_clear(&state);
-}

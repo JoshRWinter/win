@@ -4,6 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <string>
+#include <initializer_list>
 
 namespace win
 {
@@ -33,6 +34,7 @@ public:
 
 	data_list all(const char*);
 	data_list all();
+	data_list select(const std::initializer_list<const char*>&);
 
 private:
 	std::vector<roll_header> files_;

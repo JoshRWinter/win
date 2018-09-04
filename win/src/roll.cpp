@@ -148,3 +148,26 @@ win::data_list win::roll::all()
 
 	return list;
 }
+
+win::data_list win::roll::select(const std::initializer_list<const char*> &files)
+{
+	data_list list(this);
+
+	for(const char *file : files)
+	{
+		// see if the file exists in files_
+		bool found = false;
+		for(const roll_header &rh : files_)
+			if(rh.filename == file)
+			{
+				found = true;
+				break;
+			}
+		if(!found)
+			bug("File: \""s + file + "\" -- no such entity");
+
+		list.add(file);
+	}
+
+	return list;
+}
