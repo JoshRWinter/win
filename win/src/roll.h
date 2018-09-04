@@ -30,7 +30,7 @@ public:
 	roll &operator=(roll&&);
 
 	data operator[](const char*);
-	data operator[](const std::string&);
+	bool exists(const char*) const;
 
 	data_list all();
 	data_list select(const std::initializer_list<const char*>&);

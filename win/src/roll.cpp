@@ -117,9 +117,13 @@ win::data win::roll::operator[](const char *filename)
 	}
 }
 
-win::data win::roll::operator[](const std::string &filename)
+bool win::roll::exists(const char *filename) const
 {
-	return this->operator[](filename.c_str());
+	for(const roll_header &rh : files_)
+		if(rh.filename == filename)
+			return true;
+
+	return false;
 }
 
 // return a list of all the filenames in the roll

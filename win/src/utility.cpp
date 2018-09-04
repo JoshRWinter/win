@@ -105,7 +105,7 @@ win::data win::data_list::get(int index) const
 	if((long unsigned int)index >= filenames_.size())
 		bug("Index out of bounds");
 
-	return parent_->operator[](filenames_[index]);
+	return parent_->operator[](filenames_[index].c_str());
 }
 
 int win::data_list::count() const
