@@ -4,7 +4,7 @@ win::tpack::tpack()
 {
 }
 
-win::tpack::tpack(const data_list &list)
+win::tpack::tpack(const data_list &list, mode filter_mode)
 {
 	count_ = list.count();
 	textures_ = std::make_unique<unsigned[]>(count_);
@@ -15,7 +15,7 @@ win::tpack::tpack(const data_list &list)
 	{
 		try
 		{
-			tpack::targa(list.get(i), textures_[i]);
+			tpack::targa(list.get(i), textures_[i], filter_mode);
 		}
 		catch(const exception &e)
 		{
@@ -51,7 +51,19 @@ unsigned win::tpack::operator[](int index) const
 	return textures_[index];
 }
 
-void win::tpack::targa(data raw, const unsigned object)
+void win::tpack::filter(int index, mode filter_mode)
+{
+#ifndef NDEBUG
+	if(index >= count_ || index < 0)
+		bug("tpack index " + std::to_string(index) + " not in [0, " + std::to_string(count_) + ")");
+#endif
+
+	glBindTexture(GL_TEXTURE_2D, textures_[index]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode == mode::LINEAR ? GL_LINEAR : GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode == mode::LINEAR ? GL_LINEAR : GL_NEAREST);
+}
+
+void win::tpack::targa(data raw, const unsigned object, mode filter_mode)
 {
 	const unsigned char *const rawdata = raw.get();
 
@@ -93,8 +105,8 @@ void win::tpack::targa(data raw, const unsigned object)
 	const bool bottom_origin = !((imdesc >> 5) & 1);
 
 	glBindTexture(GL_TEXTURE_2D, object);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode == mode::LINEAR ? GL_LINEAR : GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode == mode::LINEAR ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 

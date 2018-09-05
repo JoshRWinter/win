@@ -9,18 +9,21 @@ namespace win
 class tpack
 {
 public:
+	enum class mode { LINEAR, NEAREST };
+
 	tpack();
-	tpack(const data_list&);
+	tpack(const data_list&, mode = mode::LINEAR);
 	tpack(const tpack&) = delete;
 	tpack(tpack&&);
 	~tpack();
 
 	void operator=(const tpack&) = delete;
 	tpack &operator=(tpack&&);
-
 	unsigned operator[](int) const;
 
-	static void targa(data, unsigned);
+	void filter(int, mode);
+
+	static void targa(data, unsigned, mode);
 
 private:
 	void move(tpack&);
