@@ -510,8 +510,6 @@ void win::display::finalize()
 #elif defined WINPLAT_WINDOWS
 
 // this function is taller than i am
-static win::display *normal = NULL;
-static HWND normal_window = NULL;
 void win::display::win_init_gl(HWND hwnd)
 {
 	hdc_ = GetDC(hwnd);
@@ -592,9 +590,8 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 
 win::display::display(const char *caption, int w, int h, int flags, window_handle)
 {
-	const char *const window_class = "defWindowClass";
+	const char *const window_class = "win_window_class";
 
-	normal = this;
 	indirect_.reset(new indirect(this));
 	handler.key_button = handler_button;
 	handler.character = handler_character;
@@ -608,10 +605,10 @@ win::display::display(const char *caption, int w, int h, int flags, window_handl
 	wc.lpfnWndProc = wndproc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hInstance = 0;
+	wc.hInstance = GetModuleHandle(NULL);
 	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 3);
+	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = window_class;
 	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
@@ -621,11 +618,14 @@ win::display::display(const char *caption, int w, int h, int flags, window_handl
 
 	std::cerr << "caption: " << caption << std::endl;
 	if(flags & FULLSCREEN)
-		window_ = CreateWindowEx(0, window_class, "hello"/*caption*/, WS_POPUP, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CXSCREEN), NULL, NULL, NULL, indirect_.get());
+		window_ = CreateWindowEx(0, window_class, "", WS_POPUP, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CXSCREEN), NULL, NULL, GetModuleHandle(NULL), indirect_.get());
 	else
-		window_ = CreateWindowEx(0, window_class, "hello"/*caption*/, WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, w, h, NULL, NULL, NULL, indirect_.get());
+		window_ = CreateWindowEx(0, window_class, caption, WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, w, h, NULL, NULL, GetModuleHandle(NULL), indirect_.get());
 	if(window_ == NULL)
 		throw exception("Could not create window");
+
+	SetWindowText(window_, caption);
+
 	ShowWindow(window_, SW_SHOWDEFAULT);
 	UpdateWindow(window_);
 }
