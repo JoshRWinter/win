@@ -115,10 +115,12 @@ void win::data_list::add(const std::string &name)
 
 win::data win::data_list::get(int index) const
 {
-	if((long unsigned int)index >= filenames_.size())
-		bug("Index out of bounds");
+	return parent_->operator[](filenames_.at(index).c_str());
+}
 
-	return parent_->operator[](filenames_[index].c_str());
+const std::string &win::data_list::name(int index) const
+{
+	return filenames_.at(index);
 }
 
 int win::data_list::count() const

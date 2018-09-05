@@ -102,6 +102,7 @@ public:
 
 	void add(const std::string&);
 	data get(int) const;
+	const std::string &name(int) const;
 	int count() const;
 
 private:

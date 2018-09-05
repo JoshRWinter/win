@@ -68,6 +68,9 @@ int go()
 #endif
 	win::roll roll = std::move(roll2);
 
+	win::tpack textures2(roll.select({"../../fishtank/assets_local/mine.tga"}));
+	win::tpack textures = std::move(textures2);
+
 	win::apack apack2(roll.select({"../../fishtank/assets_local/Motions.ogg", "../../fishtank/assets_local/platform_destroy.ogg"}));
 	win::apack apack = std::move(apack2);
 
@@ -84,7 +87,10 @@ int go()
 
 	const float verts[] =
 	{
-		-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f
+		-0.5f, -0.5f,	0.0f, 1.0f,
+		-0.5f, 0.5f,	0.0f, 0.0f,
+		0.5f, 0.5f,		1.0f, 0.0f,
+		0.5f, -0.5f,	1.0f, 1.0f
 	};
 	const unsigned int indices[] =
 	{
@@ -109,8 +115,10 @@ int go()
 	// vertex buffer
 	win::vbo vbo_vertex;
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, NULL);
+	glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 4, NULL);
+	glVertexAttribPointer(3, 2, GL_FLOAT, false, sizeof(float) * 4, (void*)(sizeof(float) * 2));
 	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(3);
 
 	// position buffer
 	win::vbo vbo_position;
@@ -230,6 +238,7 @@ int go()
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_position), block_position, GL_DYNAMIC_DRAW);
 			glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_color), block_color, GL_DYNAMIC_DRAW);
+			glBindTexture(GL_TEXTURE_2D, textures[0]);
 
 			glClear(GL_COLOR_BUFFER_BIT);
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL, 1);
