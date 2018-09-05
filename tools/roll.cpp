@@ -20,6 +20,7 @@ static constexpr const char *const helptext =
 "Usage: roll output-file.roll inputfile[:z] [ ... ]\n"
 "       roll output-file.roll\n"
 "       roll --inspect input.roll\n"
+"       roll --help\n"
 "\n"
 "If the second 1-arg form is used, a 'rollfile' is\n"
 "expected to be found in the current direcory.\n"
@@ -70,7 +71,7 @@ int main(int argc, char **argv)
 
 int go(int argc, char **argv)
 {
-	if(argc < 2)
+	if(argc < 2 || (argc == 2 && (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-h"))))
 	{
 		std::cout << helptext << std::endl;
 		return 0;
