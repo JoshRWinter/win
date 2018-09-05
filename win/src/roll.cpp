@@ -30,7 +30,7 @@ win::roll::roll(const char *file)
 		throw exception("File \""s + file + "\" is not an asset roll");
 
 	// number of files stored within
-	std::uint16_t file_count;
+	std::uint16_t file_count = 0;
 	stream_.read((char*)&file_count, sizeof(file_count));
 	if(stream_.gcount() != sizeof(file_count))
 		corrupt();

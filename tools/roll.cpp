@@ -19,6 +19,7 @@ static constexpr const char *const helptext =
 "Asset Roll\n"
 "Usage: roll output-file.roll inputfile[:z] [ ... ]\n"
 "       roll output-file.roll\n"
+"       roll --inspect input.roll\n"
 "\n"
 "If the second 1-arg form is used, a 'rollfile' is\n"
 "expected to be found in the current direcory.\n"
@@ -30,6 +31,18 @@ static constexpr const char *const helptext =
 
 static const std::string magic = "ASSETROLL";
 
+struct header
+{
+	std::uint8_t compressed;
+	std::uint64_t uncompressed_size;
+	std::uint64_t begin;
+	std::uint64_t size;
+	std::uint16_t filename_length;
+	std::string filename;
+
+	std::uint64_t length() const { return sizeof(compressed) + sizeof(uncompressed_size) + sizeof(begin) + sizeof(size) + sizeof(filename_length) + filename_length; }
+};
+
 static std::string strip_options(const std::string&);
 static std::string forward_slash(const std::string&);
 static std::string trim(const std::string&);
@@ -39,6 +52,7 @@ static long long filesize(const std::string&);
 static bool exists(const std::string&);
 static std::string format(size_t);
 static void create(const std::string&, const std::vector<std::string>&);
+static void inspect(const std::string&);
 static int go(int argc, char **argv);
 
 int main(int argc, char **argv)
@@ -65,9 +79,16 @@ int go(int argc, char **argv)
 	// collect the arguments
 	std::vector<std::string> infiles;
 
-	if(argc == 2)
+	// examine an existing rollfile
+	if(argc == 3 && !strcmp(argv[1], "--inspect"))
 	{
-		// use rollfile
+		inspect(argv[2]);
+
+		return 0;
+	}
+	// use rollfile
+	else if(argc == 2)
+	{
 		std::ifstream rollfile("rollfile");
 		if(!rollfile)
 			throw std::runtime_error("No rollfile could be found in the current directory");
@@ -95,6 +116,7 @@ int go(int argc, char **argv)
 			infiles.push_back(line);
 		}
 	}
+	// create a roll file from cmd args
 	else
 	{
 		for(int i = 2; i < argc; ++i)
@@ -124,17 +146,6 @@ void create(const std::string &out_file, const std::vector<std::string> &in_file
 	}
 
 	// construct the headers
-	struct header
-	{
-		std::uint8_t compressed;
-		std::uint64_t uncompressed_size;
-		std::uint64_t begin;
-		std::uint64_t size;
-		std::uint16_t filename_length;
-		std::string filename;
-
-		std::uint64_t length() const { return sizeof(compressed) + sizeof(uncompressed_size) + sizeof(begin) + sizeof(size) + sizeof(filename_length) + filename_length; }
-	};
 
 	std::vector<header> headers;
 	for(int i = 0; i < file_count; ++i)
@@ -251,6 +262,60 @@ void create(const std::string &out_file, const std::vector<std::string> &in_file
 	out.close();
 
 	std::cout << file_count << " files written to \"" << out_file << "\" (" << format(filesize(out_file)) << ")" << std::endl;
+}
+
+void inspect(const std::string &roll)
+{
+	if(!exists(roll))
+		throw std::runtime_error("File \"" + roll + "\" does not exist");
+	else if(!is_asset_roll(roll))
+		throw std::runtime_error("File \"" + roll + "\" does not appear to be an asset roll");
+
+	std::ifstream in(roll, std::ifstream::binary);
+	if(!in)
+		throw std::runtime_error("Could not open file \"" + roll + "\" in read mode");
+
+	in.seekg(magic.size());
+
+	// read number of files
+	std::uint16_t file_count = 0;
+	in.read((char*)&file_count, sizeof(file_count));
+	if(in.gcount() != sizeof(file_count))
+		throw std::runtime_error("File \"" + roll + "\" is corrupt");
+
+	std::cout << roll << ": " << file_count << " files" << std::endl;
+
+	for(int i = 0; i < file_count; ++i)
+	{
+		header rh;
+
+		in.read((char*)&rh.compressed, sizeof(rh.compressed));
+		if(in.gcount() != sizeof(rh.compressed))
+			throw std::runtime_error("File \"" + roll + "\" is corrupt");
+
+		in.read((char*)&rh.uncompressed_size, sizeof(rh.uncompressed_size));
+		if(in.gcount() != sizeof(rh.uncompressed_size))
+			throw std::runtime_error("File \"" + roll + "\" is corrupt");
+
+		in.seekg(sizeof(rh.begin), std::ifstream::cur);
+
+		in.read((char*)&rh.size, sizeof(rh.size));
+		if(in.gcount() != sizeof(rh.size))
+			throw std::runtime_error("File \"" + roll + "\" is corrupt");
+
+		in.read((char*)&rh.filename_length, sizeof(rh.filename_length));
+		if(in.gcount() != sizeof(rh.filename_length))
+			throw std::runtime_error("File \"" + roll + "\" is corrupt");
+
+		std::unique_ptr<char[]> fname = std::make_unique<char[]>(rh.filename_length + 1);
+		in.read(fname.get(), rh.filename_length);
+		if(in.gcount() != rh.filename_length)
+			throw std::runtime_error("File \"" + roll + "\" is corrupt");
+		fname[rh.filename_length] = 0;
+		rh.filename = fname.get();
+
+		std::cout << (i + 1) << ": \"" << rh.filename << "\" (" << format(rh.compressed ? rh.uncompressed_size : rh.size) << (rh.compressed ? "/" + format(rh.size) + " compressed" : "") << ")" << std::endl;
+	}
 }
 
 std::string format(size_t size)

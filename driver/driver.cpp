@@ -68,11 +68,7 @@ int go()
 #endif
 	win::roll roll = std::move(roll2);
 
-#if defined WINPLAT_LINUX
-	win::apack apack2(roll.select({"/home/josh/fishtank/assets_local/Motions.ogg", "/home/josh/fishtank/assets_local/platform_destroy.ogg"}));
-#elif defined WINPLAT_WINDOWS
 	win::apack apack2(roll.select({"../../fishtank/assets_local/Motions.ogg", "../../fishtank/assets_local/platform_destroy.ogg"}));
-#endif
 	win::apack apack = std::move(apack2);
 
 	win::audio_engine audio_engine2 = display.make_audio_engine(sound_config);
@@ -80,11 +76,7 @@ int go()
 
 	win::font_renderer font_renderer2 = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::font_renderer font_renderer = std::move(font_renderer2);
-#if defined WINPLAT_LINUX
-	win::font font12 = font_renderer.make_font(roll["/usr/share/fonts/noto/NotoSansMono-Regular.ttf"], 0.3f);
-#elif defined WINPLAT_WINDOWS
 	win::font font12 = font_renderer.make_font(roll["../../fishtank/assets/arial.ttf"], 0.3f);
-#endif
 	win::font font1 = std::move(font12);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
