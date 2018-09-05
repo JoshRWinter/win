@@ -25,10 +25,7 @@ win::apack::apack(const data_list &list)
 		const unsigned long long file_size = raw.size();
 
 		stored.size = 0;
-		stored.encoded = std::make_unique<unsigned char[]>(raw.size());
-		if(raw.read(stored.encoded.get(), file_size) != file_size)
-			bug("Could not read entire ogg file");
-		raw.finalize(); // early destruct (optional)
+		stored.encoded.reset(raw.release());
 
 		// eventual size of decoded data
 		unsigned long long index = file_size - 1;

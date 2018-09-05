@@ -56,6 +56,19 @@ const unsigned char *win::data::get() const noexcept
 	return data_;
 }
 
+unsigned char *win::data::release() noexcept
+{
+	if(data_ == NULL)
+		bug("Null filedata");
+
+	unsigned char *d = data_;
+	data_ = NULL;
+	size_ = 0;
+	stream_position_ = 0;
+
+	return d;
+}
+
 unsigned long long win::data::size() const noexcept
 {
 	return size_;
