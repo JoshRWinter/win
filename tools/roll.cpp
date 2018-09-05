@@ -323,7 +323,7 @@ std::string format(size_t size)
 {
 	char convert[26];
 	if(size < 1000)
-		snprintf(convert, sizeof(convert), "%.2fB", (double)size);
+		snprintf(convert, sizeof(convert), "%dB", (int)size);
 	else if(size < 1000 * 1000)
 		snprintf(convert, sizeof(convert), "%.2fKB", (double)size / 1000);
 	else
