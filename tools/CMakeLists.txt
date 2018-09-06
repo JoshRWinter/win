@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(roll roll.cpp)
+add_executable(roll roll/roll.cpp)
+
+add_executable(atlas atlas/main.cpp atlas/Targa.cpp atlas/Atlas.cpp)
 
 if(WIN32)
 	target_include_directories(roll PRIVATE ../win/include/zlib)
