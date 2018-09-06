@@ -343,7 +343,7 @@ bool win::display::process()
 				handler.key_button(name_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), true);
 				const KeySym sym = x_get_keysym(&xevent.xkey);
 				if(sym)
-					handler.character(sym, true);
+					handler.character(sym);
 				break;
 			}
 			case KeyRelease:
@@ -357,9 +357,6 @@ bool win::display::process()
 				}
 
 				handler.key_button(name_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), false);
-				const KeySym sym = x_get_keysym(&xevent.xkey);
-				if(sym)
-					handler.character(sym, false);
 				break;
 			}
 			case MotionNotify:
