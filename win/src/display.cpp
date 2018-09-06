@@ -693,12 +693,12 @@ void win::display::event_mouse(fn_event_mouse fn)
 
 int win::display::screen_width()
 {
-	return 0;
+	return GetSystemMetrics(SM_CXSCREEN);
 }
 
 int win::display::screen_height()
 {
-	return 0;
+	return GetSystemMetrics(SM_CYSCREEN);
 }
 
 void win::display::process_joystick()
