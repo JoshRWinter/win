@@ -23,7 +23,7 @@ class display
 
 	typedef std::function<void(button, bool)> fn_event_button;
 	typedef std::function<void(joystick_axis, int)> fn_event_joystick;
-	typedef std::function<void(int, bool)> fn_event_character;
+	typedef std::function<void(int)> fn_event_character;
 	typedef std::function<void(int x, int y)> fn_event_mouse;
 
 public:

@@ -162,6 +162,11 @@ int go()
 			audio_engine.play(apack, 1);
 	});
 
+	// display.event_character([](int key)
+	// {
+	// 	std::cerr << (char)key;
+	// });
+
 	// display.event_joystick([](win::joystick_axis axis, int value)
 	// {
 	// 	switch(axis)

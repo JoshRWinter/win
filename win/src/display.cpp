@@ -9,7 +9,7 @@
 
 // default event handlers
 static void handler_button(win::button, bool) {}
-static void handler_character(int, bool) {}
+static void handler_character(int) {}
 static void handler_mouse(int, int) {}
 
 win::display::display()
@@ -576,6 +576,10 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 		case WM_CREATE:
 			dsp->win_init_gl(hwnd);
 			return 0;
+		case WM_CHAR:
+			if(wp >= ' ' && wp <= '~')
+				dsp->handler.character(wp);
+			return 0;
 		case WM_CLOSE:
 			dsp->winquit_ = true;
 			return 0;
@@ -616,7 +620,6 @@ win::display::display(const char *caption, int w, int h, int flags, window_handl
 	if(!RegisterClassEx(&wc))
 		throw exception("Could not register window class");
 
-	std::cerr << "caption: " << caption << std::endl;
 	if(flags & FULLSCREEN)
 		window_ = CreateWindowEx(0, window_class, "", WS_POPUP, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CXSCREEN), NULL, NULL, GetModuleHandle(NULL), indirect_.get());
 	else
