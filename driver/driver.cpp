@@ -57,32 +57,41 @@ int main()
 int go()
 {
 	win::system system;
-	win::display display2 = system.make_display("window caption", 800, 600);
+	win::display display2;
+	display2 = system.make_display("window caption", 800, 600);
 	win::display display = std::move(display2);
 	display.cursor(false);
 
 #if defined WINPLAT_LINUX
-	win::roll roll2 = "/home/josh/win/driver/assets.roll";
+	win::roll roll2;
+	roll2 = "/home/josh/win/driver/assets.roll";
 #elif defined WINPLAT_WINDOWS
-	win::roll roll2 = "c:\\users\\josh\\desktop\\win\\driver\\assets.roll";
+	win::roll roll2;
+	roll2 = "c:\\users\\josh\\desktop\\win\\driver\\assets.roll";
 #endif
 	win::roll roll = std::move(roll2);
 
-	win::tpack textures2(roll.select({"../../fishtank/assets_local/mine.tga"}));
+	win::tpack textures2;
+	textures2 = win::tpack(roll.select({"../../fishtank/assets_local/mine.tga"}));
 	win::tpack textures = std::move(textures2);
 
-	win::atlas atlas2(roll["main.atlas"]);
+	win::atlas atlas2;
+	atlas2 = win::atlas(roll["main.atlas"]);
 	win::atlas atlas = std::move(atlas2);
 
-	win::apack apack2(roll.select({"../../fishtank/assets_local/Motions.ogg", "../../fishtank/assets_local/platform_destroy.ogg"}));
+	win::apack apack2;
+	apack2 = win::apack(roll.select({"../../fishtank/assets_local/Motions.ogg", "../../fishtank/assets_local/platform_destroy.ogg"}));
 	win::apack apack = std::move(apack2);
 
-	win::audio_engine audio_engine2 = display.make_audio_engine(sound_config);
+	win::audio_engine audio_engine2;
+	audio_engine2 = display.make_audio_engine(sound_config);
 	win::audio_engine audio_engine = std::move(audio_engine2);
 
-	win::font_renderer font_renderer2 = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
+	win::font_renderer font_renderer2;
+	font_renderer2 = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::font_renderer font_renderer = std::move(font_renderer2);
-	win::font font12 = font_renderer.make_font(roll["../../fishtank/assets/arial.ttf"], 0.3f);
+	win::font font12;
+	font12 = font_renderer.make_font(roll["../../fishtank/assets/arial.ttf"], 0.3f);
 	win::font font1 = std::move(font12);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
@@ -100,7 +109,8 @@ int go()
 		0, 1, 2, 0, 2, 3
 	};
 
-	win::program program = win::load_shaders(roll["vertex.vert"], roll["fragment.frag"]);
+	win::program program2 = win::load_shaders(roll["vertex.vert"], roll["fragment.frag"]);
+	win::program program = std::move(program2);
 	int uniform_projection, uniform_size;
 	float ortho_matrix[16];
 	win::init_ortho(ortho_matrix, -4.0f, 4.0f, 3.0f, -3.0f);
@@ -109,14 +119,17 @@ int go()
 	glUniformMatrix4fv(uniform_projection, 1, false, ortho_matrix);
 	glUniform1f(uniform_size, Block::SIZE);
 
-	win::vao vao;
+	win::vao vao2;
+	win::vao vao = std::move(vao2);
 
 	// element buffer
-	win::ebo ebo;
+	win::ebo ebo2;
+	win::ebo ebo = std::move(ebo2);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// vertex buffer
-	win::vbo vbo_vertex;
+	win::vbo vbo_vertex2;
+	win::vbo vbo_vertex = std::move(vbo_vertex2);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 4, NULL);
 	glVertexAttribPointer(3, 2, GL_FLOAT, false, sizeof(float) * 4, (void*)(sizeof(float) * 2));
@@ -124,13 +137,15 @@ int go()
 	glEnableVertexAttribArray(3);
 
 	// position buffer
-	win::vbo vbo_position;
+	win::vbo vbo_position2;
+	win::vbo vbo_position = std::move(vbo_position2);
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, NULL);
 	glVertexAttribDivisor(1, 1);
 	glEnableVertexAttribArray(1);
 
 	// color buffer
-	win::vbo vbo_color;
+	win::vbo vbo_color2;
+	win::vbo vbo_color = std::move(vbo_color2);
 	glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, false, 0, NULL);
 	glVertexAttribDivisor(2, 1);
 	glEnableVertexAttribArray(2);

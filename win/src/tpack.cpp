@@ -2,6 +2,7 @@
 
 win::tpack::tpack()
 {
+	count_ = 0;
 }
 
 win::tpack::tpack(const data_list &list, mode filter_mode)
@@ -128,4 +129,5 @@ void win::tpack::finalize()
 		return;
 
 	glDeleteTextures(count_, textures_.get());
+	count_ = 0;
 }

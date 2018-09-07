@@ -72,8 +72,13 @@ win::roll::roll(const char *file)
 
 win::roll::roll(roll &&rhs)
 {
-	files_ = std::move(rhs.files_);
-	stream_ = std::move(rhs.stream_);
+	move(rhs);
+}
+
+win::roll &win::roll::operator=(roll &&rhs)
+{
+	move(rhs);
+	return *this;
 }
 
 win::data win::roll::operator[](const char *filename)
@@ -158,4 +163,10 @@ win::data_list win::roll::select(const std::initializer_list<const char*> &files
 	}
 
 	return list;
+}
+
+void win::roll::move(roll &rhs)
+{
+	files_ = std::move(rhs.files_);
+	stream_ = std::move(rhs.stream_);
 }

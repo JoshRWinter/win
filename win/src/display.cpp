@@ -497,6 +497,8 @@ void win::display::finalize()
 	glXMakeCurrent(xdisplay, None, NULL);
 	glXDestroyContext(xdisplay, context_);
 	XDestroyWindow(xdisplay, window_);
+
+	window_ = 0;
 }
 
 /* ------------------------------------*/
@@ -707,7 +709,6 @@ void win::display::move(display &rhs)
 	handler.key_button = std::move(rhs.handler.key_button);
 	handler.character = std::move(rhs.handler.character);
 	handler.mouse = std::move(rhs.handler.mouse);
-
 
 	window_ = rhs.window_;
 	rhs.window_ = NULL;

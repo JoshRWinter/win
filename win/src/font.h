@@ -19,10 +19,12 @@ struct font
 {
 	friend font_renderer;
 
+	font();
 	font(const font&) = delete;
 	font(font&&);
 	~font();
 
+	void operator=(font&) = delete;
 	font &operator=(font&&);
 
 	unsigned atlas;
@@ -34,6 +36,7 @@ struct font
 
 private:
 	font(const font_renderer &parent, data, float);
+	void move(font&);
 	void finalize();
 };
 
@@ -45,6 +48,7 @@ class font_renderer
 public:
 	static constexpr int CENTERED = 1;
 
+	font_renderer();
 	font_renderer(const font_renderer&) = delete;
 	font_renderer(font_renderer&&);
 	~font_renderer();
@@ -58,6 +62,7 @@ public:
 
 private:
 	font_renderer(int, int, float, float, float, float);
+	void move(font_renderer&);
 	float line_length(const font&, const char*, int) const;
 	void finalize();
 

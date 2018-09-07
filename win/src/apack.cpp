@@ -49,26 +49,37 @@ win::apack::apack(apack &&rhs)
 
 win::apack::~apack()
 {
-	for(int i = 0; i < count_; ++i)
-		if(stored_[i].thread.joinable())
-			stored_[i].thread.join();
+	finalize();
 }
 
 win::apack &win::apack::operator=(apack &&rhs)
 {
+	finalize();
 	move(rhs);
 	return *this;
 }
 
 void win::apack::move(apack &rhs)
 {
-	// join the decoding threads becouse they reference this class's memory
+	if(rhs.count_ > 0)
+	// join the decoding threads because they reference this class's memory
 	for(int i = 0; i < rhs.count_; ++i)
-		rhs.stored_[i].thread.join();
+		if(rhs.stored_[i].thread.joinable())
+			rhs.stored_[i].thread.join();
 
-	stored_ = std::move(rhs.stored_);
 	count_ = rhs.count_;
+	stored_ = std::move(rhs.stored_);
+
 	rhs.count_ = 0;
+}
+
+void win::apack::finalize()
+{
+	for(int i = 0; i < count_; ++i)
+		if(stored_[i].thread.joinable())
+			stored_[i].thread.join();
+
+	count_ = 0;
 }
 
 static void ogg_vorbis_error(const std::string &msg)

@@ -34,6 +34,7 @@ public:
 
 private:
 	void move(apack&);
+	void finalize();
 
 	int count_;
 	std::unique_ptr<apack_sound[]> stored_;

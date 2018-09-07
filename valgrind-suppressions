@@ -48,6 +48,20 @@
    ...
 }
 {
+   dl crap
+   Memcheck:Leak
+   ...
+   fun:_dl_init
+   ...
+}
+{
+   more dl crap
+   Memcheck:Leak
+   ...
+   fun:_dl_open
+   ...
+}
+{
    Pulseaudio
    Memcheck:Leak
    ...

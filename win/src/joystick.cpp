@@ -21,15 +21,7 @@ win::evdev_joystick::evdev_joystick()
 
 win::evdev_joystick::evdev_joystick(evdev_joystick &&rhs)
 {
-	fd_ = rhs.fd_;
-	rhs.fd_ = -1;
-
-	handler.key_button = std::move(rhs.handler.key_button);
-	handler.js = std::move(rhs.handler.js);
-
-	buffer_index_ = rhs.buffer_index_;
-
-	memcpy(buffer_, rhs.buffer_, sizeof(buffer_));
+	move(rhs);
 }
 
 win::evdev_joystick::~evdev_joystick()
@@ -39,16 +31,8 @@ win::evdev_joystick::~evdev_joystick()
 
 win::evdev_joystick &win::evdev_joystick::operator=(evdev_joystick &&rhs)
 {
-	fd_ = rhs.fd_;
-	rhs.fd_ = -1;
-
-	handler.key_button = std::move(rhs.handler.key_button);
-	handler.js = std::move(rhs.handler.js);
-
-	buffer_index_ = rhs.buffer_index_;
-
-	memcpy(buffer_, rhs.buffer_, sizeof(buffer_));
-
+	finalize();
+	move(rhs);
 	return *this;
 }
 
@@ -231,13 +215,26 @@ void win::evdev_joystick::lost()
 	std::cerr << "Lost the joystick" << std::endl;
 }
 
+void win::evdev_joystick::move(evdev_joystick &rhs)
+{
+	fd_ = rhs.fd_;
+	rhs.fd_ = -1;
+
+	handler.key_button = std::move(rhs.handler.key_button);
+	handler.js = std::move(rhs.handler.js);
+
+	buffer_index_ = rhs.buffer_index_;
+
+	memcpy(buffer_, rhs.buffer_, sizeof(buffer_));
+}
+
 void win::evdev_joystick::finalize()
 {
-	if(fd_ != -1)
-	{
-		close(fd_);
-		fd_ = -1;
-	}
+	if(fd_ == -1)
+		return;
+
+	close(fd_);
+	fd_ = -1;
 }
 
 #endif

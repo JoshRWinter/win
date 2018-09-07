@@ -14,6 +14,11 @@ static constexpr int rows = 6;
 
 #define isvalidchar(c) ((c>31)||c=='\n'||c=='\r')
 
+win::font::font()
+{
+	atlas = (unsigned)-1;
+}
+
 win::font::font(const font_renderer &parent, data file, float fontsize)
 {
 	std::vector<unsigned char> chunk(file.size());
@@ -148,14 +153,7 @@ win::font::font(const font_renderer &parent, data file, float fontsize)
 
 win::font::font(font &&rhs)
 {
-	atlas = rhs.atlas;
-	metrics = rhs.metrics;
-	box_width = rhs.box_width;
-	box_height = rhs.box_height;
-	max_bearing_y = rhs.max_bearing_y;
-	vertical = rhs.vertical;
-
-	rhs.atlas = 0;
+	move(rhs);
 }
 
 win::font::~font()
@@ -166,16 +164,7 @@ win::font::~font()
 win::font &win::font::operator=(font &&rhs)
 {
 	finalize();
-
-	atlas = rhs.atlas;
-	metrics = rhs.metrics;
-	box_width = rhs.box_width;
-	box_height = rhs.box_height;
-	max_bearing_y = rhs.max_bearing_y;
-	vertical = rhs.vertical;
-
-	atlas = 0;
-
+	move(rhs);
 	return *this;
 }
 
@@ -189,12 +178,25 @@ static inline float aligny(int iheight, float fheight, float ypos)
 	return ((((int)((ypos / fheight) * iheight)) / (float)iheight) * fheight);
 }
 
+void win::font::move(font &rhs)
+{
+	atlas = rhs.atlas;
+	metrics = rhs.metrics;
+	box_width = rhs.box_width;
+	box_height = rhs.box_height;
+	max_bearing_y = rhs.max_bearing_y;
+	vertical = rhs.vertical;
+
+	rhs.atlas = (unsigned)-1;
+}
+
 void win::font::finalize()
 {
-	if(atlas == 0)
+	if(atlas == (unsigned)-1)
 		return;
 
 	glDeleteTextures(1, &atlas);
+	atlas = (unsigned)-1;
 }
 
 // font shaders
@@ -224,6 +226,11 @@ static const char *vertexshader =
 ;
 
 // font renderer class
+win::font_renderer::font_renderer()
+{
+	program_ = 0;
+}
+
 win::font_renderer::font_renderer(int iwidth, int iheight, float left, float right, float bottom, float top)
 {
 	display_width_ = iwidth;
@@ -290,26 +297,7 @@ win::font_renderer::font_renderer(int iwidth, int iheight, float left, float rig
 
 win::font_renderer::font_renderer(font_renderer &&rhs)
 {
-	display_width_ = rhs.display_width_;
-	display_height_ = rhs.display_height_;
-	left_ = rhs.left_;
-	right_ = rhs.right_;
-	bottom_ = rhs.bottom_;
-	top_ = rhs.top_;
-
-	program_ = rhs.program_;
-	vao_ = rhs.vao_;
-	vbo_vertex_ = rhs.vbo_vertex_;
-	vbo_position_ = rhs.vbo_position_;
-	vbo_texcoord_ = rhs.vbo_texcoord_;
-	uniform_size_ = rhs.uniform_size_;
-	uniform_color_ = rhs.uniform_color_;
-
-	rhs.program_ = 0;
-	rhs.vao_ = 0;
-	rhs.vbo_vertex_ = 0;
-	rhs.vbo_position_ = 0;
-	rhs.vbo_texcoord_ = 0;
+	move(rhs);
 }
 
 win::font_renderer::~font_renderer()
@@ -320,28 +308,7 @@ win::font_renderer::~font_renderer()
 win::font_renderer &win::font_renderer::operator=(font_renderer &&rhs)
 {
 	finalize();
-
-	display_width_ = rhs.display_width_;
-	display_height_ = rhs.display_height_;
-	left_ = rhs.left_;
-	right_ = rhs.right_;
-	bottom_ = rhs.bottom_;
-	top_ = rhs.top_;
-
-	program_ = rhs.program_;
-	vao_ = rhs.vao_;
-	vbo_vertex_ = rhs.vbo_vertex_;
-	vbo_position_ = rhs.vbo_position_;
-	vbo_texcoord_ = rhs.vbo_texcoord_;
-	uniform_size_ = rhs.uniform_size_;
-	uniform_color_ = rhs.uniform_color_;
-
-	rhs.program_ = 0;
-	rhs.vao_ = 0;
-	rhs.vbo_vertex_ = 0;
-	rhs.vbo_position_ = 0;
-	rhs.vbo_texcoord_ = 0;
-
+	move(rhs);
 	return *this;
 }
 
@@ -421,6 +388,27 @@ win::font win::font_renderer::make_font(data file, float size)
 	return font(*this, std::move(file), size);
 }
 
+void win::font_renderer::move(font_renderer &rhs)
+{
+	display_width_ = rhs.display_width_;
+	display_height_ = rhs.display_height_;
+	left_ = rhs.left_;
+	right_ = rhs.right_;
+	bottom_ = rhs.bottom_;
+	top_ = rhs.top_;
+
+	program_ = rhs.program_;
+	vao_ = rhs.vao_;
+	vbo_vertex_ = rhs.vbo_vertex_;
+	vbo_position_ = rhs.vbo_position_;
+	vbo_texcoord_ = rhs.vbo_texcoord_;
+	ebo_ = rhs.ebo_;
+	uniform_size_ = rhs.uniform_size_;
+	uniform_color_ = rhs.uniform_color_;
+
+	rhs.program_ = 0;
+}
+
 // calculate line length, only up to the first newline after <start>
 float win::font_renderer::line_length(const font &fnt, const char *text, int start) const
 {
@@ -449,4 +437,6 @@ void win::font_renderer::finalize()
 	glDeleteBuffers(1, &vbo_texcoord_);
 
 	glDeleteProgram(program_);
+
+	program_ = 0;
 }

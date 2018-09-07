@@ -22,6 +22,7 @@ struct roll_header
 class roll
 {
 public:
+	roll() = default;
 	roll(const char*);
 	roll(const roll&) = delete;
 	roll(roll&&);
@@ -36,6 +37,8 @@ public:
 	data_list select(const std::initializer_list<const char*>&);
 
 private:
+	void move(roll&);
+
 	std::vector<roll_header> files_;
 	std::ifstream stream_;
 };

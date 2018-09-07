@@ -38,6 +38,7 @@ public:
 private:
 	bool find();
 	void lost();
+	void move(evdev_joystick&);
 	void finalize();
 
 	int fd_;
