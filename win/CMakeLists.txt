@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_library(win STATIC
 	src/apack.cpp
+	src/atlas.cpp
 	src/audio_engine.cpp
 	src/display.cpp
 	src/font.cpp

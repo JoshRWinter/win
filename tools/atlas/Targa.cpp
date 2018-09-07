@@ -1,13 +1,14 @@
 #include <fstream>
 #include <string.h>
+#include <stdexcept>
 
 #include "Targa.h"
 
 Targa::Targa(const std::string &filename){
 	// open the file
-	std::ifstream file(filename);
+	std::ifstream file(filename, std::ifstream::binary);
 	if(!file)
-		throw TextureErrorNotFound();
+		throw std::runtime_error("Could not open file");
 
 	// image properties
 	bool compressed; // targa has optional RLE
@@ -19,39 +20,39 @@ Targa::Targa(const std::string &filename){
 	file.seekg(2);
 	file.read((char*)&image_type,1);
 	if(file.gcount()!=1)
-		throw TextureErrorCorrupt();
+		throw std::runtime_error("Could not read image type field");
 	compressed=(image_type>>3)&1;
 	if(compressed)
-		throw TargaErrorCompressed();
+		throw std::runtime_error("Compressed TARGAs are not supported");
 
 	// width
 	unsigned short w;
 	file.seekg(12);
 	file.read((char*)&w,2);
 	if(file.gcount()!=2)
-		throw TextureErrorCorrupt();
+		throw std::runtime_error("Could not read width field");
 	width=w;
 
 	// height
 	unsigned short h;
 	file.read((char*)&h,2);
 	if(file.gcount()!=2)
-		throw TextureErrorCorrupt();
+		throw std::runtime_error("Could not read height field");
 	height=h;
 
 	// bpp
 	file.seekg(16);
 	file.read((char*)&bpp,1);
 	if(file.gcount()!=1)
-		throw TextureErrorCorrupt();
+		throw std::runtime_error("Could not read bpp field");
 	if(bpp!=32&&bpp!=24)
-		throw TargaErrorBPP();
+		throw std::runtime_error("Only 32 or 24 BPP TARGAs are supported");
 
 	// image descriptor
 	unsigned char imdesc;
 	file.read((char*)&imdesc,1);
 	if(file.gcount()!=1)
-		throw TextureErrorCorrupt();
+		throw std::runtime_error("Could not read image descriptor field");
 	bool bit4,bit5;
 	bottom_origin=!((imdesc>>5)&1);
 
@@ -60,8 +61,9 @@ Targa::Targa(const std::string &filename){
 	data=new unsigned char[datasize];
 	if(bpp==32){
 		file.read((char*)data,datasize);
-		if(file.gcount()!=datasize)
-			throw TextureErrorCorrupt();
+		int read;
+		if((read = file.gcount())!=datasize)
+			throw std::runtime_error("Could not read bitmap");
 	}
 	else{
 		// account for 24 bit images (missing alpha channel)
@@ -71,7 +73,7 @@ Targa::Targa(const std::string &filename){
 		while(total!=datasize24){
 			file.read((char*)(data+index),3);
 			if(file.gcount()!=3)
-				throw TextureErrorCorrupt();
+				throw std::runtime_error("Could not read bitmap row");
 			data[index+3]=255;
 			total+=3;
 			index+=4;

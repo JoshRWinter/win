@@ -13,7 +13,7 @@ extern const char *vertexshader,*fragmentshader;
 
 struct Block
 {
-	static constexpr float SIZE = 1.0f;
+	static constexpr float SIZE = 2.0f;
 	Block() : x(0.0f), y(0.0f), xv(0.06f), yv(0.0f) {}
 	float x, y, xv, yv;
 };
@@ -70,6 +70,9 @@ int go()
 
 	win::tpack textures2(roll.select({"../../fishtank/assets_local/mine.tga"}));
 	win::tpack textures = std::move(textures2);
+
+	win::atlas atlas2(roll["main.atlas"]);
+	win::atlas atlas = std::move(atlas2);
 
 	win::apack apack2(roll.select({"../../fishtank/assets_local/Motions.ogg", "../../fishtank/assets_local/platform_destroy.ogg"}));
 	win::apack apack = std::move(apack2);
@@ -207,7 +210,7 @@ int go()
 
 		// process entities
 		{
-			block.x += block.xv;
+			// block.x += block.xv;
 			block.y += block.yv;
 
 			if(block.x + Block::SIZE > 4.0f)
@@ -236,14 +239,14 @@ int go()
 			block_position[0] = block.x;
 			block_position[1] = block.y;
 			block_color[0] = 1.0f;
-			block_color[1] = 0.0f;
-			block_color[2] = 0.0f;
+			block_color[1] = 1.0f;
+			block_color[2] = 1.0f;
 
 			glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_position), block_position, GL_DYNAMIC_DRAW);
 			glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_color), block_color, GL_DYNAMIC_DRAW);
-			glBindTexture(GL_TEXTURE_2D, textures[0]);
+			glBindTexture(GL_TEXTURE_2D, atlas.texture());
 
 			glClear(GL_COLOR_BUFFER_BIT);
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL, 1);

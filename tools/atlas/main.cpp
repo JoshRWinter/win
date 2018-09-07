@@ -54,16 +54,9 @@ int go(int argc, char **argv){
 
 	// iterate over input files
 	for(const input &in : inputs){
-		try{
-			// construct Targa object
-			Targa tga(in.filename); // might throw TextureError
-			atlas.add(tga, in.xpos, in.ypos);
-		}
-		catch(const TextureError &te){
-			std::cout<<"error on \""<<in.filename<<"\": "<<te.what()<<std::endl;
-			std::cout<<"aborting..."<<std::endl;
-			return 1;
-		}
+		// construct Targa object
+		Targa tga(in.filename);
+		atlas.add(tga, in.xpos, in.ypos);
 	}
 
 	// write to output file

@@ -91,14 +91,8 @@ int Atlas::write(const char *output){
 		header.push_back(bitmap_list[index].height);
 	}
 
-	// create new buffer with header followed by canvas bitmap data
-	const int combined_size=(header.size()*sizeof(unsigned short))+get_canvas_size();
-	auto combined=std::make_unique<unsigned char[]>(combined_size);
-	memcpy(combined.get(),header.data(),header.size()*sizeof(unsigned short)); // copy the header
-	memcpy(combined.get()+(header.size()*sizeof(unsigned short)),canvas,get_canvas_size()); // copy canvas bitmap data
-
 	// write to file
-	std::ofstream out(output);
+	std::ofstream out(output, std::ofstream::binary);
 	if(!out){
 		std::cout<<"error: could not open \""<<output<<"\" for writing"<<std::endl;
 		return 0;
@@ -108,10 +102,13 @@ int Atlas::write(const char *output){
 	unsigned char magic[]={'A','T','L','A','S'};
 	out.write((char*)magic, sizeof(magic));
 
-	// write data
-	out.write((char*)combined.get(),combined_size);
+	// write headers
+	out.write((char*)header.data(), header.size() * sizeof(unsigned short));
 
-	return combined_size + sizeof(magic);
+	// write bitmap
+	out.write((char*)canvas, get_canvas_size());
+
+	return (header.size() * sizeof(unsigned short)) + get_canvas_size() + sizeof(magic);
 }
 
 int Atlas::write_tga(const char *output){
@@ -132,7 +129,7 @@ int Atlas::write_tga(const char *output){
 	};
 
 	// open the output file in write mode
-	std::ofstream out(output);
+	std::ofstream out(output, std::ofstream::binary);
 	if(!out){
 		std::cout<<"couldn't open "<<output<<" for writing"<<std::endl;
 		return 0;
