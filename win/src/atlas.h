@@ -8,10 +8,7 @@ namespace win
 
 struct atlas_texture
 {
-	std::uint16_t xpos;
-	std::uint16_t ypos;
-	std::uint16_t width;
-	std::uint16_t height;
+	unsigned short coords[4];
 };
 
 class atlas
@@ -29,6 +26,7 @@ public:
 	atlas &operator=(atlas&&);
 
 	unsigned texture() const;
+	const unsigned short *coords(int) const;
 
 	static void corrupt();
 

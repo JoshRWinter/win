@@ -1,5 +1,0 @@
-"../../fishtank/assets_local/button.tga" 0 0
-"../../fishtank/assets_local/dead_fish.tga" 120 160
-"../../fishtank/assets_local/tank.tga" 0 80
-"../../fishtank/assets_local/mine.tga" 240 80
-"../../fishtank/assets_local/turret.tga" 0 160

@@ -1,3 +1,4 @@
+#include <climits>
 #include <string.h>
 
 #include <win.h>
@@ -40,21 +41,28 @@ win::atlas::atlas(data raw, mode fm)
 
 	for(int i = 0; i < count_; ++i)
 	{
-		if(raw.read(&textures_[i].xpos, sizeof(textures_[i].xpos)) != sizeof(textures_[i].xpos))
-			atlas::corrupt();
-		index += sizeof(textures_[i].xpos);
+		std::uint16_t xpos, ypos, width, height;
 
-		if(raw.read(&textures_[i].ypos, sizeof(textures_[i].ypos)) != sizeof(textures_[i].ypos))
+		if(raw.read(&xpos, sizeof(xpos)) != sizeof(xpos))
 			atlas::corrupt();
-		index += sizeof(textures_[i].ypos);
+		index += sizeof(xpos);
 
-		if(raw.read(&textures_[i].width, sizeof(textures_[i].width)) != sizeof(textures_[i].width))
+		if(raw.read(&ypos, sizeof(ypos)) != sizeof(ypos))
 			atlas::corrupt();
-		index += sizeof(textures_[i].width);
+		index += sizeof(ypos);
 
-		if(raw.read(&textures_[i].height, sizeof(textures_[i].height)) != sizeof(textures_[i].height))
+		if(raw.read(&width, sizeof(width)) != sizeof(width))
 			atlas::corrupt();
-		index += sizeof(textures_[i].height);
+		index += sizeof(width);
+
+		if(raw.read(&height, sizeof(height)) != sizeof(height))
+			atlas::corrupt();
+		index += sizeof(height);
+
+		textures_[i].coords[0] = ((float)xpos / canvas_width) * USHRT_MAX;
+		textures_[i].coords[1] = ((float)(xpos + width) / canvas_width) * USHRT_MAX;
+		textures_[i].coords[2] = ((float)(ypos + height) / canvas_height) * USHRT_MAX;
+		textures_[i].coords[3] = ((float)ypos / canvas_height) * USHRT_MAX;
 	}
 
 	if(raw.size() - index != canvas_width * canvas_height * 4)
@@ -91,6 +99,16 @@ win::atlas &win::atlas::operator=(atlas &&rhs)
 unsigned win::atlas::texture() const
 {
 	return object_;
+}
+
+const unsigned short *win::atlas::coords(int index) const
+{
+	#ifndef NDEBUG
+	if(index >= count_ || index < 0)
+		bug("Bad coords index");
+	#endif
+
+	return textures_[index].coords;
 }
 
 void win::atlas::corrupt()

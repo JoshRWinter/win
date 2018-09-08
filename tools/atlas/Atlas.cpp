@@ -147,11 +147,6 @@ void Atlas::insert(const Bitmap &b){
 	if(canvas==NULL)
 		return;
 
-	if(!fits(b)){
-		std::cout<<"does not fit"<<std::endl;
-		return;
-	}
-
 	// for each row in <b.bmp>
 	for(int row=0;row<b.height;++row){
 		const int dest_row_index=(row+b.ypos)*canvas_width;
@@ -159,23 +154,28 @@ void Atlas::insert(const Bitmap &b){
 		const int src_row_index=row*b.width;
 
 		// copy the row from source to dest
+		if((dest_row_index + dest_col_index) * 4 < 0)
+		{
+			std::cerr << "destination out of bounds negative" << std::endl;
+			std::abort();
+		}
+		else if(src_row_index * 4 < 0)
+		{
+			std::cerr << "source out of bounds negative" << std::endl;
+			std::abort();
+		}
+		if(((dest_row_index + dest_col_index) * 4) + (b.width * 4) >= get_canvas_size())
+		{
+			std::cerr << "destination out of bounds" << std::endl;
+			std::abort();
+		}
+		else if(src_row_index * 4 >= b.width * b.height * 4)
+		{
+			std::cerr << "src out of bounds" << std::endl;
+			std::abort();
+		}
 		memcpy(canvas + ((dest_row_index+dest_col_index)*4), b.bmp + (src_row_index*4), b.width*4);
 	}
-}
-
-bool Atlas::fits(const Bitmap &b)const{
-	for(const Bitmap &x:bitmap_list){
-		if(&x==&b)
-			continue; // skip self
-
-		if(b.collide(x))
-			return false;
-	}
-
-	if(!b.contained())
-		return false;
-
-	return true;
 }
 
 // determine the width of the canvas based on its current state
@@ -185,8 +185,8 @@ int Atlas::proposed_width()const{
 		if(b.xpos==-1||b.ypos==-1) // <b> hasn't been evaluated yet
 			continue;
 
-		if(b.xpos+b.width+PADDING>w)
-			w=b.xpos+b.width+PADDING;
+		if(b.xpos+b.width>w)
+			w=b.xpos+b.width;
 	}
 
 	return w;
@@ -199,25 +199,9 @@ int Atlas::proposed_height()const{
 		if(b.xpos==-1||b.ypos==-1) // <b> hasn't been evaluated yet
 			continue;
 
-		if(b.ypos+b.height+PADDING>h)
-			h=b.ypos+b.height+PADDING;
+		if(b.ypos+b.height>h)
+			h=b.ypos+b.height;
 	}
 
 	return h;
-}
-
-bool Bitmap::contained()const{
-	return xpos>=PADDING&&ypos>=PADDING;
-}
-
-bool Bitmap::collide(const Bitmap &other)const{
-	if(other.xpos==-1||other.ypos==-1)
-		return false; // <other> has not yet been placed in the atlas, ignore it
-
-	return xpos+width+PADDING>other.xpos && xpos-PADDING<other.xpos+other.width &&
-	ypos+height+PADDING>other.ypos && ypos-PADDING<other.ypos+other.height;
-}
-
-bool Bitmap::operator>(const Bitmap &b)const{
-	return size()>b.size();
 }

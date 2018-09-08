@@ -13,7 +13,7 @@ extern const char *vertexshader,*fragmentshader;
 
 struct Block
 {
-	static constexpr float SIZE = 2.0f;
+	static constexpr float SIZE = 1.0f;
 	Block() : x(0.0f), y(0.0f), xv(0.06f), yv(0.0f) {}
 	float x, y, xv, yv;
 };
@@ -97,12 +97,13 @@ int go()
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;
 
+	const unsigned short *const coords = atlas.coords(3);
 	const float verts[] =
 	{
-		-0.5f, -0.5f,	0.0f, 1.0f,
-		-0.5f, 0.5f,	0.0f, 0.0f,
-		0.5f, 0.5f,		1.0f, 0.0f,
-		0.5f, -0.5f,	1.0f, 1.0f
+		-0.5f, -0.5f,	(float)coords[0] / USHRT_MAX, (float)coords[3] / USHRT_MAX, //0.0f, 1.0f,
+		-0.5f, 0.5f,	(float)coords[0] / USHRT_MAX, (float)coords[2] / USHRT_MAX, //0.0f, 0.0f,
+		0.5f, 0.5f,		(float)coords[1] / USHRT_MAX, (float)coords[2] / USHRT_MAX, //1.0f, 0.0f,
+		0.5f, -0.5f,	(float)coords[1] / USHRT_MAX, (float)coords[3] / USHRT_MAX //1.0f, 1.0f
 	};
 	const unsigned int indices[] =
 	{
@@ -225,7 +226,7 @@ int go()
 
 		// process entities
 		{
-			// block.x += block.xv;
+			block.x += block.xv;
 			block.y += block.yv;
 
 			if(block.x + Block::SIZE > 4.0f)
