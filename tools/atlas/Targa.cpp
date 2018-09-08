@@ -8,7 +8,7 @@ Targa::Targa(const std::string &filename){
 	// open the file
 	std::ifstream file(filename, std::ifstream::binary);
 	if(!file)
-		throw std::runtime_error("Could not open file");
+		throw std::runtime_error("Could not open file \"" + filename + "\"");
 
 	// image properties
 	bool compressed; // targa has optional RLE
