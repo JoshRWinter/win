@@ -508,6 +508,8 @@ void win::display::finalize()
 /* ------------------------------------*/
 #elif defined WINPLAT_WINDOWS
 
+#include <windowsx.h>
+
 // this function is taller than i am
 void win::display::win_init_gl(HWND hwnd)
 {
@@ -578,6 +580,9 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 		case WM_CHAR:
 			if(wp >= ' ' && wp <= '~')
 				dsp->handler.character(wp);
+			return 0;
+		case WM_MOUSEMOVE:
+			dsp->handler.mouse(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
 			return 0;
 		case WM_CLOSE:
 			dsp->winquit_ = true;
