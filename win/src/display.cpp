@@ -726,6 +726,7 @@ void win::display::finalize()
 	if(window_ == NULL)
 		return;
 
+	win_term_gl();
 	// close the window
 	DestroyWindow(window_);
 	window_ = NULL;
