@@ -510,7 +510,136 @@ void win::display::finalize()
 
 #include <windowsx.h>
 
-// this function is taller than i am
+static std::unordered_map<unsigned, win::button> get_physical_keys()
+{
+	HKL current = GetKeyboardLayout(0);
+	HKL qwerty = LoadKeyboardLayout("00000409", KLF_ACTIVATE);
+
+	std::unordered_map<unsigned, win::button> map;
+
+	map.insert({MapVirtualKeyEx('A', MAPVK_VK_TO_VSC, qwerty), win::button::A});
+	map.insert({MapVirtualKeyEx('B', MAPVK_VK_TO_VSC, qwerty), win::button::B});
+	map.insert({MapVirtualKeyEx('C', MAPVK_VK_TO_VSC, qwerty), win::button::C});
+	map.insert({MapVirtualKeyEx('D', MAPVK_VK_TO_VSC, qwerty), win::button::D});
+	map.insert({MapVirtualKeyEx('E', MAPVK_VK_TO_VSC, qwerty), win::button::E});
+	map.insert({MapVirtualKeyEx('F', MAPVK_VK_TO_VSC, qwerty), win::button::F});
+	map.insert({MapVirtualKeyEx('G', MAPVK_VK_TO_VSC, qwerty), win::button::G});
+	map.insert({MapVirtualKeyEx('H', MAPVK_VK_TO_VSC, qwerty), win::button::H});
+	map.insert({MapVirtualKeyEx('I', MAPVK_VK_TO_VSC, qwerty), win::button::I});
+	map.insert({MapVirtualKeyEx('J', MAPVK_VK_TO_VSC, qwerty), win::button::J});
+	map.insert({MapVirtualKeyEx('K', MAPVK_VK_TO_VSC, qwerty), win::button::K});
+	map.insert({MapVirtualKeyEx('L', MAPVK_VK_TO_VSC, qwerty), win::button::L});
+	map.insert({MapVirtualKeyEx('M', MAPVK_VK_TO_VSC, qwerty), win::button::M});
+	map.insert({MapVirtualKeyEx('N', MAPVK_VK_TO_VSC, qwerty), win::button::N});
+	map.insert({MapVirtualKeyEx('O', MAPVK_VK_TO_VSC, qwerty), win::button::O});
+	map.insert({MapVirtualKeyEx('P', MAPVK_VK_TO_VSC, qwerty), win::button::P});
+	map.insert({MapVirtualKeyEx('Q', MAPVK_VK_TO_VSC, qwerty), win::button::Q});
+	map.insert({MapVirtualKeyEx('R', MAPVK_VK_TO_VSC, qwerty), win::button::R});
+	map.insert({MapVirtualKeyEx('S', MAPVK_VK_TO_VSC, qwerty), win::button::S});
+	map.insert({MapVirtualKeyEx('T', MAPVK_VK_TO_VSC, qwerty), win::button::T});
+	map.insert({MapVirtualKeyEx('U', MAPVK_VK_TO_VSC, qwerty), win::button::U});
+	map.insert({MapVirtualKeyEx('V', MAPVK_VK_TO_VSC, qwerty), win::button::V});
+	map.insert({MapVirtualKeyEx('W', MAPVK_VK_TO_VSC, qwerty), win::button::W});
+	map.insert({MapVirtualKeyEx('X', MAPVK_VK_TO_VSC, qwerty), win::button::X});
+	map.insert({MapVirtualKeyEx('Y', MAPVK_VK_TO_VSC, qwerty), win::button::Y});
+	map.insert({MapVirtualKeyEx('Z', MAPVK_VK_TO_VSC, qwerty), win::button::Z});
+
+	map.insert({MapVirtualKeyEx(0x30, MAPVK_VK_TO_VSC, qwerty), win::button::D0});
+	map.insert({MapVirtualKeyEx(0x31, MAPVK_VK_TO_VSC, qwerty), win::button::D1});
+	map.insert({MapVirtualKeyEx(0x32, MAPVK_VK_TO_VSC, qwerty), win::button::D2});
+	map.insert({MapVirtualKeyEx(0x33, MAPVK_VK_TO_VSC, qwerty), win::button::D3});
+	map.insert({MapVirtualKeyEx(0x34, MAPVK_VK_TO_VSC, qwerty), win::button::D4});
+	map.insert({MapVirtualKeyEx(0x35, MAPVK_VK_TO_VSC, qwerty), win::button::D5});
+	map.insert({MapVirtualKeyEx(0x36, MAPVK_VK_TO_VSC, qwerty), win::button::D6});
+	map.insert({MapVirtualKeyEx(0x37, MAPVK_VK_TO_VSC, qwerty), win::button::D7});
+	map.insert({MapVirtualKeyEx(0x38, MAPVK_VK_TO_VSC, qwerty), win::button::D8});
+	map.insert({MapVirtualKeyEx(0x39, MAPVK_VK_TO_VSC, qwerty), win::button::D9});
+
+	map.insert({MapVirtualKeyEx(VK_OEM_3, MAPVK_VK_TO_VSC, qwerty), win::button::BACKTICK});
+	map.insert({MapVirtualKeyEx(VK_OEM_MINUS, MAPVK_VK_TO_VSC, qwerty), win::button::DASH});
+	map.insert({MapVirtualKeyEx(VK_OEM_PLUS, MAPVK_VK_TO_VSC, qwerty), win::button::EQUALS});
+	map.insert({MapVirtualKeyEx(VK_OEM_4, MAPVK_VK_TO_VSC, qwerty), win::button::LBRACKET});
+	map.insert({MapVirtualKeyEx(VK_OEM_6, MAPVK_VK_TO_VSC, qwerty), win::button::RBRACKET});
+	map.insert({MapVirtualKeyEx(VK_OEM_1, MAPVK_VK_TO_VSC, qwerty), win::button::SEMICOLON});
+	map.insert({MapVirtualKeyEx(VK_OEM_7, MAPVK_VK_TO_VSC, qwerty), win::button::APOSTROPHE});
+	map.insert({MapVirtualKeyEx(VK_OEM_COMMA, MAPVK_VK_TO_VSC, qwerty), win::button::COMMA});
+	map.insert({MapVirtualKeyEx(VK_OEM_PERIOD, MAPVK_VK_TO_VSC, qwerty), win::button::PERIOD});
+	map.insert({MapVirtualKeyEx(VK_OEM_2, MAPVK_VK_TO_VSC, qwerty), win::button::SLASH});
+	map.insert({MapVirtualKeyEx(VK_OEM_102, MAPVK_VK_TO_VSC, qwerty), win::button::BACKSLASH});
+
+	map.insert({MapVirtualKeyEx(VK_F1, MAPVK_VK_TO_VSC, qwerty), win::button::F1});
+	map.insert({MapVirtualKeyEx(VK_F2, MAPVK_VK_TO_VSC, qwerty), win::button::F2});
+	map.insert({MapVirtualKeyEx(VK_F3, MAPVK_VK_TO_VSC, qwerty), win::button::F3});
+	map.insert({MapVirtualKeyEx(VK_F4, MAPVK_VK_TO_VSC, qwerty), win::button::F4});
+	map.insert({MapVirtualKeyEx(VK_F5, MAPVK_VK_TO_VSC, qwerty), win::button::F5});
+	map.insert({MapVirtualKeyEx(VK_F6, MAPVK_VK_TO_VSC, qwerty), win::button::F6});
+	map.insert({MapVirtualKeyEx(VK_F7, MAPVK_VK_TO_VSC, qwerty), win::button::F7});
+	map.insert({MapVirtualKeyEx(VK_F8, MAPVK_VK_TO_VSC, qwerty), win::button::F8});
+	map.insert({MapVirtualKeyEx(VK_F9, MAPVK_VK_TO_VSC, qwerty), win::button::F9});
+	map.insert({MapVirtualKeyEx(VK_F10, MAPVK_VK_TO_VSC, qwerty), win::button::F10});
+	map.insert({MapVirtualKeyEx(VK_F11, MAPVK_VK_TO_VSC, qwerty), win::button::F11});
+	map.insert({MapVirtualKeyEx(VK_F12, MAPVK_VK_TO_VSC, qwerty), win::button::F12});
+
+	map.insert({MapVirtualKeyEx(VK_ESCAPE, MAPVK_VK_TO_VSC, qwerty), win::button::ESC});
+	// map.insert({MapVirtualKeyEx(VK_SNAPSHOT, MAPVK_VK_TO_VSC, qwerty), win::button::PRINT_SCR});
+	// map.insert({MapVirtualKeyEx(VK_CANCEL, MAPVK_VK_TO_VSC, qwerty), win::button::PAUSE_BREAK});
+	map.insert({MapVirtualKeyEx(VK_INSERT, MAPVK_VK_TO_VSC, qwerty), win::button::INSERT});
+	map.insert({MapVirtualKeyEx(VK_DELETE, MAPVK_VK_TO_VSC, qwerty), win::button::DELETE});
+	map.insert({MapVirtualKeyEx(VK_HOME, MAPVK_VK_TO_VSC, qwerty), win::button::HOME});
+	map.insert({MapVirtualKeyEx(VK_PRIOR, MAPVK_VK_TO_VSC, qwerty), win::button::PAGE_UP});
+	map.insert({MapVirtualKeyEx(VK_NEXT, MAPVK_VK_TO_VSC, qwerty), win::button::PAGE_DOWN});
+	map.insert({MapVirtualKeyEx(VK_END, MAPVK_VK_TO_VSC, qwerty), win::button::END});
+	map.insert({MapVirtualKeyEx(VK_BACK, MAPVK_VK_TO_VSC, qwerty), win::button::BACKSPACE});
+	map.insert({MapVirtualKeyEx(VK_RETURN, MAPVK_VK_TO_VSC, qwerty), win::button::RETURN});
+	// map.insert({MapVirtualKeyEx(VK_EXECUTE, MAPVK_VK_TO_VSC, qwerty), win::button::ENTER});
+	map.insert({MapVirtualKeyEx(VK_LSHIFT, MAPVK_VK_TO_VSC, qwerty), win::button::LSHIFT});
+	map.insert({MapVirtualKeyEx(VK_RSHIFT, MAPVK_VK_TO_VSC, qwerty), win::button::RSHIFT});
+	map.insert({MapVirtualKeyEx(VK_LCONTROL, MAPVK_VK_TO_VSC, qwerty), win::button::LCTRL});
+	map.insert({MapVirtualKeyEx(VK_RCONTROL, MAPVK_VK_TO_VSC, qwerty), win::button::RCTRL});
+	map.insert({MapVirtualKeyEx(VK_MENU, MAPVK_VK_TO_VSC, qwerty), win::button::LALT});
+	// map.insert({MapVirtualKeyEx(VK_MENU, MAPVK_VK_TO_VSC, qwerty), win::button::LALT});
+	map.insert({MapVirtualKeyEx(VK_SPACE, MAPVK_VK_TO_VSC, qwerty), win::button::SPACE});
+	// map.insert({MapVirtualKeyEx(VK_RMENU, MAPVK_VK_TO_VSC, qwerty), win::button::LMETA});
+	map.insert({MapVirtualKeyEx(VK_LWIN, MAPVK_VK_TO_VSC, qwerty), win::button::LMETA});
+	map.insert({MapVirtualKeyEx(VK_RWIN, MAPVK_VK_TO_VSC, qwerty), win::button::RMETA});
+	map.insert({MapVirtualKeyEx(VK_UP, MAPVK_VK_TO_VSC, qwerty), win::button::UP});
+	map.insert({MapVirtualKeyEx(VK_DOWN, MAPVK_VK_TO_VSC, qwerty), win::button::DOWN});
+	map.insert({MapVirtualKeyEx(VK_LEFT, MAPVK_VK_TO_VSC, qwerty), win::button::LEFT});
+	map.insert({MapVirtualKeyEx(VK_RIGHT, MAPVK_VK_TO_VSC, qwerty), win::button::RIGHT});
+	map.insert({MapVirtualKeyEx(VK_CAPITAL, MAPVK_VK_TO_VSC, qwerty), win::button::CAPSLOCK});
+	map.insert({MapVirtualKeyEx(VK_TAB, MAPVK_VK_TO_VSC, qwerty), win::button::TAB});
+
+	map.insert({MapVirtualKeyEx(VK_NUMLOCK, MAPVK_VK_TO_VSC, qwerty), win::button::NUM_LOCK});
+	map.insert({MapVirtualKeyEx(VK_DIVIDE, MAPVK_VK_TO_VSC, qwerty), win::button::NUM_SLASH});
+	map.insert({MapVirtualKeyEx(VK_MULTIPLY, MAPVK_VK_TO_VSC, qwerty), win::button::NUM_MULTIPLY});
+	map.insert({MapVirtualKeyEx(VK_SUBTRACT, MAPVK_VK_TO_VSC, qwerty), win::button::NUM_MINUS});
+	map.insert({MapVirtualKeyEx(VK_ADD, MAPVK_VK_TO_VSC, qwerty), win::button::NUM_PLUS});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD0, MAPVK_VK_TO_VSC, qwerty), win::button::NUM0});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD1, MAPVK_VK_TO_VSC, qwerty), win::button::NUM1});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD2, MAPVK_VK_TO_VSC, qwerty), win::button::NUM2});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD3, MAPVK_VK_TO_VSC, qwerty), win::button::NUM3});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD4, MAPVK_VK_TO_VSC, qwerty), win::button::NUM4});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD5, MAPVK_VK_TO_VSC, qwerty), win::button::NUM5});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD6, MAPVK_VK_TO_VSC, qwerty), win::button::NUM6});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD7, MAPVK_VK_TO_VSC, qwerty), win::button::NUM7});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD8, MAPVK_VK_TO_VSC, qwerty), win::button::NUM8});
+	map.insert({MapVirtualKeyEx(VK_NUMPAD9, MAPVK_VK_TO_VSC, qwerty), win::button::NUM9});
+
+	ActivateKeyboardLayout(current, KLF_RESET);
+	return map;
+}
+
+static std::unordered_map<unsigned, win::button> physical_keys = get_physical_keys();
+
+static win::button get_physical_key(unsigned scan)
+{
+	const auto it = physical_keys.find(scan);
+	if(it == physical_keys.end())
+		return win::button::UNDEFINED;
+
+	return it->second;
+}
+
 void win::display::win_init_gl(HWND hwnd)
 {
 	hdc_ = GetDC(hwnd);
@@ -581,6 +710,35 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 			if(wp >= ' ' && wp <= '~')
 				dsp->handler.character(wp);
 			return 0;
+		case WM_KEYDOWN:
+		{
+			const unsigned scancode = (lp >> 16) & 0xff;
+			const win::button key = get_physical_key(scancode);
+			if(key == win::button::UNDEFINED)
+			{
+				std::cerr << "Unrecognized virtual key " << wp << " scancode " << scancode << std::endl;
+				return 0;
+			}
+
+			dsp->handler.key_button(get_physical_key(scancode), true);
+			return 0;
+		}
+		case WM_KEYUP:
+		{
+			const unsigned scancode = (lp >> 16) & 0xff;
+			const win::button key = get_physical_key(scancode);
+			if(key == win::button::UNDEFINED)
+			{
+				std::cerr << "Unrecognized virtual key " << wp << " scancode " << scancode << std::endl;
+				return 0;
+			}
+
+			dsp->handler.key_button(get_physical_key(scancode), false);
+			return 0;
+		}
+		case WM_SYSCOMMAND:
+			if(wp != SC_KEYMENU)
+				return DefWindowProc(hwnd, msg, wp, lp);
 		case WM_MOUSEMOVE:
 			dsp->handler.mouse(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
 			return 0;

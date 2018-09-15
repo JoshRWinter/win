@@ -477,7 +477,7 @@ const char *win::key_name(const button key)
 		case button::D8: return "8";
 		case button::D9: return "9";
 
-		case button::TILDE: return "Tilde";
+		case button::BACKTICK: return "BackTick";
 		case button::DASH: return "Dash";
 		case button::EQUALS: return "Equals";
 		case button::LBRACKET: return "LeftBracket";
