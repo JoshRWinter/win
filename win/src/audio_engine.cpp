@@ -629,6 +629,9 @@ int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float
 	if(id >= ap.count_ || id < 0)
 		throw exception("Invalid apack index " + std::to_string(id));
 
+	if(sounds_.size() >= MAX_SOUNDS)
+		return -1;
+
 	const unsigned long long size = ap.stored_[id].size.load();
 
 	WAVEFORMATEX format;
