@@ -29,6 +29,9 @@ static float clamp_balance(float bal)
 
 win::audio_engine::audio_engine(audio_engine &&rhs)
 {
+#ifdef WINPLAT_WINDOWS
+	parent_ = NULL;
+#endif
 	move_common(rhs);
 	move_platform(rhs);
 }
@@ -517,16 +520,98 @@ void win::audio_engine::finalize()
 /////////////////////////////////////////
 /* ------------------------------------*/
 
-win::audio_engine::audio_engine()
+static constexpr unsigned long long SOUND_BUFFER_SIZE = 6 * 44100 * sizeof(short); // seconds * sample rate * sample size
+static constexpr unsigned long long MAX_WRITE_SIZE = SOUND_BUFFER_SIZE / 2;
+
+static void write_buffer(win::sound &snd, const DWORD offset, const int bytes)
 {
+	void *buffer1 = NULL;
+	void *buffer2 = NULL;
+	DWORD size1 = 0;
+	DWORD size2 = 0;
+
+	if(snd.stream->Lock(offset, bytes, &buffer1, &size1, &buffer2, &size2, 0) != DS_OK)
+		throw win::exception("DirectSound: Couldn't lock buffer for writing");
+
+	if(size1 + size2 != bytes)
+		throw win::exception("DirectSound: Requested write = " + std::to_string(bytes) + ", actual write = " + std::to_string(size1 + size2));
+
+	memcpy(buffer1, (char*)snd.pcm + snd.start, size1);
+	memcpy(buffer2, (char*)snd.pcm + snd.start + size1, size2);
+
+	if(snd.stream->Unlock(buffer1, size1, buffer2, size2) != DS_OK)
+		throw win::exception("DirectSound: Couldn't unlock buffer after writing");
 }
 
-win::audio_engine::audio_engine(sound_config_fn fn)
+static void write_directsound(win::sound &snd)
+{
+	if(snd.start == snd.target_size)
+		return;
+
+	const int size = snd.size->load();
+	const int want_to_write = std::min(size - snd.start, MAX_WRITE_SIZE);
+	const int offset = snd.write_cursor;
+
+	if(offset >= SOUND_BUFFER_SIZE)
+		throw win::exception("offset too big");
+
+	write_buffer(snd, offset, want_to_write);
+
+	snd.start += want_to_write;
+	snd.write_cursor = (snd.write_cursor + want_to_write) % SOUND_BUFFER_SIZE;
+}
+
+win::audio_engine::audio_engine()
 {
 	next_id_ = 1;
 	listener_x_ = 0.0f;
 	listener_y_ = 0.0f;
+	config_fn_ = default_sound_config_fn;
+
+	parent_ = NULL;
+	context_ = NULL;
+	primary_ = NULL;
+	last_poke_ = std::chrono::high_resolution_clock::now();
+}
+
+win::audio_engine::audio_engine(sound_config_fn fn, display *parent)
+{
+	parent->directsound_ = this;
+	parent_ = parent;
+	last_poke_ = std::chrono::high_resolution_clock::now();
+	next_id_ = 1;
+	listener_x_ = 0.0f;
+	listener_y_ = 0.0f;
 	config_fn_ = fn;
+
+	if(DirectSoundCreate8(NULL, &context_, NULL) != DS_OK)
+		throw exception("Could not initialize DirectSound");
+
+	if(context_->SetCooperativeLevel(parent->window_, DSSCL_PRIORITY) != DS_OK)
+		throw exception("DirectSound: Could not set cooperation level");
+
+	DSBUFFERDESC buffer;
+	buffer.dwSize = sizeof(buffer);
+	buffer.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME;
+	buffer.dwBufferBytes = 0;
+	buffer.dwReserved = 0;
+	buffer.lpwfxFormat = NULL;
+	buffer.guid3DAlgorithm = GUID_NULL;
+
+	if(context_->CreateSoundBuffer(&buffer, &primary_, NULL) != DS_OK)
+		throw exception("DirectSound: Could not create the primary sound buffer");
+
+	WAVEFORMATEX format;
+	format.wFormatTag = WAVE_FORMAT_PCM;
+	format.nChannels = 1;
+	format.nSamplesPerSec = 44100;
+	format.nAvgBytesPerSec = 44100 * 2;
+	format.nBlockAlign = 2;
+	format.wBitsPerSample = 16;
+	format.cbSize = 0;
+
+	if(primary_->SetFormat(&format) != DS_OK)
+		throw exception("DirectSound: Could not set the primary buffer format");
 }
 
 int win::audio_engine::play(apack &ap, int id, bool loop)
@@ -539,12 +624,45 @@ int win::audio_engine::play(apack &ap, int id, float x, float y, bool loop)
 	return play(ap, id, false, loop, x, y);
 }
 
-int win::audio_engine::play(apack &ap, int id, bool, bool, float, float)
+int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float x, float y)
 {
 	if(id >= ap.count_ || id < 0)
 		throw exception("Invalid apack index " + std::to_string(id));
 
-	return 1;
+	const unsigned long long size = ap.stored_[id].size.load();
+
+	WAVEFORMATEX format;
+	format.wFormatTag = WAVE_FORMAT_PCM;
+	format.nSamplesPerSec = 44100;
+	format.wBitsPerSample = 16;
+	format.nChannels = 1;
+	format.nBlockAlign = 2;
+	format.nAvgBytesPerSec = 44100 * 2;
+	format.cbSize = 0;
+
+	DSBUFFERDESC buffer;
+	buffer.dwSize = sizeof(buffer);
+	buffer.dwFlags = DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN | DSBCAPS_GETCURRENTPOSITION2;
+	buffer.dwBufferBytes = SOUND_BUFFER_SIZE;
+	buffer.dwReserved = 0;
+	buffer.lpwfxFormat = &format;
+	buffer.guid3DAlgorithm = GUID_NULL;
+
+	IDirectSoundBuffer *tmp;
+	if(context_->CreateSoundBuffer(&buffer, &tmp, NULL) != DS_OK)
+		throw exception("DirectSound: Could not create temp buffer");
+
+	IDirectSoundBuffer8 *stream;
+	tmp->QueryInterface(IID_IDirectSoundBuffer8, (void**)&stream);
+	tmp->Release();
+
+	sound &snd = sounds_.emplace_back(next_id_++, looping, 0, ap.stored_[id].buffer.get(), &ap.stored_[id].size, ap.stored_[id].target_size, ambient, x, y, stream);
+
+	write_directsound(snd);
+
+	snd.stream->Play(0, 0, DSBPLAY_LOOPING);
+
+	return snd.id;
 }
 
 void win::audio_engine::pause()
@@ -574,12 +692,76 @@ void win::audio_engine::listener(float x, float y)
 }
 
 // move platform-specific (DirectSound) data members
-void win::audio_engine::move_platform(audio_engine&)
+void win::audio_engine::move_platform(audio_engine &rhs)
 {
+	if(parent_ != NULL)
+		parent_->directsound_ = NULL;
+	parent_ = rhs.parent_;
+	rhs.parent_ = NULL;
+	parent_->directsound_ = this;
+
+	context_ = rhs.context_;
+	rhs.context_ = NULL;
+
+	primary_ = rhs.primary_;
+	sounds_ = std::move(rhs.sounds_);
+
+	last_poke_ = std::move(rhs.last_poke_);
 }
 
 void win::audio_engine::finalize()
 {
+	if(context_ == NULL)
+		return;
+
+	cleanup();
+	primary_->Release();
+	context_->Release();
+
+	context_ = NULL;
+}
+
+void win::audio_engine::poke()
+{
+	const auto now = std::chrono::high_resolution_clock::now();
+
+	if(std::chrono::duration<double, std::milli>(now - last_poke_).count() < 10)
+		return;
+
+	last_poke_ = now;
+
+	for(auto snd = sounds_.begin(); snd != sounds_.end();)
+	{
+		DWORD play_cursor = 0;
+		if(snd->stream->GetCurrentPosition(&play_cursor, NULL) != DS_OK)
+			throw exception("DirectSound: Couldn't determine play cursor position");
+
+		const int write_cursor = snd->write_cursor < play_cursor ? (snd->write_cursor + SOUND_BUFFER_SIZE) : snd->write_cursor;
+		const int bytes_left = write_cursor - play_cursor;
+		if(bytes_left < 44100 * 2)
+			write_directsound(*snd);
+		if(bytes_left > MAX_WRITE_SIZE && snd->start == snd->target_size)
+		{
+			snd->finalize();
+			snd = sounds_.erase(snd);
+			continue;
+		}
+
+		++snd;
+	}
+
+	const double dur = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - now).count();
+	if(dur > 5)
+		std::cerr << "took longer than 5 milliseconds" << std::endl;
+}
+
+void win::audio_engine::cleanup()
+{
+	for(auto snd = sounds_.begin(); snd != sounds_.end();)
+	{
+		snd->finalize();
+		snd = sounds_.erase(snd);
+	}
 }
 
 #endif

@@ -20,6 +20,7 @@ class indirect
 class display
 {
 	friend class system;
+	friend class audio_engine;
 
 	typedef std::function<void(button, bool)> fn_event_button;
 	typedef std::function<void(joystick_axis, int)> fn_event_joystick;
@@ -47,7 +48,7 @@ public:
 	void event_character(fn_event_character);
 	void event_mouse(fn_event_mouse);
 
-	audio_engine make_audio_engine(audio_engine::sound_config_fn) const;
+	audio_engine make_audio_engine(audio_engine::sound_config_fn);
 	font_renderer make_font_renderer(int, int, float, float, float, float) const;
 
 	static int screen_width();
@@ -82,6 +83,7 @@ private:
 	HWND window_;
 	HDC hdc_;
 	HGLRC context_;
+	audio_engine *directsound_; // non-owning
 	bool winquit_;
 #endif
 };

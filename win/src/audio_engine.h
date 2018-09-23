@@ -2,9 +2,12 @@
 #define WIN_AUDIO_ENGINE_H
 
 #include <list>
+#include <chrono>
 
 #if defined WINPLAT_LINUX
 #include <pulse/pulseaudio.h>
+#elif defined WINPLAT_WINDOWS
+#include <dsound.h>
 #endif
 
 namespace win
@@ -16,6 +19,10 @@ struct sound
 #if defined WINPLAT_LINUX
 	sound(int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, pa_stream *stream_, bool ambient_, float x_, float y_)
 		: id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), ambient(ambient_), x(x_), y(y_), drained(false), stream(stream_) {}
+#elif defined WINPLAT_WINDOWS
+	sound(int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, bool ambient_, float x_, float y_, IDirectSoundBuffer8 *stream_)
+		:id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), ambient(ambient_), x(x_), y(y_), stream(stream_), write_cursor(0) {}
+	void finalize() { stream->Stop(); stream->Release(); }
 #endif
 	int id; // unique sound instance id
 	bool looping;
@@ -29,6 +36,9 @@ struct sound
 #if defined WINPLAT_LINUX
 	std::atomic<bool> drained;
 	pa_stream *stream;
+#elif defined WINPLAT_WINDOWS
+	IDirectSoundBuffer8 *stream;
+	int write_cursor;
 #endif
 };
 
@@ -59,7 +69,11 @@ public:
 	void listener(float, float);
 
 private:
+#if defined WINPLAT_WINDOWS
+	audio_engine(sound_config_fn, display*);
+#else
 	audio_engine(sound_config_fn);
+#endif
 	void get_config(float, float, float, float, float*, float*);
 	void move_platform(audio_engine&);
 	void move_common(audio_engine&);
@@ -76,6 +90,15 @@ private:
 	pa_context *context_;
 	pa_threaded_mainloop *loop_;
 	std::list<sound> sounds_;
+#elif defined WINPLAT_WINDOWS
+	void poke();
+	void cleanup();
+
+	display *parent_;
+	IDirectSound8 *context_;
+	IDirectSoundBuffer *primary_;
+	std::list<sound> sounds_;
+	std::chrono::time_point<std::chrono::high_resolution_clock> last_poke_;
 #endif
 };
 

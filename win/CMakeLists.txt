@@ -18,11 +18,13 @@ add_library(win STATIC
 
 if(WIN32)
 	find_package(OpenGL REQUIRED)
+	find_package(DSound REQUIRED)
 
 	target_include_directories(win
 		PUBLIC
 			include
 			${OPENGL_INCLUDE_DIRS}
+			${DSOUND_INCLUDE_DIRS}
 		PRIVATE
 			include/freetype
 			include/ogg
@@ -33,6 +35,8 @@ if(WIN32)
 	target_link_libraries(win
 		PRIVATE
 			${OPENGL_LIBRARIES}
+			${DSOUND_LIBRARIES}
+			dxguid.lib
 			${CMAKE_CURRENT_LIST_DIR}/lib/zlib.lib
 			${CMAKE_CURRENT_LIST_DIR}/lib/freetype.lib
 			${CMAKE_CURRENT_LIST_DIR}/lib/ogg.lib

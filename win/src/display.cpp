@@ -12,17 +12,11 @@ static void handler_button(win::button, bool) {}
 static void handler_character(int) {}
 static void handler_mouse(int, int) {}
 
-win::display::display()
-{
-#if defined WINPLAT_LINUX
-	window_ = None;
-#elif defined WINPLAT_WINDOWS
-	window_ = NULL;
-#endif
-}
-
 win::display::display(display &&rhs)
 {
+#ifdef WINPLAT_WINDOWS
+	directsound_ = NULL;
+#endif
 	move(rhs);
 }
 
@@ -36,11 +30,6 @@ win::display &win::display::operator=(display &&rhs)
 win::display::~display()
 {
 	finalize();
-}
-
-win::audio_engine win::display::make_audio_engine(audio_engine::sound_config_fn fn) const
-{
-	return audio_engine(fn);
 }
 
 win::font_renderer win::display::make_font_renderer(int iwidth, int iheight, float left, float right, float bottom, float top) const
@@ -246,6 +235,11 @@ static win::button name_to_button(const char *name)
 	}
 
 	return iterator->second;
+}
+
+win::display::display()
+{
+	window_ = None;
 }
 
 win::display::display(const char *caption, int width, int height, int flags, window_handle parent)
@@ -468,6 +462,11 @@ int win::display::screen_width()
 int win::display::screen_height()
 {
 	return HeightOfScreen(ScreenOfDisplay(xdisplay, 0));
+}
+
+win::audio_engine win::display::make_audio_engine(audio_engine::sound_config_fn fn) const
+{
+	return audio_engine(fn);
 }
 
 void win::display::process_joystick()
@@ -754,6 +753,19 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 	win::bug("late return from wndproc");
 }
 
+win::display::display()
+{
+	handler.key_button = handler_button;
+	handler.character = handler_character;
+	handler.mouse = handler_mouse;
+
+	window_ = NULL;
+	hdc_ = NULL;
+	context_ = NULL;
+	directsound_ = NULL;
+	winquit_ = false;
+}
+
 win::display::display(const char *caption, int w, int h, int flags, window_handle)
 {
 	const char *const window_class = "win_window_class";
@@ -762,6 +774,7 @@ win::display::display(const char *caption, int w, int h, int flags, window_handl
 	handler.key_button = handler_button;
 	handler.character = handler_character;
 	handler.mouse = handler_mouse;
+	directsound_ = NULL;
 
 	winquit_ = false;
 
@@ -805,6 +818,10 @@ bool win::display::process()
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+
+	// poke the directsound system
+	if(directsound_ != NULL)
+		directsound_->poke();
 
 	return !winquit_;
 }
@@ -863,12 +880,24 @@ int win::display::screen_height()
 	return GetSystemMetrics(SM_CYSCREEN);
 }
 
+win::audio_engine win::display::make_audio_engine(audio_engine::sound_config_fn fn)
+{
+	return audio_engine(fn, this);
+}
+
 void win::display::process_joystick()
 {
 }
 
 void win::display::move(display &rhs)
 {
+	if(directsound_ != NULL)
+		win::bug("child audio engine is parentless now");
+	directsound_ = rhs.directsound_;
+	rhs.directsound_ = NULL;
+	if(directsound_ != NULL)
+		directsound_->parent_ = this;
+
 	handler.key_button = std::move(rhs.handler.key_button);
 	handler.character = std::move(rhs.handler.character);
 	handler.mouse = std::move(rhs.handler.mouse);
@@ -877,7 +906,8 @@ void win::display::move(display &rhs)
 	rhs.window_ = NULL;
 
 	indirect_ = std::move(rhs.indirect_);
-	indirect_->dsp = this;
+	if(indirect_)
+		indirect_->dsp = this;
 
 	hdc_ = rhs.hdc_;
 	context_ = rhs.context_;
