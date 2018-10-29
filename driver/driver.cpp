@@ -64,7 +64,7 @@ int go()
 
 #if defined WINPLAT_LINUX
 	win::roll roll2;
-	roll2 = "/home/josh/win/driver/assets.roll";
+	roll2 = "/home/josh/programming/win/driver/assets.roll";
 #elif defined WINPLAT_WINDOWS
 	win::roll roll2;
 	roll2 = "c:\\users\\josh\\desktop\\win\\driver\\assets.roll";
