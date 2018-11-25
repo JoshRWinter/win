@@ -149,7 +149,7 @@ static std::unordered_map<std::string, win::button> load_physical_keys()
 	map.insert({name_to_string("AE08"), win::button::D8});
 	map.insert({name_to_string("AE09"), win::button::D9});
 
-	map.insert({name_to_string("TLDE"), win::button::TILDE});
+	map.insert({name_to_string("TLDE"), win::button::BACKTICK});
 	map.insert({name_to_string("AE11"), win::button::DASH});
 	map.insert({name_to_string("AE12"), win::button::EQUALS});
 	map.insert({name_to_string("AD11"), win::button::LBRACKET});
@@ -464,7 +464,7 @@ int win::display::screen_height()
 	return HeightOfScreen(ScreenOfDisplay(xdisplay, 0));
 }
 
-win::audio_engine win::display::make_audio_engine(audio_engine::sound_config_fn fn) const
+win::audio_engine win::display::make_audio_engine(audio_engine::sound_config_fn fn)
 {
 	return audio_engine(fn);
 }
