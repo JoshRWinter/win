@@ -851,6 +851,11 @@ void win::display::cursor(bool)
 {
 }
 
+void win::display::vsync(bool on)
+{
+	wglSwapIntervalEXT(on);
+}
+
 void win::display::event_button(fn_event_button fn)
 {
 	handler.key_button = std::move(fn);

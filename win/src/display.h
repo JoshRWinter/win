@@ -42,6 +42,7 @@ public:
 	int width() const;
 	int height() const;
 	void cursor(bool);
+	void vsync(bool);
 
 	void event_button(fn_event_button);
 	void event_joystick(fn_event_joystick);
