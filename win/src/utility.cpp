@@ -336,7 +336,7 @@ void win::load_extensions()
 #if defined WINPLAT_LINUX
 	glXSwapIntervalEXT = (decltype(glXSwapIntervalEXT))getproc("glXSwapIntervalEXT");
 #elif defined WINPLAT_WINDOWS
-	wglSwapIntervalEXT = (decltype(wglSwapIntervalEXT))getproc("wglChoosePixelFormatARB");
+	wglSwapIntervalEXT = (decltype(wglSwapIntervalEXT))getproc("wglSwapIntervalEXT");
 #endif
 }
 
