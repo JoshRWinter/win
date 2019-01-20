@@ -45,6 +45,7 @@ WIN_EXTERN PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor;
 WIN_EXTERN PFNGLUNIFORM1FPROC glUniform1f;
 WIN_EXTERN PFNGLUNIFORM2FPROC glUniform2f;
 WIN_EXTERN PFNGLUNIFORM4FPROC glUniform4f;
+WIN_EXTERN PFNGLUNIFORM2IPROC glUniform2i;
 WIN_EXTERN PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced;
 WIN_EXTERN PFNGLBUFFERSUBDATAPROC glBufferSubData;
 
@@ -59,12 +60,19 @@ namespace win
 
 struct color
 {
+	constexpr color()
+		: red(0.5f), green(0.5f), blue(0.5f), alpha(1.0f) {}
 	constexpr color(float r, float g, float b, float a = 1.0f)
 		: red(r), green(g), blue(b), alpha(a) {}
 	constexpr color(int r, int g, int b, int a = 255.0f)
 		: red(r / 255.0f), green(g / 255.0f), blue(b / 255.0f), alpha(a / 255.0f) {}
 
 	float red, green, blue, alpha;
+};
+
+struct area
+{
+	float left, right, bottom, top;
 };
 
 class data
@@ -172,6 +180,9 @@ unsigned load_shaders(const char*, const char*);
 unsigned load_shaders(const data&, const data&);
 void init_ortho(float *matrix, float, float, float, float);
 const char *key_name(button);
+
+// random useful utilities
+float distance(float, float, float, float);
 
 }
 

@@ -433,6 +433,11 @@ void win::display::cursor(bool show)
 	}
 }
 
+void win::display::vsync(bool on)
+{
+	glXSwapIntervalEXT(xdisplay, window_, on);
+}
+
 void win::display::event_button(fn_event_button f)
 {
 	handler.key_button = f;

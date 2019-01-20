@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <string.h>
 
 #define WIN_STORAGE
@@ -330,6 +332,7 @@ void win::load_extensions()
 	glUniform1f = (decltype(glUniform1f))getproc("glUniform1f");
 	glUniform2f = (decltype(glUniform2f))getproc("glUniform2f");
 	glUniform4f = (decltype(glUniform4f))getproc("glUniform4f");
+	glUniform2i = (decltype(glUniform2i))getproc("glUniform2i");
 	glDrawElementsInstanced = (decltype(glDrawElementsInstanced))getproc("glDrawElementsInstanced");
 	glBufferSubData = (decltype(glBufferSubData))getproc("glBufferSubData");
 
@@ -568,4 +571,9 @@ const char *win::key_name(const button key)
 	}
 
 	return "UndefinedKey";
+}
+
+float win::distance(float x1, float y1, float x2, float y2)
+{
+	return std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2));
 }
