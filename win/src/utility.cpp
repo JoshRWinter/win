@@ -131,11 +131,9 @@ int win::data_list::count() const
 }
 
 // shader program wrapper
-win::program::program(GLuint prog, bool bind)
+win::program::program(GLuint prog)
 {
 	program_ = prog;
-	if(bind)
-		glUseProgram(prog);
 }
 
 win::program::program(program &&rhs)
@@ -174,11 +172,9 @@ void win::program::finalize()
 }
 
 // vao wrappper
-win::vao::vao(bool bind)
+win::vao::vao()
 {
-	glGenVertexArrays(1, &vao_);
-	if(bind)
-		glBindVertexArray(vao_);
+	vao_ = (GLuint)-1;
 }
 
 win::vao::vao(vao &&rhs)
@@ -190,6 +186,15 @@ win::vao::vao(vao &&rhs)
 win::vao::~vao()
 {
 	finalize();
+}
+
+void win::vao::gen()
+{
+#ifndef NDEBUG
+	if(vao_ != (GLuint)-1)
+		win::bug("REDUNDANT VERTEX ARRAY GENERATION");
+#endif
+	glGenVertexArrays(1, &vao_);
 }
 
 win::vao &win::vao::operator=(vao &&rhs)
@@ -204,6 +209,10 @@ win::vao &win::vao::operator=(vao &&rhs)
 
 win::vao::operator GLuint()
 {
+#ifndef NDEBUG
+	if(vao_ == (GLuint)-1)
+		win::bug("INVALID VERTEX ARRAY OBJECT");
+#endif
 	return vao_;
 }
 
@@ -217,11 +226,9 @@ void win::vao::finalize()
 }
 
 // vbo wrapper
-win::vbo::vbo(bool bind)
+win::vbo::vbo()
 {
-	glGenBuffers(1, &vbo_);
-	if(bind)
-		glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+	vbo_ = (GLuint)-1;
 }
 
 win::vbo::vbo(vbo &&rhs)
@@ -233,6 +240,15 @@ win::vbo::vbo(vbo &&rhs)
 win::vbo::~vbo()
 {
 	finalize();
+}
+
+void win::vbo::gen()
+{
+#ifndef NDEBUG
+	if(vbo_ != (GLuint)-1)
+		win::bug("REDUNDANT VERTEX BUFFER GENERATION");
+#endif
+	glGenBuffers(1, &vbo_);
 }
 
 win::vbo &win::vbo::operator=(vbo &&rhs)
@@ -247,6 +263,10 @@ win::vbo &win::vbo::operator=(vbo &&rhs)
 
 win::vbo::operator GLuint()
 {
+#ifndef NDEBUG
+	if(vbo_ == (GLuint)-1)
+		win::bug("INVALID VERTEX BUFFER OBJECT");
+#endif
 	return vbo_;
 }
 
@@ -260,11 +280,9 @@ void win::vbo::finalize()
 }
 
 // ebo wrapper
-win::ebo::ebo(bool bind)
+win::ebo::ebo()
 {
-	glGenBuffers(1, &ebo_);
-	if(bind)
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+	ebo_ = (GLuint)-1;
 }
 
 win::ebo::ebo(ebo &&rhs)
@@ -276,6 +294,15 @@ win::ebo::ebo(ebo &&rhs)
 win::ebo::~ebo()
 {
 	finalize();
+}
+
+void win::ebo::gen()
+{
+#ifndef NDEBUG
+	if(ebo_ != (GLuint)-1)
+		win::bug("REDUNDANT ELEMENT BUFFER GENERATION");
+#endif
+	glGenBuffers(1, &ebo_);
 }
 
 win::ebo &win::ebo::operator=(ebo &&rhs)
@@ -290,6 +317,10 @@ win::ebo &win::ebo::operator=(ebo &&rhs)
 
 win::ebo::operator GLuint()
 {
+#ifndef NDEBUG
+	if(ebo_ == (GLuint)-1)
+		win::bug("INVALID ELEMENT BUFFER OBJECT");
+#endif
 	return ebo_;
 }
 

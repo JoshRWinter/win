@@ -120,7 +120,7 @@ private:
 
 struct program
 {
-	program(GLuint, bool = true);
+	program(GLuint);
 	program(const program&) = delete;
 	program(program&&);
 	~program();
@@ -134,10 +134,11 @@ struct program
 
 struct vao
 {
-	vao(bool = true);
+	vao();
 	vao(const vao&) = delete;
 	vao(vao&&);
 	~vao();
+	void gen();
 	void operator=(const vao&) = delete;
 	vao &operator=(vao&&);
 	operator GLuint();
@@ -148,10 +149,11 @@ struct vao
 
 struct vbo
 {
-	vbo(bool = true);
+	vbo();
 	vbo(const vbo&) = delete;
 	vbo(vbo&&);
 	~vbo();
+	void gen();
 	void operator=(const vbo&) = delete;
 	vbo &operator=(vbo&&);
 	operator GLuint();
@@ -162,10 +164,11 @@ struct vbo
 
 struct ebo
 {
-	ebo(bool = true);
+	ebo();
 	ebo(const ebo&) = delete;
 	ebo(ebo&&);
 	~ebo();
+	void gen();
 	void operator=(const ebo&) = delete;
 	ebo &operator=(ebo&&);
 	operator GLuint();

@@ -111,6 +111,7 @@ int go()
 	};
 
 	win::program program2 = win::load_shaders(roll["vertex.vert"], roll["fragment.frag"]);
+	glUseProgram(program2);
 	win::program program = std::move(program2);
 	int uniform_projection, uniform_size;
 	float ortho_matrix[16];
@@ -121,15 +122,21 @@ int go()
 	glUniform1f(uniform_size, Block::SIZE);
 
 	win::vao vao2;
+	vao2.gen();
+	glBindVertexArray(vao2);
 	win::vao vao = std::move(vao2);
 
 	// element buffer
 	win::ebo ebo2;
+	ebo2.gen();
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo2);
 	win::ebo ebo = std::move(ebo2);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// vertex buffer
 	win::vbo vbo_vertex2;
+	vbo_vertex2.gen();
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex2);
 	win::vbo vbo_vertex = std::move(vbo_vertex2);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 4, NULL);
@@ -139,6 +146,8 @@ int go()
 
 	// position buffer
 	win::vbo vbo_position2;
+	vbo_position2.gen();
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position2);
 	win::vbo vbo_position = std::move(vbo_position2);
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, NULL);
 	glVertexAttribDivisor(1, 1);
@@ -146,6 +155,8 @@ int go()
 
 	// color buffer
 	win::vbo vbo_color2;
+	vbo_color2.gen();
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_color2);
 	win::vbo vbo_color = std::move(vbo_color2);
 	glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, false, 0, NULL);
 	glVertexAttribDivisor(2, 1);
