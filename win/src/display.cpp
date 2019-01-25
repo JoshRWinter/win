@@ -746,6 +746,24 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 		case WM_MOUSEMOVE:
 			dsp->handler.mouse(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
 			return 0;
+		case WM_LBUTTONDOWN:
+			dsp->handler.key_button(button::MOUSE_LEFT, true);
+			return 0;
+		case WM_LBUTTONUP:
+			dsp->handler.key_button(button::MOUSE_LEFT, false);
+			return 0;
+		case WM_RBUTTONDOWN:
+			dsp->handler.key_button(button::MOUSE_RIGHT, true);
+			return 0;
+		case WM_RBUTTONUP:
+			dsp->handler.key_button(button::MOUSE_RIGHT, false);
+			return 0;
+		case WM_MBUTTONDOWN:
+			dsp->handler.key_button(button::MOUSE_MIDDLE, true);
+			return 0;
+		case WM_MBUTTONUP:
+			dsp->handler.key_button(button::MOUSE_MIDDLE, false);
+			return 0;
 		case WM_CLOSE:
 			dsp->winquit_ = true;
 			return 0;

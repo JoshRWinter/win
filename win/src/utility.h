@@ -72,6 +72,11 @@ struct color
 
 struct area
 {
+	area()
+		: left(-1.0f), right(1.0f), bottom(1.0f), top(-1.0f) {}
+	area(const float l, const float r, const float b, const float t)
+		: left(l), right(r), bottom(b), top(t) {}
+
 	float left, right, bottom, top;
 };
 
@@ -120,6 +125,7 @@ private:
 
 struct program
 {
+	program();
 	program(GLuint);
 	program(const program&) = delete;
 	program(program&&);
@@ -138,7 +144,6 @@ struct vao
 	vao(const vao&) = delete;
 	vao(vao&&);
 	~vao();
-	void gen();
 	void operator=(const vao&) = delete;
 	vao &operator=(vao&&);
 	operator GLuint();
@@ -153,7 +158,6 @@ struct vbo
 	vbo(const vbo&) = delete;
 	vbo(vbo&&);
 	~vbo();
-	void gen();
 	void operator=(const vbo&) = delete;
 	vbo &operator=(vbo&&);
 	operator GLuint();
@@ -168,7 +172,6 @@ struct ebo
 	ebo(const ebo&) = delete;
 	ebo(ebo&&);
 	~ebo();
-	void gen();
 	void operator=(const ebo&) = delete;
 	ebo &operator=(ebo&&);
 	operator GLuint();
