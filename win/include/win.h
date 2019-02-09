@@ -60,7 +60,7 @@ private:
 	const std::string msg_;
 };
 
-inline void bug(const std::string &msg)
+[[noreturn]] inline void bug(const std::string &msg)
 {
 #ifdef WINPLAT_WINDOWS
 	MessageBox(NULL, ("IMPLEMENTATION BUG:\n" + msg).c_str(), "BUG", MB_ICONEXCLAMATION);

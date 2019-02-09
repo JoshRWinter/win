@@ -263,7 +263,7 @@ win::font_renderer::font_renderer(int iwidth, int iheight, float left, float rig
 	// element indices
 	unsigned int indices[] =
 	{
-		0, 1, 2, 0, 2, 3
+		0, 1, 3, 3, 1, 2
 	};
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
@@ -271,10 +271,10 @@ win::font_renderer::font_renderer(int iwidth, int iheight, float left, float rig
 	// font vertices
 	const float verts[] =
 	{
-		-0.5f, -0.5f, 0.0f, 0.0f,
 		-0.5f, 0.5f, 0.0f, 1.0f / rows,
-		0.5f, 0.5f, 1.0f / cols, 1.0f / rows,
-		0.5f, -0.5f, 1.0f / cols, 0.0f
+		-0.5f, -0.5f, 0.0f, 0.0f,
+		0.5f, -0.5f, 1.0f / cols, 0.0f,
+		0.5f, 0.5f, 1.0f / cols, 1.0f / rows
 	};
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex_);
 	glEnableVertexAttribArray(0);
@@ -351,7 +351,7 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 
 		// pos vbo
 		pos_buffer[(charcount * 2) + 0] = alignx(display_width_, right_ - left_, xoffset);
-		pos_buffer[(charcount * 2) + 1] = aligny(display_height_, bottom_ - top_, yoffset + fnt.metrics.at(metrics_index).bearing_y);
+		pos_buffer[(charcount * 2) + 1] = aligny(display_height_, top_ - bottom_, yoffset + fnt.metrics.at(metrics_index).bearing_y);
 
 		// texcoord vbo
 		const float xnormal = 1.0f / cols;
