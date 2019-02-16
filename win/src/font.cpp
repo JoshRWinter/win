@@ -133,22 +133,6 @@ win::font::font(const font_renderer &parent, data file, float fontsize)
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
-
-	unsigned short header[9]={
-		0x0000,
-		0x0002,
-		0x0000,
-		0x0000,
-		0x0000,
-		0x0000,
-		(unsigned short)(bitmap_width * cols),
-		(unsigned short)(bitmap_height * rows),
-		0x0820
-	};
-
-	std::ofstream out("/home/josh/atlas.tga", std::ofstream::binary);
-	out.write((char*)header, sizeof(header));
-	out.write((char*)bitmap.data(), bitmap.size());
 }
 
 win::font::font(font &&rhs)
