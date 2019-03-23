@@ -7,6 +7,8 @@
 #include "Texture.h"
 #include "Targa.h"
 
+#define PADDING 1
+
 // used internally in class Atlas
 struct Bitmap{
 	Bitmap(int w,int h,int xp, int yp, unsigned char *b,int unique)
