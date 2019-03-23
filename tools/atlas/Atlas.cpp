@@ -185,8 +185,8 @@ int Atlas::proposed_width()const{
 		if(b.xpos==-1||b.ypos==-1) // <b> hasn't been evaluated yet
 			continue;
 
-		if(b.xpos+b.width>w)
-			w=b.xpos+b.width;
+		if(b.xpos+b.width+PADDING>w)
+			w=b.xpos+b.width+PADDING;
 	}
 
 	return w;
@@ -199,8 +199,8 @@ int Atlas::proposed_height()const{
 		if(b.xpos==-1||b.ypos==-1) // <b> hasn't been evaluated yet
 			continue;
 
-		if(b.ypos+b.height>h)
-			h=b.ypos+b.height;
+		if(b.ypos+b.height+PADDING>h)
+			h=b.ypos+b.height+PADDING;
 	}
 
 	return h;
