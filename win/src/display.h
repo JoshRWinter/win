@@ -17,10 +17,12 @@ class indirect
 };
 #endif
 
+struct display_remote;
 class display
 {
 	friend class system;
 	friend class audio_engine;
+	friend struct display_remote;
 
 	typedef std::function<void(button, bool)> fn_event_button;
 	typedef std::function<void(joystick_axis, int)> fn_event_joystick;
@@ -30,7 +32,7 @@ class display
 public:
 	static constexpr int FULLSCREEN = 1;
 
-	display();
+	display() = default;
 	display(const display&) = delete;
 	display(display&&);
 	~display();
@@ -57,18 +59,27 @@ public:
 
 private:
 	display(const char*, int, int, int, window_handle);
-	void process_joystick();
-	void move(display&);
-	void finalize();
 
+	std::unique_ptr<display_remote> remote;
+	void process_joystick();
+	void finalize();
+};
+
+struct display_remote
+{
+	display_remote() = default;
+	display_remote(const display_remote&) = delete;
+	display_remote(display_remote&&) = delete;
+	void operator=(const display_remote&) = delete;
+	void operator=(display_remote&&) = delete;
 	struct
 	{
 		// keyboard
-		fn_event_button key_button;
-		fn_event_character character;
+		win::display::fn_event_button key_button;
+		win::display::fn_event_character character;
 
 		// mouse
-		fn_event_mouse mouse;
+		win::display::fn_event_mouse mouse;
 	}handler;
 
 #if defined WINPLAT_LINUX
