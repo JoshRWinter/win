@@ -2,6 +2,7 @@
 #define WIN_FONT_H
 
 #include <array>
+#include <memory>
 
 namespace win
 {
@@ -15,11 +16,12 @@ struct metric
 	float bitmap_left;
 };
 
+struct font_remote;
 struct font
 {
 	friend font_renderer;
 
-	font();
+	font() = default;;
 	font(const font&) = delete;
 	font(font&&);
 	~font();
@@ -27,17 +29,27 @@ struct font
 	void operator=(font&) = delete;
 	font &operator=(font&&);
 
+private:
+	font(const font_renderer &parent, data, float);
+	void finalize();
+
+	std::unique_ptr<font_remote> remote;
+};
+
+struct font_remote
+{
+	font_remote() = default;
+	font_remote(const font_remote&) = delete;
+	font_remote(font_remote&&) = delete;
+	void operator=(const font_remote&) = delete;
+	void operator=(font_remote&&) = delete;
+
 	unsigned atlas;
 	std::array<metric, 95> metrics;
 	float box_width; // width of each tile in the atlas
 	float box_height; // height of each tile in the atlas
 	float max_bearing_y; // greatest y bearing
 	float vertical; // vertical advance
-
-private:
-	font(const font_renderer &parent, data, float);
-	void move(font&);
-	void finalize();
 };
 
 class font_renderer
