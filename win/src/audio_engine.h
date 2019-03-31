@@ -3,6 +3,7 @@
 
 #include <list>
 #include <chrono>
+#include <memory>
 
 #if defined WINPLAT_LINUX
 #include <pulse/pulseaudio.h>
@@ -42,6 +43,7 @@ struct sound
 #endif
 };
 
+struct audio_engine_remote;
 class audio_engine
 {
 	friend display;
@@ -50,7 +52,7 @@ public:
 	static constexpr int MAX_SOUNDS = 32;
 	typedef void (*sound_config_fn)(float, float, float, float, float*, float*);
 
-	audio_engine();
+	audio_engine() = default;
 	audio_engine(const audio_engine&) = delete;
 	audio_engine(audio_engine&&);
 	~audio_engine();
@@ -69,31 +71,38 @@ public:
 	void listener(float, float);
 
 private:
+	std::unique_ptr<audio_engine_remote> remote;
+
 #if defined WINPLAT_WINDOWS
 	audio_engine(sound_config_fn, display*);
-#else
+	void poke();
+	void cleanup();
+#elif defined WINPLAT_LINUX
 	audio_engine(sound_config_fn);
+	void cleanup(bool);
 #endif
 	void get_config(float, float, float, float, float*, float*);
-	void move_platform(audio_engine&);
-	void move_common(audio_engine&);
 	void finalize();
+};
+
+struct audio_engine_remote
+{
+	audio_engine_remote() = default;
+	audio_engine_remote(const audio_engine_remote&) = delete;
+	audio_engine_remote(audio_engine_remote&&) = delete;
+	void operator=(audio_engine_remote&) = delete;
+	void operator=(audio_engine_remote&&) = delete;
 
 	int next_id_;
 	float listener_x_;
 	float listener_y_;
-	sound_config_fn config_fn_;
+	win::audio_engine::sound_config_fn config_fn_;
 
 #if defined WINPLAT_LINUX
-	void cleanup(bool);
-
 	pa_context *context_;
 	pa_threaded_mainloop *loop_;
 	std::list<sound> sounds_;
 #elif defined WINPLAT_WINDOWS
-	void poke();
-	void cleanup();
-
 	display *parent_;
 	IDirectSound8 *context_;
 	IDirectSoundBuffer *primary_;
