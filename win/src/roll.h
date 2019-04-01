@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <initializer_list>
+#include <memory>
 
 namespace win
 {
@@ -19,6 +20,7 @@ struct roll_header
 	std::string filename;
 };
 
+struct roll_remote;
 class roll
 {
 public:
@@ -37,7 +39,16 @@ public:
 	data_list select(const std::initializer_list<const char*>&);
 
 private:
-	void move(roll&);
+	std::unique_ptr<roll_remote> remote;
+};
+
+struct roll_remote
+{
+	roll_remote() = default;
+	roll_remote(const roll_remote&) = delete;
+	roll_remote(roll_remote&&) = delete;
+	void operator=(const roll_remote&) = delete;
+	void operator=(roll_remote&&) = delete;
 
 	std::vector<roll_header> files_;
 	std::ifstream stream_;
