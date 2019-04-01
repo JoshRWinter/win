@@ -7,19 +7,16 @@
 
 static void decodeogg(std::unique_ptr<unsigned char[]>, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
 
-win::apack::apack()
-	: count_(0)
-{
-}
-
 win::apack::apack(const data_list &list)
 {
-	count_ = list.count();
-	stored_ = std::make_unique<apack_sound[]>(5);
+	remote.reset(new apack_remote);
+
+	remote->count_ = list.count();
+	remote->stored_ = std::make_unique<apack_sound[]>(5);
 
 	for(int i = 0; i < list.count(); ++i)
 	{
-		apack_sound &stored = stored_[i];
+		apack_sound &stored = remote->stored_[i];
 
 		data raw = list.get(i);
 		const unsigned long long file_size = raw.size();
@@ -44,7 +41,7 @@ win::apack::apack(const data_list &list)
 
 win::apack::apack(apack &&rhs)
 {
-	move(rhs);
+	remote = std::move(rhs.remote);
 }
 
 win::apack::~apack()
@@ -55,31 +52,20 @@ win::apack::~apack()
 win::apack &win::apack::operator=(apack &&rhs)
 {
 	finalize();
-	move(rhs);
+	remote = std::move(rhs.remote);
 	return *this;
-}
-
-void win::apack::move(apack &rhs)
-{
-	if(rhs.count_ > 0)
-	// join the decoding threads because they reference this class's memory
-	for(int i = 0; i < rhs.count_; ++i)
-		if(rhs.stored_[i].thread.joinable())
-			rhs.stored_[i].thread.join();
-
-	count_ = rhs.count_;
-	stored_ = std::move(rhs.stored_);
-
-	rhs.count_ = 0;
 }
 
 void win::apack::finalize()
 {
-	for(int i = 0; i < count_; ++i)
-		if(stored_[i].thread.joinable())
-			stored_[i].thread.join();
+	if(!remote)
+		return;
 
-	count_ = 0;
+	for(int i = 0; i < remote->count_; ++i)
+		if(remote->stored_[i].thread.joinable())
+			remote->stored_[i].thread.join();
+
+	remote.reset();
 }
 
 static void ogg_vorbis_error(const std::string &msg)

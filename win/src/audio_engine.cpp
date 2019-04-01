@@ -228,7 +228,7 @@ int win::audio_engine::play(apack &ap, int id, float x, float y, bool looping)
 
 int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float x, float y)
 {
-	if(id >= (int)ap.count_ || id < 0)
+	if(id >= (int)ap.remote->count_ || id < 0)
 		bug("Apack id out of bounds");
 
 	if(remote->sounds_.size() > MAX_SOUNDS)
@@ -267,7 +267,7 @@ int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float
 	if(stream == NULL)
 		raise("Could not create stream object");
 
-	sound &stored = remote->sounds_.emplace_front(sid, looping, 0, ap.stored_[id].buffer.get(), &ap.stored_[id].size, ap.stored_[id].target_size, stream, ambient, x, y);
+	sound &stored = remote->sounds_.emplace_front(sid, looping, 0, ap.remote->stored_[id].buffer.get(), &ap.remote->stored_[id].size, ap.remote->stored_[id].target_size, stream, ambient, x, y);
 
 	pa_stream_set_state_callback(stream, callback_stream, remote->loop_);
 	pa_stream_set_write_callback(stream, callback_stream_write, &stored);

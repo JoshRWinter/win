@@ -18,12 +18,13 @@ struct apack_sound
 };
 
 class audio_engine;
+struct apack_remote;
 class apack
 {
 	friend audio_engine;
 
 public:
-	apack();
+	apack() = default;
 	apack(const data_list&);
 	apack(apack&) = delete;
 	apack(apack&&);
@@ -33,8 +34,18 @@ public:
 	apack &operator=(apack&&);
 
 private:
-	void move(apack&);
 	void finalize();
+
+	std::unique_ptr<apack_remote> remote;
+};
+
+struct apack_remote
+{
+	apack_remote() = default;
+	apack_remote(const apack_remote&) = delete;
+	apack_remote(apack_remote&&) = delete;
+	void operator=(const apack_remote&) = delete;
+	void operator=(apack_remote&&) = delete;
 
 	int count_;
 	std::unique_ptr<apack_sound[]> stored_;
