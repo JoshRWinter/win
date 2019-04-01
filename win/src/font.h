@@ -52,6 +52,7 @@ struct font_remote
 	float vertical; // vertical advance
 };
 
+struct font_renderer_remote;
 class font_renderer
 {
 	friend font;
@@ -60,7 +61,7 @@ class font_renderer
 public:
 	static constexpr int CENTERED = 1;
 
-	font_renderer();
+	font_renderer() = default;
 	font_renderer(const font_renderer&) = delete;
 	font_renderer(font_renderer&&);
 	~font_renderer();
@@ -74,9 +75,19 @@ public:
 
 private:
 	font_renderer(int, int, float, float, float, float);
-	void move(font_renderer&);
 	float line_length(const font&, const char*, int) const;
 	void finalize();
+
+	std::unique_ptr<font_renderer_remote> remote;
+};
+
+struct font_renderer_remote
+{
+	font_renderer_remote() = default;
+	font_renderer_remote(const font_renderer_remote&) = delete;
+	font_renderer_remote(font_renderer_remote&&) = delete;
+	void operator=(const font_renderer_remote&) = delete;
+	void operator=(font_renderer_remote&&) = delete;
 
 	// renderer settings
 	int display_width_, display_height_;
