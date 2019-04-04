@@ -75,7 +75,7 @@ private:
 
 #if defined WINPLAT_WINDOWS
 	audio_engine(sound_config_fn, display*);
-	void poke();
+	static void poke(audio_engine_remote*);
 	void cleanup();
 #elif defined WINPLAT_LINUX
 	audio_engine(sound_config_fn);

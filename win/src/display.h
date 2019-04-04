@@ -7,16 +7,6 @@
 namespace win
 {
 
-#ifdef _WIN32
-class display;
-class indirect
-{
-	friend class display;
-	indirect(display *d) : dsp(d) {}
-	win::display *dsp;
-};
-#endif
-
 struct display_remote;
 class display
 {
@@ -60,6 +50,12 @@ public:
 private:
 	display(const char*, int, int, int, window_handle);
 
+#if defined WINPLAT_WINDOWS
+	static LRESULT CALLBACK wndproc(HWND, UINT, WPARAM, LPARAM);
+	static void win_init_gl(display_remote*, HWND);
+	void win_term_gl();
+#endif
+
 	std::unique_ptr<display_remote> remote;
 	void process_joystick();
 	void finalize();
@@ -87,15 +83,10 @@ struct display_remote
 	GLXContext context_;
 	evdev_joystick joystick_;
 #elif defined WINPLAT_WINDOWS
-	static LRESULT CALLBACK wndproc(HWND, UINT, WPARAM, LPARAM);
-	void win_init_gl(HWND);
-	void win_term_gl();
-
-	std::unique_ptr<indirect> indirect_;
 	HWND window_;
 	HDC hdc_;
 	HGLRC context_;
-	audio_engine *directsound_; // non-owning
+	win::audio_engine_remote *directsound_; // non-owning
 	bool winquit_;
 #endif
 };

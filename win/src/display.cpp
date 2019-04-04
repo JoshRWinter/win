@@ -14,9 +14,6 @@ static void handler_mouse(int, int) {}
 
 win::display::display(display &&rhs)
 {
-#ifdef WINPLAT_WINDOWS
-	directsound_ = NULL;
-#endif
 	remote = std::move(rhs.remote);
 }
 
@@ -627,9 +624,9 @@ static win::button get_physical_key(unsigned scan)
 	return it->second;
 }
 
-void win::display::win_init_gl(HWND hwnd)
+void win::display::win_init_gl(display_remote *remote, HWND hwnd)
 {
-	hdc_ = GetDC(hwnd);
+	remote->hdc_ = GetDC(hwnd);
 
 	PIXELFORMATDESCRIPTOR pfd;
 	memset(&pfd, 0, sizeof(pfd));
@@ -647,16 +644,16 @@ void win::display::win_init_gl(HWND hwnd)
 		WGL_CONTEXT_MAJOR_VERSION_ARB, 3, WGL_CONTEXT_MINOR_VERSION_ARB, 3, 0
 	};
 
-	SetPixelFormat(hdc_, ChoosePixelFormat(hdc_, &pfd), &pfd);
-	HGLRC tmp = wglCreateContext(hdc_);
-	wglMakeCurrent(hdc_, tmp);
+	SetPixelFormat(remote->hdc_, ChoosePixelFormat(remote->hdc_, &pfd), &pfd);
+	HGLRC tmp = wglCreateContext(remote->hdc_);
+	wglMakeCurrent(remote->hdc_, tmp);
 	PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = (decltype(wglCreateContextAttribsARB))wglGetProcAddress("wglCreateContextAttribsARB");
-	context_ = wglCreateContextAttribsARB(hdc_, NULL, attribs);
-	wglMakeCurrent(hdc_, context_);
+	remote->context_ = wglCreateContextAttribsARB(remote->hdc_, NULL, attribs);
+	wglMakeCurrent(remote->hdc_, remote->context_);
 	wglDeleteContext(tmp);
-	if(context_ == NULL)
+	if(remote->context_ == NULL)
 	{
-		ReleaseDC(hwnd, hdc_);
+		ReleaseDC(hwnd, remote->hdc_);
 		MessageBox(NULL, "This software requires support for at least Opengl 3.3", "Fatal Error", MB_ICONEXCLAMATION);
 		std::abort();
 	}
@@ -665,9 +662,9 @@ void win::display::win_init_gl(HWND hwnd)
 
 void win::display::win_term_gl()
 {
-	wglMakeCurrent(hdc_, NULL);
-	wglDeleteContext(context_);
-	ReleaseDC(window_, hdc_);
+	wglMakeCurrent(remote->hdc_, NULL);
+	wglDeleteContext(remote->context_);
+	ReleaseDC(remote->window_, remote->hdc_);
 }
 
 LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
@@ -675,27 +672,26 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 	if(msg == WM_NCCREATE)
 	{
 		CREATESTRUCT *cs = (CREATESTRUCT*)lp;
-		win::indirect *d = (win::indirect*)cs->lpCreateParams;
+		win::display_remote *d = (win::display_remote*)cs->lpCreateParams;
 		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)d);
 		SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
 
 		return TRUE;
 	}
 
-	win::indirect *const ind = (win::indirect*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-	if(ind == NULL)
+	win::display_remote *const remote = (win::display_remote*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	if(remote == NULL)
 		return DefWindowProc(hwnd, msg, wp, lp);
-	win::display *const dsp = (win::display*)ind->dsp;
 
 
 	switch(msg)
 	{
 		case WM_CREATE:
-			dsp->win_init_gl(hwnd);
+			win_init_gl(remote, hwnd);
 			return 0;
 		case WM_CHAR:
 			if(wp >= ' ' && wp <= '~')
-				dsp->handler.character(wp);
+				remote->handler.character(wp);
 			return 0;
 		case WM_KEYDOWN:
 		{
@@ -707,7 +703,7 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 				return 0;
 			}
 
-			dsp->handler.key_button(get_physical_key(scancode), true);
+			remote->handler.key_button(get_physical_key(scancode), true);
 			return 0;
 		}
 		case WM_KEYUP:
@@ -720,35 +716,35 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 				return 0;
 			}
 
-			dsp->handler.key_button(get_physical_key(scancode), false);
+			remote->handler.key_button(get_physical_key(scancode), false);
 			return 0;
 		}
 		case WM_SYSCOMMAND:
 			if(wp != SC_KEYMENU)
 				return DefWindowProc(hwnd, msg, wp, lp);
 		case WM_MOUSEMOVE:
-			dsp->handler.mouse(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
+			remote->handler.mouse(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
 			return 0;
 		case WM_LBUTTONDOWN:
-			dsp->handler.key_button(button::MOUSE_LEFT, true);
+			remote->handler.key_button(button::MOUSE_LEFT, true);
 			return 0;
 		case WM_LBUTTONUP:
-			dsp->handler.key_button(button::MOUSE_LEFT, false);
+			remote->handler.key_button(button::MOUSE_LEFT, false);
 			return 0;
 		case WM_RBUTTONDOWN:
-			dsp->handler.key_button(button::MOUSE_RIGHT, true);
+			remote->handler.key_button(button::MOUSE_RIGHT, true);
 			return 0;
 		case WM_RBUTTONUP:
-			dsp->handler.key_button(button::MOUSE_RIGHT, false);
+			remote->handler.key_button(button::MOUSE_RIGHT, false);
 			return 0;
 		case WM_MBUTTONDOWN:
-			dsp->handler.key_button(button::MOUSE_MIDDLE, true);
+			remote->handler.key_button(button::MOUSE_MIDDLE, true);
 			return 0;
 		case WM_MBUTTONUP:
-			dsp->handler.key_button(button::MOUSE_MIDDLE, false);
+			remote->handler.key_button(button::MOUSE_MIDDLE, false);
 			return 0;
 		case WM_CLOSE:
-			dsp->winquit_ = true;
+			remote->winquit_ = true;
 			return 0;
 		case WM_ERASEBKGND:
 			return 0;
@@ -759,30 +755,18 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 	win::bug("late return from wndproc");
 }
 
-win::display::display()
-{
-	handler.key_button = handler_button;
-	handler.character = handler_character;
-	handler.mouse = handler_mouse;
-
-	window_ = NULL;
-	hdc_ = NULL;
-	context_ = NULL;
-	directsound_ = NULL;
-	winquit_ = false;
-}
-
 win::display::display(const char *caption, int w, int h, int flags, window_handle)
 {
 	const char *const window_class = "win_window_class";
 
-	indirect_.reset(new indirect(this));
-	handler.key_button = handler_button;
-	handler.character = handler_character;
-	handler.mouse = handler_mouse;
-	directsound_ = NULL;
+	remote.reset(new display_remote);
 
-	winquit_ = false;
+	remote->handler.key_button = handler_button;
+	remote->handler.character = handler_character;
+	remote->handler.mouse = handler_mouse;
+	remote->directsound_ = NULL;
+
+	remote->winquit_ = false;
 
 	WNDCLASSEX wc;
 	wc.cbSize = sizeof(wc);
@@ -802,16 +786,16 @@ win::display::display(const char *caption, int w, int h, int flags, window_handl
 		throw exception("Could not register window class");
 
 	if(flags & FULLSCREEN)
-		window_ = CreateWindowEx(0, window_class, "", WS_POPUP, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CXSCREEN), NULL, NULL, GetModuleHandle(NULL), indirect_.get());
+		remote->window_ = CreateWindowEx(0, window_class, "", WS_POPUP, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CXSCREEN), NULL, NULL, GetModuleHandle(NULL), remote.get());
 	else
-		window_ = CreateWindowEx(0, window_class, caption, WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, w, h, NULL, NULL, GetModuleHandle(NULL), indirect_.get());
-	if(window_ == NULL)
+		remote->window_ = CreateWindowEx(0, window_class, caption, WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, w, h, NULL, NULL, GetModuleHandle(NULL), remote.get());
+	if(remote->window_ == NULL)
 		throw exception("Could not create window");
 
-	SetWindowText(window_, caption);
+	SetWindowText(remote->window_, caption);
 
-	ShowWindow(window_, SW_SHOWDEFAULT);
-	UpdateWindow(window_);
+	ShowWindow(remote->window_, SW_SHOWDEFAULT);
+	UpdateWindow(remote->window_);
 }
 
 // return false if application is to exit
@@ -819,28 +803,28 @@ bool win::display::process()
 {
 	MSG msg;
 
-	while(PeekMessage(&msg, window_, 0, 0, PM_REMOVE))
+	while(PeekMessage(&msg, remote->window_, 0, 0, PM_REMOVE))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
 
 	// poke the directsound system
-	if(directsound_ != NULL)
-		directsound_->poke();
+	if(remote->directsound_ != NULL)
+		win::audio_engine::poke(remote->directsound_);
 
-	return !winquit_;
+	return !remote->winquit_;
 }
 
 void win::display::swap() const
 {
-	SwapBuffers(hdc_);
+	SwapBuffers(remote->hdc_);
 }
 
 int win::display::width() const
 {
 	RECT rect;
-	GetClientRect(window_, &rect);
+	GetClientRect(remote->window_, &rect);
 
 	return rect.right;
 }
@@ -848,7 +832,7 @@ int win::display::width() const
 int win::display::height() const
 {
 	RECT rect;
-	GetClientRect(window_, &rect);
+	GetClientRect(remote->window_, &rect);
 
 	return rect.bottom;
 }
@@ -864,7 +848,7 @@ void win::display::vsync(bool on)
 
 void win::display::event_button(fn_event_button fn)
 {
-	handler.key_button = std::move(fn);
+	remote->handler.key_button = std::move(fn);
 }
 
 void win::display::event_joystick(fn_event_joystick)
@@ -873,12 +857,12 @@ void win::display::event_joystick(fn_event_joystick)
 
 void win::display::event_character(fn_event_character fn)
 {
-	handler.character = std::move(fn);
+	remote->handler.character = std::move(fn);
 }
 
 void win::display::event_mouse(fn_event_mouse fn)
 {
-	handler.mouse = std::move(fn);
+	remote->handler.mouse = std::move(fn);
 }
 
 int win::display::screen_width()
@@ -900,40 +884,16 @@ void win::display::process_joystick()
 {
 }
 
-void win::display::move(display &rhs)
-{
-	if(directsound_ != NULL)
-		win::bug("child audio engine is parentless now");
-	directsound_ = rhs.directsound_;
-	rhs.directsound_ = NULL;
-	if(directsound_ != NULL)
-		directsound_->parent_ = this;
-
-	handler.key_button = std::move(rhs.handler.key_button);
-	handler.character = std::move(rhs.handler.character);
-	handler.mouse = std::move(rhs.handler.mouse);
-
-	window_ = rhs.window_;
-	rhs.window_ = NULL;
-
-	indirect_ = std::move(rhs.indirect_);
-	if(indirect_)
-		indirect_->dsp = this;
-
-	hdc_ = rhs.hdc_;
-	context_ = rhs.context_;
-	winquit_ = rhs.winquit_;
-}
-
 void win::display::finalize()
 {
-	if(window_ == NULL)
+	if(!remote)
 		return;
 
 	win_term_gl();
 	// close the window
-	DestroyWindow(window_);
-	window_ = NULL;
+	DestroyWindow(remote->window_);
+
+	remote.reset();
 }
 
 #else
