@@ -14,6 +14,18 @@ add_library(win STATIC
 	src/system.cpp
 	src/texture.cpp
 	src/utility.cpp
+
+	src/apack.h
+	src/atlas.h
+	src/audio_engine.h
+	src/display.h
+	src/font.h
+	src/joystick.h
+	src/roll.h
+	src/system.h
+	src/texture.h
+	src/utility.h
+	src/event.h
 )
 
 if(WIN32)
