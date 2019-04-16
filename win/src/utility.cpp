@@ -91,6 +91,11 @@ unsigned long long win::data::read(void *userbuffer, size_t amount) noexcept
 	return to_read;
 }
 
+unsigned long long win::data::tell() const noexcept
+{
+	return stream_position_;
+}
+
 void win::data::seek(size_t position) noexcept
 {
 	stream_position_ = position;
@@ -101,6 +106,9 @@ void win::data::seek(size_t position) noexcept
 
 void win::data::finalize()
 {
+	if(data_ == NULL)
+		return;
+
 	delete[] data_;
 	data_ = NULL;
 }

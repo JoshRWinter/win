@@ -12,7 +12,7 @@ add_library(win STATIC
 	src/joystick.cpp
 	src/roll.cpp
 	src/system.cpp
-	src/tpack.cpp
+	src/texture.cpp
 	src/utility.cpp
 )
 

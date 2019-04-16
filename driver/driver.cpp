@@ -14,8 +14,9 @@ extern const char *vertexshader,*fragmentshader;
 struct Block
 {
 	static constexpr float SIZE = 1.0f;
-	Block() : x(0.0f), y(0.0f), xv(0.06f), yv(0.0f) {}
+	Block() : x(0.0f), y(0.0f), xv(0.06f), yv(0.0f), use_atlas(true) {}
 	float x, y, xv, yv;
+	bool use_atlas;
 };
 
 /*
@@ -71,9 +72,9 @@ int go()
 #endif
 	win::roll roll = std::move(roll2);
 
-	win::tpack textures2;
-	textures2 = win::tpack(roll.select({"../../fishtank/assets_local/mine.tga"}));
-	win::tpack textures = std::move(textures2);
+	win::texture texture2;
+	texture2 = roll["../../fishtank/assets_local/beacon_1.tga"];
+	win::texture texture = std::move(texture2);
 
 	win::atlas atlas2;
 	atlas2 = win::atlas(roll["main.atlas"]);
@@ -268,7 +269,10 @@ int go()
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_position), block_position, GL_DYNAMIC_DRAW);
 			glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_color), block_color, GL_DYNAMIC_DRAW);
-			glBindTexture(GL_TEXTURE_2D, atlas.texture());
+			if(block.use_atlas)
+				glBindTexture(GL_TEXTURE_2D, atlas.texture());
+			else
+				glBindTexture(GL_TEXTURE_2D, texture);
 
 			glClear(GL_COLOR_BUFFER_BIT);
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL, 1);
