@@ -15,13 +15,13 @@ namespace win
 {
 
 class audio_engine;
-struct sound
+struct clip
 {
 #if defined WINPLAT_LINUX
-	sound(int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, pa_stream *stream_, bool ambient_, float x_, float y_)
+	clip(int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, pa_stream *stream_, bool ambient_, float x_, float y_)
 		: id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), ambient(ambient_), x(x_), y(y_), drained(false), stream(stream_) {}
 #elif defined WINPLAT_WINDOWS
-	sound(int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, bool ambient_, float x_, float y_, IDirectSoundBuffer8 *stream_)
+	clip(int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, bool ambient_, float x_, float y_, IDirectSoundBuffer8 *stream_)
 		:id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), ambient(ambient_), x(x_), y(y_), stream(stream_), write_cursor(0) {}
 	void finalize() { stream->Stop(); stream->Release(); }
 #endif
@@ -101,12 +101,12 @@ struct audio_engine_remote
 #if defined WINPLAT_LINUX
 	pa_context *context_;
 	pa_threaded_mainloop *loop_;
-	std::list<sound> sounds_;
+	std::list<clip> clips_;
 #elif defined WINPLAT_WINDOWS
 	display *parent_;
 	IDirectSound8 *context_;
 	IDirectSoundBuffer *primary_;
-	std::list<sound> sounds_;
+	std::list<clip> clips_;
 	std::chrono::time_point<std::chrono::high_resolution_clock> last_poke_;
 #endif
 };

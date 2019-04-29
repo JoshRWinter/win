@@ -95,7 +95,7 @@ static void callback_stream(pa_stream*, void *loop)
 
 static void callback_stream_drained(pa_stream*, int success, void *data)
 {
-	win::sound *snd = (win::sound*)data;
+	win::clip *snd = (win::clip*)data;
 	snd->drained.store(success == 1);
 }
 
@@ -120,7 +120,7 @@ static size_t channel_dupe(void *d, const void *s, size_t len)
 
 static void callback_stream_write(pa_stream *stream, const size_t bytes, void *data)
 {
-	win::sound *const snd = (win::sound*)data;
+	win::clip *const snd = (win::clip*)data;
 
 	if(snd->start == snd->target_size)
 		return;
@@ -231,14 +231,14 @@ int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float
 	if(id >= (int)ap.remote->count_ || id < 0)
 		bug("Apack id out of bounds");
 
-	if(remote->sounds_.size() > MAX_SOUNDS)
+	if(remote->clips_.size() > MAX_SOUNDS)
 	{
 		pa_threaded_mainloop_lock(remote->loop_);
 		cleanup(false);
 		pa_threaded_mainloop_unlock(remote->loop_);
 	}
 
-	if(remote->sounds_.size() > MAX_SOUNDS)
+	if(remote->clips_.size() > MAX_SOUNDS)
 		return -1;
 
 	const int sid = remote->next_id_++;
@@ -267,7 +267,7 @@ int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float
 	if(stream == NULL)
 		raise("Could not create stream object");
 
-	sound &stored = remote->sounds_.emplace_front(sid, looping, 0, ap.remote->stored_[id].buffer.get(), &ap.remote->stored_[id].size, ap.remote->stored_[id].target_size, stream, ambient, x, y);
+	clip &stored = remote->clips_.emplace_front(sid, looping, 0, ap.remote->stored_[id].buffer.get(), &ap.remote->stored_[id].size, ap.remote->stored_[id].target_size, stream, ambient, x, y);
 
 	pa_stream_set_state_callback(stream, callback_stream, remote->loop_);
 	pa_stream_set_write_callback(stream, callback_stream_write, &stored);
@@ -300,7 +300,7 @@ int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float
 void win::audio_engine::pause()
 {
 	pa_threaded_mainloop_lock(remote->loop_);
-	for(sound &snd : remote->sounds_)
+	for(clip &snd : remote->clips_)
 		pa_operation_unref(pa_stream_cork(snd.stream, 1, NULL, NULL));
 
 	pa_threaded_mainloop_unlock(remote->loop_);
@@ -310,7 +310,7 @@ void win::audio_engine::resume()
 {
 	pa_threaded_mainloop_lock(remote->loop_);
 
-	for(sound &snd : remote->sounds_)
+	for(clip &snd : remote->clips_)
 		pa_operation_unref(pa_stream_cork(snd.stream, 0, NULL, NULL));
 
 	pa_threaded_mainloop_unlock(remote->loop_);
@@ -320,7 +320,7 @@ void win::audio_engine::pause(int id)
 {
 	pa_threaded_mainloop_lock(remote->loop_);
 
-	for(sound &snd : remote->sounds_)
+	for(clip &snd : remote->clips_)
 	{
 		if(id != snd.id)
 			continue;
@@ -338,7 +338,7 @@ void win::audio_engine::resume(int id)
 {
 	pa_threaded_mainloop_lock(remote->loop_);
 
-	for(sound &snd : remote->sounds_)
+	for(clip &snd : remote->clips_)
 	{
 		if(id != snd.id)
 			continue;
@@ -356,7 +356,7 @@ void win::audio_engine::source(int id, float x, float y)
 {
 	pa_threaded_mainloop_lock(remote->loop_);
 
-	for(sound &snd : remote->sounds_)
+	for(clip &snd : remote->clips_)
 	{
 		if(snd.id != id)
 			continue;
@@ -387,7 +387,7 @@ void win::audio_engine::listener(float x, float y)
 
 	pa_threaded_mainloop_lock(remote->loop_);
 
-	for(sound &snd : remote->sounds_)
+	for(clip &snd : remote->clips_)
 	{
 		float volume_left;
 		float volume_right;
@@ -406,9 +406,9 @@ void win::audio_engine::listener(float x, float y)
 
 void win::audio_engine::cleanup(bool all)
 {
-	for(auto it = remote->sounds_.begin(); it != remote->sounds_.end();)
+	for(auto it = remote->clips_.begin(); it != remote->clips_.end();)
 	{
-		sound &snd = *it;
+		clip &snd = *it;
 
 		const bool done = snd.drained; // the sound is done playing
 
@@ -456,7 +456,7 @@ void win::audio_engine::cleanup(bool all)
 			raise("Couldn't disconnect stream");
 		pa_stream_unref(snd.stream);
 
-		it = remote->sounds_.erase(it);
+		it = remote->clips_.erase(it);
 	}
 }
 
