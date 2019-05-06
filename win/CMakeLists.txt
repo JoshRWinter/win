@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/CMakeModule
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(win STATIC
-	src/apack.cpp
+	src/sound.cpp
 	src/atlas.cpp
 	src/audio_engine.cpp
 	src/display.cpp
@@ -15,7 +15,7 @@ add_library(win STATIC
 	src/texture.cpp
 	src/utility.cpp
 
-	src/apack.h
+	src/sound.h
 	src/atlas.h
 	src/audio_engine.h
 	src/display.h

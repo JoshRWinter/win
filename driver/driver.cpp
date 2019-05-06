@@ -80,9 +80,11 @@ int go()
 	atlas2 = win::atlas(roll["main.atlas"]);
 	win::atlas atlas = std::move(atlas2);
 
-	win::apack apack2;
-	apack2 = win::apack(roll.select({"../../fishtank/assets_local/Motions.ogg", "../../fishtank/assets_local/platform_destroy.ogg"}));
-	win::apack apack = std::move(apack2);
+	win::sound music2, effect2;
+	music2 = roll["../../fishtank/assets_local/Motions.ogg"];
+	effect2 = roll["../../fishtank/assets_local/platform_destroy.ogg"];
+	win::sound music = std::move(music2);
+	win::sound effect = std::move(effect2);
 
 	win::audio_engine audio_engine2;
 	audio_engine2 = display.make_audio_engine(sound_config);
@@ -168,7 +170,7 @@ int go()
 
 	bool quit = false;
 	bool paused = false;
-	display.event_button([&apack, &quit, &paused, &audio_engine](win::button button, bool press)
+	display.event_button([&effect, &quit, &paused, &audio_engine](win::button button, bool press)
 	{
 		if(press)
 			std::cerr << "key: " << win::key_name(button) << std::endl;
@@ -185,7 +187,7 @@ int go()
 		else if(press && button == win::button::LALT)
 			audio_engine.listener(0, 0);
 		else if(press)
-			audio_engine.play(apack, 1);
+			audio_engine.play(effect);
 	});
 
 	// display.event_character([](int key)
@@ -223,7 +225,7 @@ int go()
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
 
-	const int block_sid = audio_engine.play(apack, 0, block.x, block.y);
+	const int block_sid = audio_engine.play(music, block.x, block.y);
 	for(;;)
 	{
 		auto start = std::chrono::high_resolution_clock::now();

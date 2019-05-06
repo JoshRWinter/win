@@ -1,6 +1,5 @@
 #include <win.h>
 
-
 static void default_sound_config_fn(float, float, float, float, float *volume, float *balance)
 {
 	*volume = 1.0f;
@@ -215,22 +214,19 @@ win::audio_engine::audio_engine(sound_config_fn fn)
 }
 
 // ambient (for music)
-int win::audio_engine::play(apack &ap, int id, bool looping)
+int win::audio_engine::play(win::sound &sound, bool looping)
 {
-	return play(ap, id, true, looping, 0.0f, 0.0f);
+	return play(sound, true, looping, 0.0f, 0.0f);
 }
 
 // stero (for in-world sounds)
-int win::audio_engine::play(apack &ap, int id, float x, float y, bool looping)
+int win::audio_engine::play(sound &sound, float x, float y, bool looping)
 {
-	return play(ap, id, false, looping, x, y);
+	return play(sound, false, looping, x, y);
 }
 
-int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float x, float y)
+int win::audio_engine::play(sound &sound, bool ambient, bool looping, float x, float y)
 {
-	if(id >= (int)ap.remote->count_ || id < 0)
-		bug("Apack id out of bounds");
-
 	if(remote->clips_.size() > MAX_SOUNDS)
 	{
 		pa_threaded_mainloop_lock(remote->loop_);
@@ -267,7 +263,7 @@ int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float
 	if(stream == NULL)
 		raise("Could not create stream object");
 
-	clip &stored = remote->clips_.emplace_front(sid, looping, 0, ap.remote->stored_[id].buffer.get(), &ap.remote->stored_[id].size, ap.remote->stored_[id].target_size, stream, ambient, x, y);
+	clip &stored = remote->clips_.emplace_front(sid, looping, 0, sound.remote->buffer.get(), &sound.remote->size, sound.remote->target_size, stream, ambient, x, y);
 
 	pa_stream_set_state_callback(stream, callback_stream, remote->loop_);
 	pa_stream_set_write_callback(stream, callback_stream_write, &stored);

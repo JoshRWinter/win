@@ -60,9 +60,9 @@ public:
 	void operator=(const audio_engine&) = delete;
 	audio_engine &operator=(audio_engine&&);
 
-	int play(apack&, int, bool = false); // ambient
-	int play(apack&, int, float, float, bool = false); // stereo
-	int play(apack&, int, bool, bool, float, float); // fully dressed function
+	int play(sound&, bool = false); // ambient
+	int play(sound&, float, float, bool = false); // stereo
+	int play(sound&, bool, bool, float, float); // fully dressed function
 	void pause();
 	void resume();
 	void pause(int);

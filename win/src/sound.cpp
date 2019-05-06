@@ -7,63 +7,65 @@
 
 static void decodeogg(std::unique_ptr<unsigned char[]>, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
 
-win::apack::apack(const data_list &list)
+win::sound::sound(win::data raw)
 {
-	remote.reset(new apack_remote);
-
-	remote->count_ = list.count();
-	remote->stored_ = std::make_unique<apack_sound[]>(5);
-
-	for(int i = 0; i < list.count(); ++i)
-	{
-		apack_sound &stored = remote->stored_[i];
-
-		data raw = list.get(i);
-		const unsigned long long file_size = raw.size();
-
-		stored.size = 0;
-		stored.encoded.reset(raw.release());
-
-		// eventual size of decoded data
-		unsigned long long index = file_size - 1;
-		while(!(stored.encoded[index] == 'S' && stored.encoded[index - 1] == 'g' && stored.encoded[index - 2] == 'g' && stored.encoded[index - 3] == 'O'))
-			--index;
-		unsigned long long samplecount;
-		memcpy(&samplecount, &stored.encoded[index + 3], sizeof(samplecount));
-		stored.target_size = samplecount * sizeof(short);
-
-		stored.buffer = std::make_unique<short[]>(samplecount);
-
-		// decode
-		stored.thread = std::thread(decodeogg, std::move(stored.encoded), file_size, stored.buffer.get(), stored.target_size, &stored.size);
-	}
+	from_roll(raw);
 }
 
-win::apack::apack(apack &&rhs)
+win::sound::sound(sound &&rhs)
 {
 	remote = std::move(rhs.remote);
 }
 
-win::apack::~apack()
+win::sound::~sound()
 {
 	finalize();
 }
 
-win::apack &win::apack::operator=(apack &&rhs)
+win::sound &win::sound::operator=(sound &&rhs)
 {
 	finalize();
 	remote = std::move(rhs.remote);
 	return *this;
 }
 
-void win::apack::finalize()
+win::sound &win::sound::operator=(win::data raw)
+{
+	from_roll(raw);
+	return *this;
+}
+
+void win::sound::from_roll(win::data &raw)
+{
+	finalize();
+
+	remote.reset(new sound_remote);
+
+	const unsigned long long file_size = raw.size();
+	remote->size = 0;
+	remote->encoded.reset(raw.release());
+
+	// eventual size of decoded data
+	unsigned long long index = file_size - 1;
+	while(index - 3 >= 0 && !(remote->encoded[index] == 'S' && remote->encoded[index - 1] == 'g' && remote->encoded[index - 2] == 'g' && remote->encoded[index - 3] == 'O'))
+		--index;
+	unsigned long long samplecount;
+	memcpy(&samplecount, &remote->encoded[index + 3], sizeof(samplecount));
+	remote->target_size = samplecount * sizeof(short);
+
+	remote->buffer = std::make_unique<short[]>(samplecount);
+
+	// decode
+	remote->thread = std::thread(decodeogg, std::move(remote->encoded), file_size, remote->buffer.get(), remote->target_size, &remote->size);
+}
+
+void win::sound::finalize()
 {
 	if(!remote)
 		return;
 
-	for(int i = 0; i < remote->count_; ++i)
-		if(remote->stored_[i].thread.joinable())
-			remote->stored_[i].thread.join();
+	if(remote->thread.joinable())
+		remote->thread.join();
 
 	remote.reset();
 }
