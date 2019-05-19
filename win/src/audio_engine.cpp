@@ -471,7 +471,7 @@ void win::audio_engine::finalize()
 static constexpr unsigned long long SOUND_BUFFER_SIZE = 6 * 44100 * sizeof(short); // seconds * sample rate * sample size
 static constexpr unsigned long long MAX_WRITE_SIZE = SOUND_BUFFER_SIZE / 2;
 
-static void write_buffer(win::sound &snd, const DWORD offset, const int bytes)
+static void write_buffer(win::clip &snd, const DWORD offset, const int bytes)
 {
 	void *buffer1 = NULL;
 	void *buffer2 = NULL;
@@ -491,7 +491,7 @@ static void write_buffer(win::sound &snd, const DWORD offset, const int bytes)
 		throw win::exception("DirectSound: Couldn't unlock buffer after writing");
 }
 
-static void write_directsound(win::sound &snd)
+static void write_directsound(win::clip &snd)
 {
 	if(snd.start == snd.target_size)
 		return;
@@ -551,25 +551,22 @@ win::audio_engine::audio_engine(sound_config_fn fn, display *parent)
 		throw exception("DirectSound: Could not set the primary buffer format");
 }
 
-int win::audio_engine::play(apack &ap, int id, bool loop)
+int win::audio_engine::play(win::sound &snd, bool loop)
 {
-	return play(ap, id, true, loop, 0.0f, 0.0f);
+	return play(snd, true, loop, 0.0f, 0.0f);
 }
 
-int win::audio_engine::play(apack &ap, int id, float x, float y, bool loop)
+int win::audio_engine::play(win::sound &snd, float x, float y, bool loop)
 {
-	return play(ap, id, false, loop, x, y);
+	return play(snd, false, loop, x, y);
 }
 
-int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float x, float y)
+int win::audio_engine::play(win::sound &src, bool ambient, bool looping, float x, float y)
 {
-	if(id >= ap.remote->count_ || id < 0)
-		throw exception("Invalid apack index " + std::to_string(id));
-
-	if(remote->sounds_.size() >= MAX_SOUNDS)
+	if(remote->clips_.size() >= MAX_SOUNDS)
 		return -1;
 
-	const unsigned long long size = ap.remote->stored_[id].size.load();
+	const unsigned long long size = src.remote->size.load();
 
 	WAVEFORMATEX format;
 	format.wFormatTag = WAVE_FORMAT_PCM;
@@ -596,7 +593,7 @@ int win::audio_engine::play(apack &ap, int id, bool ambient, bool looping, float
 	tmp->QueryInterface(IID_IDirectSoundBuffer8, (void**)&stream);
 	tmp->Release();
 
-	sound &snd = remote->sounds_.emplace_back(remote->next_id_++, looping, 0, ap.remote->stored_[id].buffer.get(), &ap.remote->stored_[id].size, ap.remote->stored_[id].target_size, ambient, x, y, stream);
+	clip &snd = remote->clips_.emplace_back(remote->next_id_++, looping, 0, src.remote->buffer.get(), &src.remote->size, src.remote->target_size, ambient, x, y, stream);
 
 	write_directsound(snd);
 
@@ -653,7 +650,7 @@ void win::audio_engine::poke(audio_engine_remote *const remote)
 
 	remote->last_poke_ = now;
 
-	for(auto snd = remote->sounds_.begin(); snd != remote->sounds_.end();)
+	for(auto snd = remote->clips_.begin(); snd != remote->clips_.end();)
 	{
 		DWORD play_cursor = 0;
 		if(snd->stream->GetCurrentPosition(&play_cursor, NULL) != DS_OK)
@@ -666,7 +663,7 @@ void win::audio_engine::poke(audio_engine_remote *const remote)
 		if(bytes_left > MAX_WRITE_SIZE && snd->start == snd->target_size)
 		{
 			snd->finalize();
-			snd = remote->sounds_.erase(snd);
+			snd = remote->clips_.erase(snd);
 			continue;
 		}
 
@@ -680,10 +677,10 @@ void win::audio_engine::poke(audio_engine_remote *const remote)
 
 void win::audio_engine::cleanup()
 {
-	for(auto snd = remote->sounds_.begin(); snd != remote->sounds_.end();)
+	for(auto snd = remote->clips_.begin(); snd != remote->clips_.end();)
 	{
 		snd->finalize();
-		snd = remote->sounds_.erase(snd);
+		snd = remote->clips_.erase(snd);
 	}
 }
 
