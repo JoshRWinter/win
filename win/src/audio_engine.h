@@ -19,7 +19,7 @@ struct clip
 {
 #if defined WINPLAT_LINUX
 	clip(int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, pa_stream *stream_, bool ambient_, float x_, float y_)
-		: id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), ambient(ambient_), x(x_), y(y_), drained(false), stream(stream_) {}
+		: id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), ambient(ambient_), x(x_), y(y_), drain(NULL), stream(stream_), finished(false) {}
 #elif defined WINPLAT_WINDOWS
 	clip(int id_, bool looping_, unsigned long long start_, short *pcm_, std::atomic<unsigned long long> *size_, unsigned long long target_size_, bool ambient_, float x_, float y_, IDirectSoundBuffer8 *stream_)
 		:id(id_), looping(looping_), start(start_), pcm(pcm_), size(size_), target_size(target_size_), ambient(ambient_), x(x_), y(y_), stream(stream_), write_cursor(0) {}
@@ -35,8 +35,9 @@ struct clip
 	float x, y; // position in the world
 
 #if defined WINPLAT_LINUX
-	std::atomic<bool> drained;
 	pa_stream *stream;
+	pa_operation *drain;
+	std::atomic<bool> finished;
 #elif defined WINPLAT_WINDOWS
 	IDirectSoundBuffer8 *stream;
 	int write_cursor;

@@ -92,12 +92,6 @@ static void callback_stream(pa_stream*, void *loop)
 	pa_threaded_mainloop_signal((pa_threaded_mainloop*)loop, 0);
 }
 
-static void callback_stream_drained(pa_stream*, int success, void *data)
-{
-	win::clip *snd = (win::clip*)data;
-	snd->drained.store(success == 1);
-}
-
 static size_t channel_dupe(void *d, const void *s, size_t len)
 {
 	if(len % 4 != 0)
@@ -135,7 +129,7 @@ static void callback_stream_write(pa_stream *stream, const size_t bytes, void *d
 		while(snd->size->load() - snd->start == 0);
 
 		const size_t left_to_write = bytes - total_written; // how many more bytes i owe pulseaudio
-		const size_t total_size = snd->size->load(); // total size of the source buffer
+		const size_t total_size = snd->size->load(); // total size of the (decoded) source buffer
 		const size_t i_have = total_size - snd->start; // i have this many bytes from the source buffer ready to write
 		size_t take = left_to_write / 2; // i want to give pulseaudio this much data taken from the source buffer
 		if(take > i_have)
@@ -160,10 +154,15 @@ static void callback_stream_write(pa_stream *stream, const size_t bytes, void *d
 	// see if the stream is done
 	if(snd->start == snd->target_size)
 	{
-		pa_operation *op = pa_stream_drain(stream, callback_stream_drained, data);
-		if(!op)
-			raise("Couldn't drain the stream");
-		pa_operation_unref(op);
+		if(snd->looping)
+		{
+			snd->start = 0;
+
+			if(total_written < bytes)
+				callback_stream_write(stream, bytes - total_written, data); // recurse
+		}
+		else
+			snd->finished.store(true);
 	}
 }
 
@@ -220,22 +219,22 @@ int win::audio_engine::play(win::sound &sound, bool looping)
 }
 
 // stero (for in-world sounds)
-int win::audio_engine::play(sound &sound, float x, float y, bool looping)
+int win::audio_engine::play(win::sound &sound, float x, float y, bool looping)
 {
 	return play(sound, false, looping, x, y);
 }
 
-int win::audio_engine::play(sound &sound, bool ambient, bool looping, float x, float y)
+int win::audio_engine::play(win::sound &sound, bool ambient, bool looping, float x, float y)
 {
-	if(remote->clips_.size() > MAX_SOUNDS)
-	{
-		pa_threaded_mainloop_lock(remote->loop_);
-		cleanup(false);
-		pa_threaded_mainloop_unlock(remote->loop_);
-	}
+	pa_threaded_mainloop_lock(remote->loop_);
+
+	cleanup(false);
 
 	if(remote->clips_.size() > MAX_SOUNDS)
+	{
+		pa_threaded_mainloop_unlock(remote->loop_);
 		return -1;
+	}
 
 	const int sid = remote->next_id_++;
 	char namestr[16];
@@ -252,10 +251,6 @@ int win::audio_engine::play(sound &sound, bool ambient, bool looping, float x, f
 	attr.prebuf = (std::uint32_t) -1;
 	attr.minreq = (std::uint32_t) -1;
 
-	const unsigned flags = PA_STREAM_START_CORKED;
-
-	pa_threaded_mainloop_lock(remote->loop_);
-
 	// cleanup dead streams
 	cleanup(false);
 
@@ -268,7 +263,7 @@ int win::audio_engine::play(sound &sound, bool ambient, bool looping, float x, f
 	pa_stream_set_state_callback(stream, callback_stream, remote->loop_);
 	pa_stream_set_write_callback(stream, callback_stream_write, &stored);
 
-	if(pa_stream_connect_playback(stream, NULL, &attr, (pa_stream_flags)flags, NULL, NULL))
+	if(pa_stream_connect_playback(stream, NULL, &attr, (pa_stream_flags)0, NULL, NULL))
 		raise("Could not connect the playback stream");
 
 	for(;;)
@@ -286,8 +281,11 @@ int win::audio_engine::play(sound &sound, bool ambient, bool looping, float x, f
 	pa_cvolume_set(&volume, 2, PA_VOLUME_NORM);
 	pa_operation_unref(pa_context_set_sink_input_volume(remote->context_, pa_stream_get_index(stream), &volume, NULL, NULL));
 
-	pa_operation_unref(pa_stream_cork(stream, 0, [](pa_stream*, int, void*){}, remote->loop_));
-	while(pa_stream_is_corked(stream));
+	// register a drain notification
+	stored.drain = pa_stream_drain(stream, NULL, NULL);
+	if(stored.drain == NULL)
+		raise("couldn't start a drain op");
+
 	pa_threaded_mainloop_unlock(remote->loop_);
 
 	return sid;
@@ -406,7 +404,7 @@ void win::audio_engine::cleanup(bool all)
 	{
 		clip &snd = *it;
 
-		const bool done = snd.drained; // the sound is done playing
+		const bool done = pa_operation_get_state(snd.drain) == PA_OPERATION_DONE && snd.finished.load();
 
 		if(!all) // only cleaning up sounds that have finished
 			if(!done)
@@ -419,34 +417,20 @@ void win::audio_engine::cleanup(bool all)
 		pa_stream_set_state_callback(snd.stream, [](pa_stream*, void*){}, NULL);
 		pa_stream_set_write_callback(snd.stream, [](pa_stream*, size_t, void*){}, NULL);
 
-		if(!done)
+		pa_operation *op_flush = pa_stream_flush(snd.stream, NULL, NULL);
+		if(!op_flush)
+			raise("Couldn't flush the stream");
+
+		// wait for flush & drain
+		while(pa_operation_get_state(op_flush) != PA_OPERATION_DONE && pa_operation_get_state(snd.drain) != PA_OPERATION_DONE)
 		{
-			// flush pending audio data
-			pa_operation *op_flush = pa_stream_flush(snd.stream, [](pa_stream*, int, void*){}, NULL);
-			if(!op_flush)
-				raise("Couldn't flush the stream");
-
-			// tell pulse audio it's done
-			pa_operation *op_drain = pa_stream_drain(snd.stream, callback_stream_drained, (void*)&snd);
-			if(!op_drain)
-				raise("Couldn't drain the stream");
-
 			pa_threaded_mainloop_unlock(remote->loop_);
-
-			// wait for flush
-			while(pa_operation_get_state(op_flush) != PA_OPERATION_DONE);
-			pa_operation_unref(op_flush);
-
-			// wait for drain
-			while(!snd.drained);
-			pa_operation_unref(op_drain);
-
+			usleep(50);
 			pa_threaded_mainloop_lock(remote->loop_);
 		}
 
-		pa_threaded_mainloop_unlock(remote->loop_);
-		while(!snd.drained);
-		pa_threaded_mainloop_lock(remote->loop_);
+		pa_operation_unref(op_flush);
+		pa_operation_unref(snd.drain);
 
 		if(pa_stream_disconnect(snd.stream))
 			raise("Couldn't disconnect stream");
@@ -464,6 +448,9 @@ void win::audio_engine::finalize()
 	pa_threaded_mainloop_lock(remote->loop_);
 	cleanup(true);
 	pa_threaded_mainloop_unlock(remote->loop_);
+
+	if(remote->clips_.size() != 0)
+		win::bug("could not sweep up all streams");
 
 	pa_threaded_mainloop_stop(remote->loop_);
 	pa_context_disconnect(remote->context_);

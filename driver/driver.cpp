@@ -225,7 +225,7 @@ int go()
 	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
 
-	const int block_sid = audio_engine.play(music, block.x, block.y);
+	const int block_sid = audio_engine.play(music, block.x, block.y, true);
 	for(;;)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
