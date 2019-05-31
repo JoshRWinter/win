@@ -283,8 +283,8 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 {
 	const int textlen = strlen(text);
 
-	std::unique_ptr<float[]> pos_buffer(new float[2 * textlen]);
-	std::unique_ptr<unsigned short[]> texcoord_buffer(new unsigned short[2 * textlen]);
+	remote->pos_buffer.clear();
+	remote->texcoord_buffer.clear();
 
 	// fill vbos
 	float xoffset;
@@ -317,16 +317,16 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 			throw exception("non printing ascii character: " + std::to_string((int)text[i]) + " found in text string");
 
 		// pos vbo
-		pos_buffer[(charcount * 2) + 0] = alignx(remote->display_width_, remote->right_ - remote->left_, xoffset);
-		pos_buffer[(charcount * 2) + 1] = aligny(remote->display_height_, remote->top_ - remote->bottom_, yoffset + fnt.remote->metrics.at(metrics_index).bearing_y);
+		remote->pos_buffer.push_back(alignx(remote->display_width_, remote->right_ - remote->left_, xoffset));
+		remote->pos_buffer.push_back(aligny(remote->display_height_, remote->top_ - remote->bottom_, yoffset + fnt.remote->metrics.at(metrics_index).bearing_y));
 
 		// texcoord vbo
 		const float xnormal = 1.0f / cols;
 		const float ynormal = 1.0f / rows;
 		unsigned short xcoord = ((float)((text[i] - ' ') % 16) * xnormal) * USHRT_MAX;
 		unsigned short ycoord = ((float)((text[i] - ' ') / 16) * ynormal) * USHRT_MAX;
-		texcoord_buffer[(charcount * 2) + 0] = xcoord;
-		texcoord_buffer[(charcount * 2) + 1] = USHRT_MAX - ycoord;
+		remote->texcoord_buffer.push_back(xcoord);
+		remote->texcoord_buffer.push_back(USHRT_MAX - ycoord);
 
 		xoffset += fnt.remote->metrics[metrics_index].advance - fnt.remote->metrics.at(metrics_index).bitmap_left;
 
@@ -340,10 +340,10 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 	glUniform4f(remote->uniform_color_, clr.red, clr.green, clr.blue, clr.alpha);
 
 	glBindBuffer(GL_ARRAY_BUFFER, remote->vbo_position_);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * charcount * 2, pos_buffer.get(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * charcount * 2, remote->pos_buffer.data(), GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, remote->vbo_texcoord_);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned short) * 2 * charcount, texcoord_buffer.get(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned short) * 2 * charcount, remote->texcoord_buffer.data(), GL_DYNAMIC_DRAW);
 
 	glBindTexture(GL_TEXTURE_2D, fnt.remote->atlas);
 

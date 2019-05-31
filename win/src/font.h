@@ -99,6 +99,9 @@ struct font_renderer_remote
 	unsigned vbo_vertex_, vbo_position_, vbo_texcoord_;
 	unsigned ebo_;
 	int uniform_size_, uniform_color_;
+
+	std::vector<float> pos_buffer;
+	std::vector<unsigned short> texcoord_buffer;
 };
 
 }
