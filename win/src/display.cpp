@@ -795,6 +795,15 @@ win::display::display(const char *caption, int w, int h, int flags, window_handl
 	SetWindowText(remote->window_, caption);
 
 	ShowWindow(remote->window_, SW_SHOWDEFAULT);
+
+	const int result = flags & FULLSCREEN;
+	if((flags & FULLSCREEN) == 0)
+	{
+		RECT rect;
+		GetClientRect(remote->window_, &rect);
+		SetWindowPos(remote->window_, NULL, 0, 0, w + (w - rect.right), h + (h - rect.bottom), SWP_SHOWWINDOW);
+	}
+
 	UpdateWindow(remote->window_);
 }
 
