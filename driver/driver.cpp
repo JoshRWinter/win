@@ -94,7 +94,7 @@ int go()
 	font_renderer2 = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::font_renderer font_renderer = std::move(font_renderer2);
 	win::font font12;
-	font12 = font_renderer.make_font(roll["../../fishtank/assets/arial.ttf"], 0.3f);
+	font12 = font_renderer.make_font(roll["../../fishtank/assets/arial.ttf"], 0.5f);
 	win::font font1 = std::move(font12);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
@@ -188,6 +188,13 @@ int go()
 			audio_engine.listener(0, 0);
 		else if(press)
 			audio_engine.play(effect);
+	});
+
+	float mousex = 0.0f, mousey = 0.0f;
+	display.event_mouse([&mousex, &mousey](int x, int y)
+	{
+		mousex = ((x / 800.0f) * 8.0f) - 4.0f;
+		mousey = ((y / 600.0f) * 6.0f) - 3.0f;
 	});
 
 	// display.event_character([](int key)
@@ -286,7 +293,7 @@ int go()
 		if(0 == strftime(formatted, sizeof(formatted), "Today is %A, %B %d\n%I:%M:%S %p", tm))
 			strcpy(formatted, "null");
 
-		font_renderer.draw(font1, formatted, 0.0f, -2.9f, win::color(1.0f, 1.0f, 0.0f), win::font_renderer::CENTERED);
+		font_renderer.draw(font1, formatted, mousex, mousey, win::color(1.0f, 1.0f, 0.0f), win::font_renderer::CENTERED);
 		glBindVertexArray(vao);
 		glUseProgram(program);
 
