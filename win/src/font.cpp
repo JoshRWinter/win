@@ -12,8 +12,6 @@
 static constexpr int cols = 16;
 static constexpr int rows = 6;
 
-#define isvalidchar(c) ((c>31)||c=='\n'||c=='\r')
-
 win::font::font(const font_renderer &parent, data file, float fontsize)
 {
 	remote.reset(new font_remote);
@@ -71,7 +69,7 @@ win::font::font(const font_renderer &parent, data file, float fontsize)
 
 	std::vector<unsigned char> bitmap(bitmap_width * bitmap_height * rows * cols * 4);
 	memset(bitmap.data(), 0, bitmap.size());
-	for(unsigned char character = ' '; character < '~'; character++)
+	for(unsigned char character = ' '; character <= '~'; character++)
 	{
 		error = FT_Load_Char(face,character,FT_LOAD_RENDER);
 		if(error)
