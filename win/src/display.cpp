@@ -723,7 +723,7 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 			if(wp != SC_KEYMENU)
 				return DefWindowProc(hwnd, msg, wp, lp);
 		case WM_MOUSEMOVE:
-			remote->handler.mouse(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
+			remote->handler.mouse(LOWORD(lp), HIWORD(lp));
 			return 0;
 		case WM_LBUTTONDOWN:
 			remote->handler.key_button(button::MOUSE_LEFT, true);
