@@ -804,6 +804,8 @@ win::display::display(const char *caption, int w, int h, int flags, window_handl
 		SetWindowPos(remote->window_, NULL, 0, 0, w + (w - rect.right), h + (h - rect.bottom), SWP_SHOWWINDOW);
 	}
 
+	glViewport(0, 0, w, h);
+
 	UpdateWindow(remote->window_);
 }
 
