@@ -120,8 +120,8 @@ win::font::font(const font_renderer &parent, data file, float fontsize)
 
 	glGenTextures(1, &remote->atlas);
 	glBindTexture(GL_TEXTURE_2D, remote->atlas);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,bitmap_width * cols,bitmap_height * rows,0,GL_RGBA,GL_UNSIGNED_BYTE,bitmap.data());
@@ -232,13 +232,16 @@ win::font_renderer::font_renderer(int iwidth, int iheight, float left, float rig
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, remote->ebo_);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+	const float half_pixel_width = (1 / 752.0f) / 2.0f;
+	const float half_pixel_height = (1 / 282.0f) / 2.0f;
+
 	// font vertices
 	const float verts[] =
 	{
-		-0.5f, 0.5f, 0.0f, 1.0f / rows,
-		-0.5f, -0.5f, 0.0f, 0.0f,
-		0.5f, -0.5f, 1.0f / cols, 0.0f,
-		0.5f, 0.5f, 1.0f / cols, 1.0f / rows
+		-0.5f, 0.5f, 0.0f + half_pixel_width, (1.0f / rows) - half_pixel_height,
+		-0.5f, -0.5f, 0.0f + half_pixel_width, 0.0f + half_pixel_height,
+		0.5f, -0.5f, (1.0f / cols) - half_pixel_width, 0.0f + half_pixel_height,
+		0.5f, 0.5f, (1.0f / cols) - half_pixel_width, (1.0f / rows) - half_pixel_height
 	};
 
 	glBindBuffer(GL_ARRAY_BUFFER, remote->vbo_vertex_);
