@@ -326,6 +326,8 @@ void win::load_extensions()
 	glCompileShader = (decltype(glCompileShader))getproc("glCompileShader");
 	glGetShaderiv = (decltype(glGetShaderiv))getproc("glGetShaderiv");
 	glGetShaderInfoLog = (decltype(glGetShaderInfoLog))getproc("glGetShaderInfoLog");
+	glGetProgramiv = (decltype(glGetProgramiv))getproc("glGetProgramiv");
+	glGetProgramInfoLog = (decltype(glGetProgramInfoLog))getproc("glGetProgramInfoLog");
 	glAttachShader = (decltype(glAttachShader))getproc("glAttachShader");
 	glDetachShader = (decltype(glDetachShader))getproc("glDetachShader");
 	glLinkProgram = (decltype(glLinkProgram))getproc("glLinkProgram");
@@ -386,6 +388,13 @@ unsigned win::load_shaders(const char *vertex_source, int vertex_length, const c
 	glAttachShader(program, vshader);
 	glAttachShader(program, fshader);
 	glLinkProgram(program);
+	GLint linked = 0;
+	glGetProgramiv(program, GL_LINK_STATUS, &linked);
+	if(!linked)
+	{
+		glGetProgramInfoLog(program, 2000, NULL, buffer);
+		throw exception(std::string("linker:\n") + buffer);
+	}
 	glDetachShader(program, vshader);
 	glDetachShader(program, fshader);
 	glDeleteShader(vshader);
