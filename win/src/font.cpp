@@ -15,6 +15,7 @@ static constexpr int rows = 6;
 win::font::font(const font_renderer &parent, data file, float fontsize)
 {
 	remote.reset(new font_remote);
+	remote->fontsize = fontsize;
 
 	std::vector<unsigned char> chunk(file.size());
 	if(file.read(chunk.data(), file.size()) != file.size())
@@ -145,6 +146,11 @@ win::font &win::font::operator=(font &&rhs)
 	finalize();
 	remote = std::move(rhs.remote);
 	return *this;
+}
+
+float win::font::size() const
+{
+	return remote->fontsize;
 }
 
 static inline float alignx(int iwidth, float fwidth, float xpos)

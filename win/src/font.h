@@ -29,6 +29,8 @@ struct font
 	void operator=(font&) = delete;
 	font &operator=(font&&);
 
+	float size() const;
+
 private:
 	font(const font_renderer &parent, data, float);
 	void finalize();
@@ -50,6 +52,7 @@ struct font_remote
 	float box_height; // height of each tile in the atlas
 	float max_bearing_y; // greatest y bearing
 	float vertical; // vertical advance
+	float fontsize;
 };
 
 struct font_renderer_remote;
