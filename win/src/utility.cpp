@@ -593,3 +593,21 @@ float win::distance(float x1, float y1, float x2, float y2)
 {
 	return std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2));
 }
+
+float win::zerof(float f, float approach)
+{
+	if(f > 0.0f)
+	{
+		f -= approach;
+		if(f < 0.0f)
+			f = 0.0f;
+	}
+	else if(f < 0.0f)
+	{
+		f += approach;
+		if(f > 0.0f)
+			f = 0.0f;
+	}
+
+	return f;
+}
