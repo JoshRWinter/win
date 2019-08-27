@@ -96,142 +96,157 @@ static std::string name_to_string(const char* name)
 	return str;
 }
 
-static std::unordered_map<std::string, win::button> load_physical_keys()
+constexpr int ascii_append(const char *const source, const int index = 0, int number = 0)
 {
-	std::unordered_map<std::string, win::button> map;
+	if(index > 3)
+		return number;
 
-	map.insert({name_to_string("MS1\0"), win::button::MOUSE_LEFT});
-	map.insert({name_to_string("MS2\0"), win::button::MOUSE_RIGHT});
-	map.insert({name_to_string("MS3\0"), win::button::MOUSE_MIDDLE});
-	map.insert({name_to_string("MS4\0"), win::button::MOUSE4});
-	map.insert({name_to_string("MS5\0"), win::button::MOUSE5});
-	map.insert({name_to_string("MS6\0"), win::button::MOUSE6});
-	map.insert({name_to_string("MS7\0"), win::button::MOUSE7});
+	if(source[index] == '\0')
+		return number;
 
-	map.insert({name_to_string("AC01"), win::button::A});
-	map.insert({name_to_string("AB05"), win::button::B});
-	map.insert({name_to_string("AB03"), win::button::C});
-	map.insert({name_to_string("AC03"), win::button::D});
-	map.insert({name_to_string("AD03"), win::button::E});
-	map.insert({name_to_string("AC04"), win::button::F});
-	map.insert({name_to_string("AC05"), win::button::G});
-	map.insert({name_to_string("AC06"), win::button::H});
-	map.insert({name_to_string("AD08"), win::button::I});
-	map.insert({name_to_string("AC07"), win::button::J});
-	map.insert({name_to_string("AC08"), win::button::K});
-	map.insert({name_to_string("AC09"), win::button::L});
-	map.insert({name_to_string("AB07"), win::button::M});
-	map.insert({name_to_string("AB06"), win::button::N});
-	map.insert({name_to_string("AD09"), win::button::O});
-	map.insert({name_to_string("AD10"), win::button::P});
-	map.insert({name_to_string("AD01"), win::button::Q});
-	map.insert({name_to_string("AD04"), win::button::R});
-	map.insert({name_to_string("AC02"), win::button::S});
-	map.insert({name_to_string("AD05"), win::button::T});
-	map.insert({name_to_string("AD07"), win::button::U});
-	map.insert({name_to_string("AB04"), win::button::V});
-	map.insert({name_to_string("AD02"), win::button::W});
-	map.insert({name_to_string("AB02"), win::button::X});
-	map.insert({name_to_string("AD06"), win::button::Y});
-	map.insert({name_to_string("AB01"), win::button::Z});
+	const char c = source[index] - '0';
 
-	map.insert({name_to_string("AE10"), win::button::D0});
-	map.insert({name_to_string("AE01"), win::button::D1});
-	map.insert({name_to_string("AE02"), win::button::D2});
-	map.insert({name_to_string("AE03"), win::button::D3});
-	map.insert({name_to_string("AE04"), win::button::D4});
-	map.insert({name_to_string("AE05"), win::button::D5});
-	map.insert({name_to_string("AE06"), win::button::D6});
-	map.insert({name_to_string("AE07"), win::button::D7});
-	map.insert({name_to_string("AE08"), win::button::D8});
-	map.insert({name_to_string("AE09"), win::button::D9});
+	const int first = c / 10;
+	const int second = c % 10;
 
-	map.insert({name_to_string("TLDE"), win::button::BACKTICK});
-	map.insert({name_to_string("AE11"), win::button::DASH});
-	map.insert({name_to_string("AE12"), win::button::EQUALS});
-	map.insert({name_to_string("AD11"), win::button::LBRACKET});
-	map.insert({name_to_string("AD12"), win::button::RBRACKET});
-	map.insert({name_to_string("AC10"), win::button::SEMICOLON});
-	map.insert({name_to_string("AC11"), win::button::APOSTROPHE});
-	map.insert({name_to_string("AB08"), win::button::COMMA});
-	map.insert({name_to_string("AB09"), win::button::PERIOD});
-	map.insert({name_to_string("AB10"), win::button::SLASH});
-	map.insert({name_to_string("BKSL"), win::button::BACKSLASH});
+	number *= 10;
+	number += first;
+	number *= 10;
+	number += second;
 
-	map.insert({name_to_string("FK01"), win::button::F1});
-	map.insert({name_to_string("FK02"), win::button::F2});
-	map.insert({name_to_string("FK03"), win::button::F3});
-	map.insert({name_to_string("FK04"), win::button::F4});
-	map.insert({name_to_string("FK05"), win::button::F5});
-	map.insert({name_to_string("FK06"), win::button::F6});
-	map.insert({name_to_string("FK07"), win::button::F7});
-	map.insert({name_to_string("FK08"), win::button::F8});
-	map.insert({name_to_string("FK09"), win::button::F9});
-	map.insert({name_to_string("FK10"), win::button::F10});
-	map.insert({name_to_string("FK11"), win::button::F11});
-	map.insert({name_to_string("FK12"), win::button::F12});
-
-	map.insert({name_to_string("ESC\0"), win::button::ESC});
-	map.insert({name_to_string("PRSC"), win::button::PRINT_SCR});
-	map.insert({name_to_string("PAUS"), win::button::PAUSE_BREAK});
-	map.insert({name_to_string("INS\0"), win::button::INSERT});
-	map.insert({name_to_string("DELE"), win::button::DELETE});
-	map.insert({name_to_string("HOME"), win::button::HOME});
-	map.insert({name_to_string("PGUP"), win::button::PAGE_UP});
-	map.insert({name_to_string("PGDN"), win::button::PAGE_DOWN});
-	map.insert({name_to_string("END\0"), win::button::END});
-	map.insert({name_to_string("BKSP"), win::button::BACKSPACE});
-	map.insert({name_to_string("RTRN"), win::button::RETURN});
-	map.insert({name_to_string("KPEN"), win::button::ENTER});
-	map.insert({name_to_string("LFSH"), win::button::LSHIFT});
-	map.insert({name_to_string("RTSH"), win::button::RSHIFT});
-	map.insert({name_to_string("LCTL"), win::button::LCTRL});
-	map.insert({name_to_string("RCTL"), win::button::RCTRL});
-	map.insert({name_to_string("LALT"), win::button::LALT});
-	map.insert({name_to_string("RALT"), win::button::RALT});
-	map.insert({name_to_string("SPCE"), win::button::SPACE});
-	map.insert({name_to_string("COMP"), win::button::MENU});
-	map.insert({name_to_string("LWIN"), win::button::LMETA});
-	map.insert({name_to_string("RWIN"), win::button::RMETA});
-	map.insert({name_to_string("UP\0\0"), win::button::UP});
-	map.insert({name_to_string("LEFT"), win::button::LEFT});
-	map.insert({name_to_string("RGHT"), win::button::RIGHT});
-	map.insert({name_to_string("DOWN"), win::button::DOWN});
-	map.insert({name_to_string("CAPS"), win::button::CAPSLOCK});
-	map.insert({name_to_string("TAB\0"), win::button::TAB});
-
-	map.insert({name_to_string("NMLK"), win::button::NUM_LOCK});
-	map.insert({name_to_string("KPDV"), win::button::NUM_SLASH});
-	map.insert({name_to_string("KPMU"), win::button::NUM_MULTIPLY});
-	map.insert({name_to_string("KPSU"), win::button::NUM_MINUS});
-	map.insert({name_to_string("KPAD"), win::button::NUM_PLUS});
-	map.insert({name_to_string("KPDL"), win::button::NUM_DEL});
-	map.insert({name_to_string("KP0\0"), win::button::NUM0});
-	map.insert({name_to_string("KP1\0"), win::button::NUM1});
-	map.insert({name_to_string("KP2\0"), win::button::NUM2});
-	map.insert({name_to_string("KP3\0"), win::button::NUM3});
-	map.insert({name_to_string("KP4\0"), win::button::NUM4});
-	map.insert({name_to_string("KP5\0"), win::button::NUM5});
-	map.insert({name_to_string("KP6\0"), win::button::NUM6});
-	map.insert({name_to_string("KP7\0"), win::button::NUM7});
-	map.insert({name_to_string("KP8\0"), win::button::NUM8});
-	map.insert({name_to_string("KP9\0"), win::button::NUM9});
-
-	return map;
+	return ascii_append(source, index + 1, number);
 }
 
-static const std::unordered_map<std::string, win::button> physical_keys = load_physical_keys();
-
-static win::button name_to_button(const char *name)
+constexpr int keystring_hash(const char *const keycode_hash)
 {
-	auto iterator = physical_keys.find(name_to_string(name));
-	if(iterator == physical_keys.end())
-	{
-		std::cerr << "Unkown key \"" << name[0] << name[1] << name[2] << name[3] << "\"" << std::endl;
-		return win::button::UNDEFINED;
-	}
+	return ascii_append(keycode_hash);
+}
 
-	return iterator->second;
+win::button keystring_to_button(const char *const keystring)
+{
+	switch(keystring_hash(keystring))
+	{
+		case keystring_hash("MS1\0"): return win::button::MOUSE_LEFT;
+		case keystring_hash("MS2\0"): return win::button::MOUSE_RIGHT;
+		case keystring_hash("MS3\0"): return win::button::MOUSE_MIDDLE;
+		case keystring_hash("MS4\0"): return win::button::MOUSE4;
+		case keystring_hash("MS5\0"): return win::button::MOUSE5;
+		case keystring_hash("MS6\0"): return win::button::MOUSE6;
+		case keystring_hash("MS7\0"): return win::button::MOUSE7;
+
+		case keystring_hash("AC01"): return win::button::A;
+		case keystring_hash("AB05"): return win::button::B;
+		case keystring_hash("AB03"): return win::button::C;
+		case keystring_hash("AC03"): return win::button::D;
+		case keystring_hash("AD03"): return win::button::E;
+		case keystring_hash("AC04"): return win::button::F;
+		case keystring_hash("AC05"): return win::button::G;
+		case keystring_hash("AC06"): return win::button::H;
+		case keystring_hash("AD08"): return win::button::I;
+		case keystring_hash("AC07"): return win::button::J;
+		case keystring_hash("AC08"): return win::button::K;
+		case keystring_hash("AC09"): return win::button::L;
+		case keystring_hash("AB07"): return win::button::M;
+		case keystring_hash("AB06"): return win::button::N;
+		case keystring_hash("AD09"): return win::button::O;
+		case keystring_hash("AD10"): return win::button::P;
+		case keystring_hash("AD01"): return win::button::Q;
+		case keystring_hash("AD04"): return win::button::R;
+		case keystring_hash("AC02"): return win::button::S;
+		case keystring_hash("AD05"): return win::button::T;
+		case keystring_hash("AD07"): return win::button::U;
+		case keystring_hash("AB04"): return win::button::V;
+		case keystring_hash("AD02"): return win::button::W;
+		case keystring_hash("AB02"): return win::button::X;
+		case keystring_hash("AD06"): return win::button::Y;
+		case keystring_hash("AB01"): return win::button::Z;
+
+		case keystring_hash("AE10"): return win::button::D0;
+		case keystring_hash("AE01"): return win::button::D1;
+		case keystring_hash("AE02"): return win::button::D2;
+		case keystring_hash("AE03"): return win::button::D3;
+		case keystring_hash("AE04"): return win::button::D4;
+		case keystring_hash("AE05"): return win::button::D5;
+		case keystring_hash("AE06"): return win::button::D6;
+		case keystring_hash("AE07"): return win::button::D7;
+		case keystring_hash("AE08"): return win::button::D8;
+		case keystring_hash("AE09"): return win::button::D9;
+
+		case keystring_hash("TLDE"): return win::button::BACKTICK;
+		case keystring_hash("AE11"): return win::button::DASH;
+		case keystring_hash("AE12"): return win::button::EQUALS;
+		case keystring_hash("AD11"): return win::button::LBRACKET;
+		case keystring_hash("AD12"): return win::button::RBRACKET;
+		case keystring_hash("AC10"): return win::button::SEMICOLON;
+		case keystring_hash("AC11"): return win::button::APOSTROPHE;
+		case keystring_hash("AB08"): return win::button::COMMA;
+		case keystring_hash("AB09"): return win::button::PERIOD;
+		case keystring_hash("AB10"): return win::button::SLASH;
+		case keystring_hash("BKSL"): return win::button::BACKSLASH;
+
+		case keystring_hash("FK01"): return win::button::F1;
+		case keystring_hash("FK02"): return win::button::F2;
+		case keystring_hash("FK03"): return win::button::F3;
+		case keystring_hash("FK04"): return win::button::F4;
+		case keystring_hash("FK05"): return win::button::F5;
+		case keystring_hash("FK06"): return win::button::F6;
+		case keystring_hash("FK07"): return win::button::F7;
+		case keystring_hash("FK08"): return win::button::F8;
+		case keystring_hash("FK09"): return win::button::F9;
+		case keystring_hash("FK10"): return win::button::F10;
+		case keystring_hash("FK11"): return win::button::F11;
+		case keystring_hash("FK12"): return win::button::F12;
+
+		case keystring_hash("ESC\0"): return win::button::ESC;
+		case keystring_hash("PRSC"): return win::button::PRINT_SCR;
+		case keystring_hash("PAUS"): return win::button::PAUSE_BREAK;
+		case keystring_hash("INS\0"): return win::button::INSERT;
+		case keystring_hash("DELE"): return win::button::DELETE;
+		case keystring_hash("HOME"): return win::button::HOME;
+		case keystring_hash("PGUP"): return win::button::PAGE_UP;
+		case keystring_hash("PGDN"): return win::button::PAGE_DOWN;
+		case keystring_hash("END\0"): return win::button::END;
+		case keystring_hash("BKSP"): return win::button::BACKSPACE;
+		case keystring_hash("RTRN"): return win::button::RETURN;
+		case keystring_hash("KPEN"): return win::button::ENTER;
+		case keystring_hash("LFSH"): return win::button::LSHIFT;
+		case keystring_hash("RTSH"): return win::button::RSHIFT;
+		case keystring_hash("LCTL"): return win::button::LCTRL;
+		case keystring_hash("RCTL"): return win::button::RCTRL;
+		case keystring_hash("LALT"): return win::button::LALT;
+		case keystring_hash("RALT"): return win::button::RALT;
+		case keystring_hash("SPCE"): return win::button::SPACE;
+		case keystring_hash("COMP"): return win::button::MENU;
+		case keystring_hash("LWIN"): return win::button::LMETA;
+		case keystring_hash("RWIN"): return win::button::RMETA;
+
+		case keystring_hash("UP\0\0"): return win::button::UP;
+		case keystring_hash("LEFT"): return win::button::LEFT;
+		case keystring_hash("RGHT"): return win::button::RIGHT;
+		case keystring_hash("DOWN"): return win::button::DOWN;
+
+		case keystring_hash("CAPS"): return win::button::CAPSLOCK;
+		case keystring_hash("TAB\0"): return win::button::TAB;
+		case keystring_hash("NMLK"): return win::button::NUM_LOCK;
+		case keystring_hash("KPDV"): return win::button::NUM_SLASH;
+		case keystring_hash("KPMU"): return win::button::NUM_MULTIPLY;
+		case keystring_hash("KPSU"): return win::button::NUM_MINUS;
+		case keystring_hash("KPAD"): return win::button::NUM_PLUS;
+		case keystring_hash("KPDL"): return win::button::NUM_DEL;
+
+		case keystring_hash("KP0\0"): return win::button::NUM0;
+		case keystring_hash("KP1\0"): return win::button::NUM1;
+		case keystring_hash("KP2\0"): return win::button::NUM2;
+		case keystring_hash("KP3\0"): return win::button::NUM3;
+		case keystring_hash("KP4\0"): return win::button::NUM4;
+		case keystring_hash("KP5\0"): return win::button::NUM5;
+		case keystring_hash("KP6\0"): return win::button::NUM6;
+		case keystring_hash("KP7\0"): return win::button::NUM7;
+		case keystring_hash("KP8\0"): return win::button::NUM8;
+		case keystring_hash("KP9\0"): return win::button::NUM9;
+
+		default: return win::button::UNDEFINED;
+	}
 }
 
 win::display::display(const char *caption, int width, int height, int flags, window_handle parent)
@@ -328,7 +343,7 @@ bool win::display::process()
 
 			case KeyPress:
 			{
-				remote->handler.key_button(name_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), true);
+				remote->handler.key_button(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), true);
 				const KeySym sym = x_get_keysym(&xevent.xkey);
 				if(sym)
 					remote->handler.character(sym);
@@ -344,7 +359,7 @@ bool win::display::process()
 						break;
 				}
 
-				remote->handler.key_button(name_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), false);
+				remote->handler.key_button(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), false);
 				break;
 			}
 			case MotionNotify:
