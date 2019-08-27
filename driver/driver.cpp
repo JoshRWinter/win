@@ -104,9 +104,9 @@ int go()
 	const float verts[] =
 	{
 		-0.5f, -0.5f,	(float)coords[0] / USHRT_MAX, (float)coords[3] / USHRT_MAX, //0.0f, 1.0f,
-		-0.5f, 0.5f,	(float)coords[0] / USHRT_MAX, (float)coords[2] / USHRT_MAX, //0.0f, 0.0f,
-		0.5f, 0.5f,		(float)coords[1] / USHRT_MAX, (float)coords[2] / USHRT_MAX, //1.0f, 0.0f,
-		0.5f, -0.5f,	(float)coords[1] / USHRT_MAX, (float)coords[3] / USHRT_MAX //1.0f, 1.0f
+		-0.5f, 0.5f,	(float)coords[0] / USHRT_MAX, (float)coords[1] / USHRT_MAX, //0.0f, 0.0f,
+		0.5f, 0.5f,		(float)coords[2] / USHRT_MAX, (float)coords[1] / USHRT_MAX, //1.0f, 0.0f,
+		0.5f, -0.5f,	(float)coords[2] / USHRT_MAX, (float)coords[3] / USHRT_MAX //1.0f, 1.0f
 	};
 	const unsigned int indices[] =
 	{
