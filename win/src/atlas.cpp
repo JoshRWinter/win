@@ -60,9 +60,9 @@ win::atlas::atlas(data raw, mode fm)
 		index += sizeof(height);
 
 		textures_[i].coords[0] = ((float)xpos / canvas_width) * USHRT_MAX;
-		textures_[i].coords[1] = ((float)(xpos + width) / canvas_width) * USHRT_MAX;
-		textures_[i].coords[2] = ((float)(ypos + height) / canvas_height) * USHRT_MAX;
-		textures_[i].coords[3] = ((float)ypos / canvas_height) * USHRT_MAX;
+		textures_[i].coords[1] = ((float)ypos / canvas_height) * USHRT_MAX;
+		textures_[i].coords[2] = ((float)(xpos + width) / canvas_width) * USHRT_MAX;
+		textures_[i].coords[3] = ((float)(ypos + height) / canvas_height) * USHRT_MAX;
 	}
 
 	if(raw.size() - index != canvas_width * canvas_height * 4)
