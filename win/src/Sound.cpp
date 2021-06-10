@@ -7,72 +7,51 @@
 
 static void decodeogg(std::unique_ptr<unsigned char[]>, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
 
-win::sound::sound(win::data raw)
+namespace win
+{
+
+Sound::Sound(AssetRollStream raw)
 {
 	from_roll(raw);
 }
 
-win::sound::sound(sound &&rhs)
+Sound::~Sound()
 {
-	remote = std::move(rhs.remote);
+	if(thread.joinable())
+		thread.join();
 }
 
-win::sound::~sound()
-{
-	finalize();
-}
-
-win::sound &win::sound::operator=(sound &&rhs)
-{
-	finalize();
-	remote = std::move(rhs.remote);
-	return *this;
-}
-
-win::sound &win::sound::operator=(win::data raw)
+Sound &Sound::operator=(AssetRollStream &raw)
 {
 	from_roll(raw);
 	return *this;
 }
 
-void win::sound::from_roll(win::data &raw)
+void Sound::from_roll(AssetRollStream &raw)
 {
-	finalize();
-
-	remote.reset(new sound_remote);
-
 	const unsigned long long file_size = raw.size();
-	remote->size = 0;
-	remote->encoded.reset(raw.release());
+	size = 0;
+	encoded = std::move(raw.read_all());
 
 	// eventual size of decoded data
 	unsigned long long index = file_size - 1;
-	while(index - 3 >= 0 && !(remote->encoded[index] == 'S' && remote->encoded[index - 1] == 'g' && remote->encoded[index - 2] == 'g' && remote->encoded[index - 3] == 'O'))
+	while(index - 3 >= 0 && !(encoded[index] == 'S' && encoded[index - 1] == 'g' && encoded[index - 2] == 'g' && encoded[index - 3] == 'O'))
 		--index;
 	unsigned long long samplecount;
-	memcpy(&samplecount, &remote->encoded[index + 3], sizeof(samplecount));
-	remote->target_size = samplecount * sizeof(short);
+	memcpy(&samplecount, &encoded[index + 3], sizeof(samplecount));
+	target_size = samplecount * sizeof(short);
 
-	remote->buffer = std::make_unique<short[]>(samplecount);
+	buffer = std::make_unique<short[]>(samplecount);
 
 	// decode
-	remote->thread = std::thread(decodeogg, std::move(remote->encoded), file_size, remote->buffer.get(), remote->target_size, &remote->size);
+	thread = std::thread(decodeogg, std::move(encoded), file_size, buffer.get(), target_size, &size);
 }
 
-void win::sound::finalize()
-{
-	if(!remote)
-		return;
-
-	if(remote->thread.joinable())
-		remote->thread.join();
-
-	remote.reset();
 }
 
 static void ogg_vorbis_error(const std::string &msg)
 {
-	throw win::exception("Ogg-Vorbis: " + msg);
+	win::bug("Ogg-Vorbis: " + msg);
 }
 
 void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long long encoded_size, short *const decoded, const unsigned long long decoded_size, std::atomic<unsigned long long> *const size){

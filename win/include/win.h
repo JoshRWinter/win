@@ -25,40 +25,26 @@ namespace win
 {
 
 #if defined WINPLAT_WINDOWS
-	typedef HWND window_handle;
+typedef HWND window_handle;
 #elif defined WINPLAT_LINUX
-	typedef Window window_handle;
+typedef Window window_handle;
 #else
 #error "unsupported platform"
 #endif
 }
 
-#include "../src/system.h"
 #include "../src/event.h"
-#include "../src/utility.h"
-#include "../src/roll.h"
-#include "../src/font.h"
-#include "../src/atlas.h"
-#include "../src/texture.h"
-#include "../src/sound.h"
-#include "../src/audio_engine.h"
-#include "../src/joystick.h"
-#include "../src/display.h"
+#include "../src/AssetRoll.h"
+#include "../src/Utility.h"
+#include "../src/Texture.h"
+#include "../src/Font.h"
+#include "../src/Atlas.h"
+#include "../src/Sound.h"
+#include "../src/AudioEngine.h"
+#include "../src/Display.h"
 
 namespace win
 {
-
-class exception : public std::exception
-{
-public:
-	exception(const std::string &msg) : msg_(msg) {}
-	exception(const char *msg) : msg_(msg) {}
-
-	virtual const char *what() const noexcept { return msg_.c_str(); }
-
-private:
-	const std::string msg_;
-};
 
 [[noreturn]] inline void bug(const std::string &msg)
 {

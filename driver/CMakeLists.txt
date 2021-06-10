@@ -3,10 +3,10 @@ cmake_minimum_required(VERSION 3.0)
 if(NOT WIN32)
 	add_custom_command(
 		OUTPUT
-			${CMAKE_CURRENT_LIST_DIR}/assets.roll
+		${CMAKE_CURRENT_LIST_DIR}/assets.roll
 		COMMAND
-			cd ${CMAKE_CURRENT_LIST_DIR} && roll assets.roll `cat roll.assets`
-	)
+		cd ${CMAKE_CURRENT_LIST_DIR} && roll assets.roll `cat roll.assets`
+		)
 endif()
 
 if(WIN32)
@@ -25,3 +25,7 @@ else()
 endif()
 
 target_link_libraries(driver win)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(driver PRIVATE -fno-exceptions)
+endif()

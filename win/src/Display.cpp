@@ -8,31 +8,12 @@
 #endif
 
 // default event handlers
-static void handler_button(win::button, bool) {}
-static void handler_character(int) {}
-static void handler_mouse(int, int) {}
+static void default_button_handler(win::Button, bool) {}
+static void default_character_handler(int) {}
+static void default_mouse_handler(int, int) {}
 
-win::display::display(display &&rhs)
+namespace win
 {
-	remote = std::move(rhs.remote);
-}
-
-win::display &win::display::operator=(display &&rhs)
-{
-	finalize();
-	remote = std::move(rhs.remote);
-	return *this;
-}
-
-win::display::~display()
-{
-	finalize();
-}
-
-win::font_renderer win::display::make_font_renderer(int iwidth, int iheight, float left, float right, float bottom, float top) const
-{
-	return font_renderer(iwidth, iheight, left, right, bottom, top);
-}
 
 /* ------------------------------------*/
 /////////////////////////////////////////
@@ -42,13 +23,13 @@ win::font_renderer win::display::make_font_renderer(int iwidth, int iheight, flo
 
 #if defined WINPLAT_LINUX
 
-typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+typedef GLXContext (*glXCreateContextAttribsARBProc)(::Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
 static Atom atom_delete_window;
 static Atom atom_fullscreen;
-static Display *xdisplay;
+static ::Display *xdisplay;
 static XkbDescPtr xkb_desc;
-struct x_init_helper
+static struct x_init_helper
 {
 	x_init_helper()
 	{
@@ -62,7 +43,7 @@ struct x_init_helper
 		// x keyboard extension schtuff
 		xkb_desc = XkbGetMap(xdisplay, 0, XkbUseCoreKbd);
 		if(xkb_desc == NULL)
-			throw win::exception("Could not get the X keyboard map");
+			win::bug("Could not get the X keyboard map");
 		XkbGetNames(xdisplay, XkbKeyNamesMask, xkb_desc);
 
 		// window close message
@@ -122,140 +103,138 @@ constexpr int keystring_hash(const char *const keycode_hash)
 	return ascii_append(keycode_hash);
 }
 
-win::button keystring_to_button(const char *const keystring)
+static Button keystring_to_button(const char *const keystring)
 {
 	switch(keystring_hash(keystring))
 	{
-		case keystring_hash("MS1\0"): return win::button::MOUSE_LEFT;
-		case keystring_hash("MS2\0"): return win::button::MOUSE_RIGHT;
-		case keystring_hash("MS3\0"): return win::button::MOUSE_MIDDLE;
-		case keystring_hash("MS4\0"): return win::button::MOUSE4;
-		case keystring_hash("MS5\0"): return win::button::MOUSE5;
-		case keystring_hash("MS6\0"): return win::button::MOUSE6;
-		case keystring_hash("MS7\0"): return win::button::MOUSE7;
+	case keystring_hash("MS1\0"): return win::Button::MOUSE_LEFT;
+	case keystring_hash("MS2\0"): return win::Button::MOUSE_RIGHT;
+	case keystring_hash("MS3\0"): return win::Button::MOUSE_MIDDLE;
+	case keystring_hash("MS4\0"): return win::Button::MOUSE4;
+	case keystring_hash("MS5\0"): return win::Button::MOUSE5;
+	case keystring_hash("MS6\0"): return win::Button::MOUSE6;
+	case keystring_hash("MS7\0"): return win::Button::MOUSE7;
 
-		case keystring_hash("AC01"): return win::button::A;
-		case keystring_hash("AB05"): return win::button::B;
-		case keystring_hash("AB03"): return win::button::C;
-		case keystring_hash("AC03"): return win::button::D;
-		case keystring_hash("AD03"): return win::button::E;
-		case keystring_hash("AC04"): return win::button::F;
-		case keystring_hash("AC05"): return win::button::G;
-		case keystring_hash("AC06"): return win::button::H;
-		case keystring_hash("AD08"): return win::button::I;
-		case keystring_hash("AC07"): return win::button::J;
-		case keystring_hash("AC08"): return win::button::K;
-		case keystring_hash("AC09"): return win::button::L;
-		case keystring_hash("AB07"): return win::button::M;
-		case keystring_hash("AB06"): return win::button::N;
-		case keystring_hash("AD09"): return win::button::O;
-		case keystring_hash("AD10"): return win::button::P;
-		case keystring_hash("AD01"): return win::button::Q;
-		case keystring_hash("AD04"): return win::button::R;
-		case keystring_hash("AC02"): return win::button::S;
-		case keystring_hash("AD05"): return win::button::T;
-		case keystring_hash("AD07"): return win::button::U;
-		case keystring_hash("AB04"): return win::button::V;
-		case keystring_hash("AD02"): return win::button::W;
-		case keystring_hash("AB02"): return win::button::X;
-		case keystring_hash("AD06"): return win::button::Y;
-		case keystring_hash("AB01"): return win::button::Z;
+	case keystring_hash("AC01"): return win::Button::A;
+	case keystring_hash("AB05"): return win::Button::B;
+	case keystring_hash("AB03"): return win::Button::C;
+	case keystring_hash("AC03"): return win::Button::D;
+	case keystring_hash("AD03"): return win::Button::E;
+	case keystring_hash("AC04"): return win::Button::F;
+	case keystring_hash("AC05"): return win::Button::G;
+	case keystring_hash("AC06"): return win::Button::H;
+	case keystring_hash("AD08"): return win::Button::I;
+	case keystring_hash("AC07"): return win::Button::J;
+	case keystring_hash("AC08"): return win::Button::K;
+	case keystring_hash("AC09"): return win::Button::L;
+	case keystring_hash("AB07"): return win::Button::M;
+	case keystring_hash("AB06"): return win::Button::N;
+	case keystring_hash("AD09"): return win::Button::O;
+	case keystring_hash("AD10"): return win::Button::P;
+	case keystring_hash("AD01"): return win::Button::Q;
+	case keystring_hash("AD04"): return win::Button::R;
+	case keystring_hash("AC02"): return win::Button::S;
+	case keystring_hash("AD05"): return win::Button::T;
+	case keystring_hash("AD07"): return win::Button::U;
+	case keystring_hash("AB04"): return win::Button::V;
+	case keystring_hash("AD02"): return win::Button::W;
+	case keystring_hash("AB02"): return win::Button::X;
+	case keystring_hash("AD06"): return win::Button::Y;
+	case keystring_hash("AB01"): return win::Button::Z;
 
-		case keystring_hash("AE10"): return win::button::D0;
-		case keystring_hash("AE01"): return win::button::D1;
-		case keystring_hash("AE02"): return win::button::D2;
-		case keystring_hash("AE03"): return win::button::D3;
-		case keystring_hash("AE04"): return win::button::D4;
-		case keystring_hash("AE05"): return win::button::D5;
-		case keystring_hash("AE06"): return win::button::D6;
-		case keystring_hash("AE07"): return win::button::D7;
-		case keystring_hash("AE08"): return win::button::D8;
-		case keystring_hash("AE09"): return win::button::D9;
+	case keystring_hash("AE10"): return win::Button::D0;
+	case keystring_hash("AE01"): return win::Button::D1;
+	case keystring_hash("AE02"): return win::Button::D2;
+	case keystring_hash("AE03"): return win::Button::D3;
+	case keystring_hash("AE04"): return win::Button::D4;
+	case keystring_hash("AE05"): return win::Button::D5;
+	case keystring_hash("AE06"): return win::Button::D6;
+	case keystring_hash("AE07"): return win::Button::D7;
+	case keystring_hash("AE08"): return win::Button::D8;
+	case keystring_hash("AE09"): return win::Button::D9;
 
-		case keystring_hash("TLDE"): return win::button::BACKTICK;
-		case keystring_hash("AE11"): return win::button::DASH;
-		case keystring_hash("AE12"): return win::button::EQUALS;
-		case keystring_hash("AD11"): return win::button::LBRACKET;
-		case keystring_hash("AD12"): return win::button::RBRACKET;
-		case keystring_hash("AC10"): return win::button::SEMICOLON;
-		case keystring_hash("AC11"): return win::button::APOSTROPHE;
-		case keystring_hash("AB08"): return win::button::COMMA;
-		case keystring_hash("AB09"): return win::button::PERIOD;
-		case keystring_hash("AB10"): return win::button::SLASH;
-		case keystring_hash("BKSL"): return win::button::BACKSLASH;
+	case keystring_hash("TLDE"): return win::Button::BACKTICK;
+	case keystring_hash("AE11"): return win::Button::DASH;
+	case keystring_hash("AE12"): return win::Button::EQUALS;
+	case keystring_hash("AD11"): return win::Button::LBRACKET;
+	case keystring_hash("AD12"): return win::Button::RBRACKET;
+	case keystring_hash("AC10"): return win::Button::SEMICOLON;
+	case keystring_hash("AC11"): return win::Button::APOSTROPHE;
+	case keystring_hash("AB08"): return win::Button::COMMA;
+	case keystring_hash("AB09"): return win::Button::PERIOD;
+	case keystring_hash("AB10"): return win::Button::SLASH;
+	case keystring_hash("BKSL"): return win::Button::BACKSLASH;
 
-		case keystring_hash("FK01"): return win::button::F1;
-		case keystring_hash("FK02"): return win::button::F2;
-		case keystring_hash("FK03"): return win::button::F3;
-		case keystring_hash("FK04"): return win::button::F4;
-		case keystring_hash("FK05"): return win::button::F5;
-		case keystring_hash("FK06"): return win::button::F6;
-		case keystring_hash("FK07"): return win::button::F7;
-		case keystring_hash("FK08"): return win::button::F8;
-		case keystring_hash("FK09"): return win::button::F9;
-		case keystring_hash("FK10"): return win::button::F10;
-		case keystring_hash("FK11"): return win::button::F11;
-		case keystring_hash("FK12"): return win::button::F12;
+	case keystring_hash("FK01"): return win::Button::F1;
+	case keystring_hash("FK02"): return win::Button::F2;
+	case keystring_hash("FK03"): return win::Button::F3;
+	case keystring_hash("FK04"): return win::Button::F4;
+	case keystring_hash("FK05"): return win::Button::F5;
+	case keystring_hash("FK06"): return win::Button::F6;
+	case keystring_hash("FK07"): return win::Button::F7;
+	case keystring_hash("FK08"): return win::Button::F8;
+	case keystring_hash("FK09"): return win::Button::F9;
+	case keystring_hash("FK10"): return win::Button::F10;
+	case keystring_hash("FK11"): return win::Button::F11;
+	case keystring_hash("FK12"): return win::Button::F12;
 
-		case keystring_hash("ESC\0"): return win::button::ESC;
-		case keystring_hash("PRSC"): return win::button::PRINT_SCR;
-		case keystring_hash("PAUS"): return win::button::PAUSE_BREAK;
-		case keystring_hash("INS\0"): return win::button::INSERT;
-		case keystring_hash("DELE"): return win::button::DELETE;
-		case keystring_hash("HOME"): return win::button::HOME;
-		case keystring_hash("PGUP"): return win::button::PAGE_UP;
-		case keystring_hash("PGDN"): return win::button::PAGE_DOWN;
-		case keystring_hash("END\0"): return win::button::END;
-		case keystring_hash("BKSP"): return win::button::BACKSPACE;
-		case keystring_hash("RTRN"): return win::button::RETURN;
-		case keystring_hash("KPEN"): return win::button::ENTER;
-		case keystring_hash("LFSH"): return win::button::LSHIFT;
-		case keystring_hash("RTSH"): return win::button::RSHIFT;
-		case keystring_hash("LCTL"): return win::button::LCTRL;
-		case keystring_hash("RCTL"): return win::button::RCTRL;
-		case keystring_hash("LALT"): return win::button::LALT;
-		case keystring_hash("RALT"): return win::button::RALT;
-		case keystring_hash("SPCE"): return win::button::SPACE;
-		case keystring_hash("COMP"): return win::button::MENU;
-		case keystring_hash("LWIN"): return win::button::LMETA;
-		case keystring_hash("RWIN"): return win::button::RMETA;
+	case keystring_hash("ESC\0"): return win::Button::ESC;
+	case keystring_hash("PRSC"): return win::Button::PRINT_SCR;
+	case keystring_hash("PAUS"): return win::Button::PAUSE_BREAK;
+	case keystring_hash("INS\0"): return win::Button::INSERT;
+	case keystring_hash("DELE"): return win::Button::DELETE;
+	case keystring_hash("HOME"): return win::Button::HOME;
+	case keystring_hash("PGUP"): return win::Button::PAGE_UP;
+	case keystring_hash("PGDN"): return win::Button::PAGE_DOWN;
+	case keystring_hash("END\0"): return win::Button::END;
+	case keystring_hash("BKSP"): return win::Button::BACKSPACE;
+	case keystring_hash("RTRN"): return win::Button::RETURN;
+	case keystring_hash("KPEN"): return win::Button::ENTER;
+	case keystring_hash("LFSH"): return win::Button::LSHIFT;
+	case keystring_hash("RTSH"): return win::Button::RSHIFT;
+	case keystring_hash("LCTL"): return win::Button::LCTRL;
+	case keystring_hash("RCTL"): return win::Button::RCTRL;
+	case keystring_hash("LALT"): return win::Button::LALT;
+	case keystring_hash("RALT"): return win::Button::RALT;
+	case keystring_hash("SPCE"): return win::Button::SPACE;
+	case keystring_hash("COMP"): return win::Button::MENU;
+	case keystring_hash("LWIN"): return win::Button::LMETA;
+	case keystring_hash("RWIN"): return win::Button::RMETA;
 
-		case keystring_hash("UP\0\0"): return win::button::UP;
-		case keystring_hash("LEFT"): return win::button::LEFT;
-		case keystring_hash("RGHT"): return win::button::RIGHT;
-		case keystring_hash("DOWN"): return win::button::DOWN;
+	case keystring_hash("UP\0\0"): return win::Button::UP;
+	case keystring_hash("LEFT"): return win::Button::LEFT;
+	case keystring_hash("RGHT"): return win::Button::RIGHT;
+	case keystring_hash("DOWN"): return win::Button::DOWN;
 
-		case keystring_hash("CAPS"): return win::button::CAPSLOCK;
-		case keystring_hash("TAB\0"): return win::button::TAB;
-		case keystring_hash("NMLK"): return win::button::NUM_LOCK;
-		case keystring_hash("KPDV"): return win::button::NUM_SLASH;
-		case keystring_hash("KPMU"): return win::button::NUM_MULTIPLY;
-		case keystring_hash("KPSU"): return win::button::NUM_MINUS;
-		case keystring_hash("KPAD"): return win::button::NUM_PLUS;
-		case keystring_hash("KPDL"): return win::button::NUM_DEL;
+	case keystring_hash("CAPS"): return win::Button::CAPSLOCK;
+	case keystring_hash("TAB\0"): return win::Button::TAB;
+	case keystring_hash("NMLK"): return win::Button::NUM_LOCK;
+	case keystring_hash("KPDV"): return win::Button::NUM_SLASH;
+	case keystring_hash("KPMU"): return win::Button::NUM_MULTIPLY;
+	case keystring_hash("KPSU"): return win::Button::NUM_MINUS;
+	case keystring_hash("KPAD"): return win::Button::NUM_PLUS;
+	case keystring_hash("KPDL"): return win::Button::NUM_DEL;
 
-		case keystring_hash("KP0\0"): return win::button::NUM0;
-		case keystring_hash("KP1\0"): return win::button::NUM1;
-		case keystring_hash("KP2\0"): return win::button::NUM2;
-		case keystring_hash("KP3\0"): return win::button::NUM3;
-		case keystring_hash("KP4\0"): return win::button::NUM4;
-		case keystring_hash("KP5\0"): return win::button::NUM5;
-		case keystring_hash("KP6\0"): return win::button::NUM6;
-		case keystring_hash("KP7\0"): return win::button::NUM7;
-		case keystring_hash("KP8\0"): return win::button::NUM8;
-		case keystring_hash("KP9\0"): return win::button::NUM9;
+	case keystring_hash("KP0\0"): return win::Button::NUM0;
+	case keystring_hash("KP1\0"): return win::Button::NUM1;
+	case keystring_hash("KP2\0"): return win::Button::NUM2;
+	case keystring_hash("KP3\0"): return win::Button::NUM3;
+	case keystring_hash("KP4\0"): return win::Button::NUM4;
+	case keystring_hash("KP5\0"): return win::Button::NUM5;
+	case keystring_hash("KP6\0"): return win::Button::NUM6;
+	case keystring_hash("KP7\0"): return win::Button::NUM7;
+	case keystring_hash("KP8\0"): return win::Button::NUM8;
+	case keystring_hash("KP9\0"): return win::Button::NUM9;
 
-		default: return win::button::UNDEFINED;
+	default: return win::Button::UNDEFINED;
 	}
 }
 
-win::display::display(const char *caption, int width, int height, int flags, window_handle parent)
+Display::Display(const char *caption, int width, int height, bool flags, window_handle parent)
 {
-	remote.reset(new display_remote);
-
-	remote->handler.key_button = handler_button;
-	remote->handler.character = handler_character;
-	remote->handler.mouse = handler_mouse;
+	button_handler = default_button_handler;
+	character_handler = default_character_handler;
+	mouse_handler = default_mouse_handler;
 	load_extensions();
 
 	int visual_attributes[] =
@@ -275,12 +254,12 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	int fb_count = 0;
 	GLXFBConfig *fbconfig = glXChooseFBConfig(xdisplay, DefaultScreen(xdisplay), visual_attributes, &fb_count);
 	if(fbconfig == NULL)
-		throw exception("Could not find a suitable frame buffer configuration");
+		win::bug("Could not find a suitable frame buffer configuration");
 
 	// get a X visual config
 	XVisualInfo *xvi = glXGetVisualFromFBConfig(xdisplay, fbconfig[0]);
 	if(xvi == NULL)
-		throw exception("Could not find a suitable X Visual configuration");
+		win::bug("Could not find a suitable X Visual configuration");
 
 	// window settings
 	XSetWindowAttributes xswa;
@@ -288,17 +267,17 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	xswa.event_mask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
 
 	// create da window
-	remote->window_ = XCreateWindow(xdisplay, RootWindow(xdisplay, xvi->screen), 0, 0, width, height, 0, xvi->depth, InputOutput, xvi->visual, CWColormap | CWEventMask, &xswa);
-	XMapWindow(xdisplay, remote->window_);
-	XStoreName(xdisplay, remote->window_, caption);
+	window = XCreateWindow(xdisplay, RootWindow(xdisplay, xvi->screen), 0, 0, width, height, 0, xvi->depth, InputOutput, xvi->visual, CWColormap | CWEventMask, &xswa);
+	XMapWindow(xdisplay, window);
+	XStoreName(xdisplay, window, caption);
 
 	// fullscreen
 	if(flags & FULLSCREEN)
-		XChangeProperty(xdisplay, remote->window_, XInternAtom(xdisplay, "_NET_WM_STATE", False), XA_ATOM, 32, PropModeReplace, (const unsigned char*)&atom_fullscreen, 1);
+		XChangeProperty(xdisplay, window, XInternAtom(xdisplay, "_NET_WM_STATE", False), XA_ATOM, 32, PropModeReplace, (const unsigned char*)&atom_fullscreen, 1);
 
 	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)glXGetProcAddress((unsigned char*)"glXCreateContextAttribsARB");
 	if(glXCreateContextAttribsARB == NULL)
-		throw exception("Could not find function glXCreateContextAttribsARB");
+		win::bug("Could not find function glXCreateContextAttribsARB");
 
 	const int context_attributes[] =
 	{
@@ -308,90 +287,94 @@ win::display::display(const char *caption, int width, int height, int flags, win
 	};
 
 	// create opengl context
-	remote->context_ = glXCreateContextAttribsARB(xdisplay, fbconfig[0], NULL, true, context_attributes);
-	if(remote->context_ == None)
-		throw exception("Could not create an OpenGL " + std::to_string(context_attributes[1]) + "." + std::to_string(context_attributes[3])  + " context");
-	glXMakeCurrent(xdisplay, remote->window_, remote->context_);
+	context = glXCreateContextAttribsARB(xdisplay, fbconfig[0], NULL, true, context_attributes);
+	if(context == None)
+		win::bug("Could not create an OpenGL " + std::to_string(context_attributes[1]) + "." + std::to_string(context_attributes[3])  + " context");
+	glXMakeCurrent(xdisplay, window, context);
 
 	// set up delete window protocol
-	XSetWMProtocols(xdisplay, remote->window_, &atom_delete_window, 1);
+	XSetWMProtocols(xdisplay, window, &atom_delete_window, 1);
 
 	// vsync
-	glXSwapIntervalEXT(xdisplay, remote->window_, 1);
+	glXSwapIntervalEXT(xdisplay, window, 1);
 
 	XFree(xvi);
 	XFree(fbconfig);
 }
 
-// return false if application is to exit
-bool win::display::process()
+Display::~Display()
 {
-	// handle evdev event-joystick
-	process_joystick();
+	glXMakeCurrent(xdisplay, None, NULL);
+	glXDestroyContext(xdisplay, context);
+	XDestroyWindow(xdisplay, window);
+}
 
+// return false if application is to exit
+bool Display::process()
+{
 	while(XPending(xdisplay))
 	{
 		XEvent xevent;
 		XPeekEvent(xdisplay, &xevent);
-		if(xevent.xany.window != remote->window_)
+		if(xevent.xany.window != window)
 			return true;
 		XNextEvent(xdisplay, &xevent);
 
 		switch(xevent.type)
 		{
-			case ClientMessage: return false;
+		case ClientMessage: return false;
 
-			case KeyPress:
+		case KeyPress:
+		{
+			button_handler(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), true);
+			const KeySym sym = x_get_keysym(&xevent.xkey);
+			if(sym)
+				character_handler(sym);
+			break;
+		}
+		case KeyRelease:
+		{
+			XEvent e;
+			if(XPending(xdisplay))
 			{
-				remote->handler.key_button(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), true);
-				const KeySym sym = x_get_keysym(&xevent.xkey);
-				if(sym)
-					remote->handler.character(sym);
+				XPeekEvent(xdisplay, &e);
+				if(e.xany.window == xevent.xany.window && xevent.xkey.keycode == e.xkey.keycode && e.type == KeyPress)
+					break;
+			}
+
+			button_handler(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), false);
+			break;
+		}
+		case MotionNotify:
+			mouse_handler(xevent.xmotion.x, xevent.xmotion.y);
+			break;
+		case ButtonPress:
+		case ButtonRelease:
+			switch(xevent.xbutton.button)
+			{
+			case 1:
+				button_handler(Button::MOUSE_LEFT, xevent.type == ButtonPress);
+				break;
+			case 2:
+				button_handler(Button::MOUSE_MIDDLE, xevent.type == ButtonPress);
+				break;
+			case 3:
+				button_handler(Button::MOUSE_RIGHT, xevent.type == ButtonPress);
 				break;
 			}
-			case KeyRelease:
-			{
-				XEvent e;
-				if(XPending(xdisplay))
-				{
-					XPeekEvent(xdisplay, &e);
-					if(e.xany.window == xevent.xany.window && xevent.xkey.keycode == e.xkey.keycode && e.type == KeyPress)
-						break;
-				}
-
-				remote->handler.key_button(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), false);
-				break;
-			}
-			case MotionNotify:
-				remote->handler.mouse(xevent.xmotion.x, xevent.xmotion.y);
-				break;
-			case ButtonPress:
-			case ButtonRelease:
-				switch(xevent.xbutton.button)
-				{
-					case 1:
-						remote->handler.key_button(button::MOUSE_LEFT, xevent.type == ButtonPress);
-						break;
-					case 2:
-						remote->handler.key_button(button::MOUSE_MIDDLE, xevent.type == ButtonPress);
-						break;
-					case 3:
-						remote->handler.key_button(button::MOUSE_RIGHT, xevent.type == ButtonPress);
-						break;
-				}
-				break;
+			break;
 		}
 	}
 
 	return true;
 }
 
-void win::display::swap() const
+void Display::swap()
 {
-	glXSwapBuffers(xdisplay, remote->window_);
+	glXSwapBuffers(xdisplay, window);
 }
 
-int win::display::width() const
+int Display::width()
 {
 	Window root;
 	int xpos;
@@ -401,12 +384,12 @@ int win::display::width() const
 	unsigned border;
 	unsigned depth;
 
-	XGetGeometry(xdisplay, remote->window_, &root, &xpos, &ypos, &width, &height, &border, &depth);
+	XGetGeometry(xdisplay, window, &root, &xpos, &ypos, &width, &height, &border, &depth);
 
 	return width;
 }
 
-int win::display::height() const
+int Display::height()
 {
 	Window root;
 	int xpos;
@@ -416,16 +399,16 @@ int win::display::height() const
 	unsigned border;
 	unsigned depth;
 
-	XGetGeometry(xdisplay, remote->window_, &root, &xpos, &ypos, &width, &height, &border, &depth);
+	XGetGeometry(xdisplay, window, &root, &xpos, &ypos, &width, &height, &border, &depth);
 
 	return height;
 }
 
-void win::display::cursor(bool show)
+void Display::cursor(bool show)
 {
 	if(show)
 	{
-		XUndefineCursor(xdisplay, remote->window_);
+		XUndefineCursor(xdisplay, window);
 	}
 	else
 	{
@@ -434,70 +417,42 @@ void win::display::cursor(bool show)
 		char data[2] = {0, 0};
 		Cursor cursor;
 
-		pm = XCreateBitmapFromData(xdisplay, remote->window_, data, 1, 1);
+		pm = XCreateBitmapFromData(xdisplay, window, data, 1, 1);
 		cursor = XCreatePixmapCursor(xdisplay, pm, pm, &dummy, &dummy, 0, 0);
 		XFreePixmap(xdisplay, pm);
 
-		XDefineCursor(xdisplay, remote->window_, cursor);
+		XDefineCursor(xdisplay, window, cursor);
 	}
 }
 
-void win::display::vsync(bool on)
+void Display::vsync(bool on)
 {
-	glXSwapIntervalEXT(xdisplay, remote->window_, on);
+	glXSwapIntervalEXT(xdisplay, window, on);
 }
 
-void win::display::event_button(fn_event_button f)
+void Display::register_button_handler(ButtonHandler f)
 {
-	remote->handler.key_button = f;
-	remote->joystick_.event_button(f);
+	button_handler = std::move(f);
 }
 
-void win::display::event_joystick(fn_event_joystick f)
+void Display::register_character_handler(CharacterHandler f)
 {
-	remote->joystick_.event_joystick(std::move(f));
+	character_handler = std::move(f);
 }
 
-void win::display::event_character(fn_event_character f)
+void Display::register_mouse_handler(MouseHandler f)
 {
-	remote->handler.character = std::move(f);
+	mouse_handler = std::move(f);
 }
 
-void win::display::event_mouse(fn_event_mouse f)
-{
-	remote->handler.mouse = std::move(f);
-}
-
-int win::display::screen_width()
+int Display::display_width()
 {
 	return WidthOfScreen(ScreenOfDisplay(xdisplay, 0));
 }
 
-int win::display::screen_height()
+int Display::display_height()
 {
 	return HeightOfScreen(ScreenOfDisplay(xdisplay, 0));
-}
-
-win::audio_engine win::display::make_audio_engine(audio_engine::sound_config_fn fn)
-{
-	return audio_engine(fn);
-}
-
-void win::display::process_joystick()
-{
-	remote->joystick_.process();
-}
-
-void win::display::finalize()
-{
-	if(!remote)
-		return;
-
-	glXMakeCurrent(xdisplay, None, NULL);
-	glXDestroyContext(xdisplay, remote->context_);
-	XDestroyWindow(xdisplay, remote->window_);
-
-	remote.reset();
 }
 
 /* ------------------------------------*/
@@ -701,70 +656,70 @@ LRESULT CALLBACK win::display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 
 	switch(msg)
 	{
-		case WM_CREATE:
-			win_init_gl(remote, hwnd);
-			return 0;
-		case WM_CHAR:
-			if(wp >= ' ' && wp <= '~')
-				remote->handler.character(wp);
-			return 0;
-		case WM_KEYDOWN:
+	case WM_CREATE:
+		win_init_gl(remote, hwnd);
+		return 0;
+	case WM_CHAR:
+		if(wp >= ' ' && wp <= '~')
+			remote->handler.character(wp);
+		return 0;
+	case WM_KEYDOWN:
+	{
+		const unsigned scancode = (lp >> 16) & 0xff;
+		const win::button key = get_physical_key(scancode);
+		if(key == win::button::UNDEFINED)
 		{
-			const unsigned scancode = (lp >> 16) & 0xff;
-			const win::button key = get_physical_key(scancode);
-			if(key == win::button::UNDEFINED)
-			{
-				std::cerr << "Unrecognized virtual key " << wp << " scancode " << scancode << std::endl;
-				return 0;
-			}
-
-			remote->handler.key_button(get_physical_key(scancode), true);
+			std::cerr << "Unrecognized virtual key " << wp << " scancode " << scancode << std::endl;
 			return 0;
 		}
-		case WM_KEYUP:
-		{
-			const unsigned scancode = (lp >> 16) & 0xff;
-			const win::button key = get_physical_key(scancode);
-			if(key == win::button::UNDEFINED)
-			{
-				std::cerr << "Unrecognized virtual key " << wp << " scancode " << scancode << std::endl;
-				return 0;
-			}
 
-			remote->handler.key_button(get_physical_key(scancode), false);
+		remote->handler.key_button(get_physical_key(scancode), true);
+		return 0;
+	}
+	case WM_KEYUP:
+	{
+		const unsigned scancode = (lp >> 16) & 0xff;
+		const win::button key = get_physical_key(scancode);
+		if(key == win::button::UNDEFINED)
+		{
+			std::cerr << "Unrecognized virtual key " << wp << " scancode " << scancode << std::endl;
 			return 0;
 		}
-		case WM_SYSCOMMAND:
-			if(wp != SC_KEYMENU)
-				return DefWindowProc(hwnd, msg, wp, lp);
-		case WM_MOUSEMOVE:
-			remote->handler.mouse(LOWORD(lp), HIWORD(lp));
-			return 0;
-		case WM_LBUTTONDOWN:
-			remote->handler.key_button(button::MOUSE_LEFT, true);
-			return 0;
-		case WM_LBUTTONUP:
-			remote->handler.key_button(button::MOUSE_LEFT, false);
-			return 0;
-		case WM_RBUTTONDOWN:
-			remote->handler.key_button(button::MOUSE_RIGHT, true);
-			return 0;
-		case WM_RBUTTONUP:
-			remote->handler.key_button(button::MOUSE_RIGHT, false);
-			return 0;
-		case WM_MBUTTONDOWN:
-			remote->handler.key_button(button::MOUSE_MIDDLE, true);
-			return 0;
-		case WM_MBUTTONUP:
-			remote->handler.key_button(button::MOUSE_MIDDLE, false);
-			return 0;
-		case WM_CLOSE:
-			remote->winquit_ = true;
-			return 0;
-		case WM_ERASEBKGND:
-			return 0;
-		default:
+
+		remote->handler.key_button(get_physical_key(scancode), false);
+		return 0;
+	}
+	case WM_SYSCOMMAND:
+		if(wp != SC_KEYMENU)
 			return DefWindowProc(hwnd, msg, wp, lp);
+	case WM_MOUSEMOVE:
+		remote->handler.mouse(LOWORD(lp), HIWORD(lp));
+		return 0;
+	case WM_LBUTTONDOWN:
+		remote->handler.key_button(button::MOUSE_LEFT, true);
+		return 0;
+	case WM_LBUTTONUP:
+		remote->handler.key_button(button::MOUSE_LEFT, false);
+		return 0;
+	case WM_RBUTTONDOWN:
+		remote->handler.key_button(button::MOUSE_RIGHT, true);
+		return 0;
+	case WM_RBUTTONUP:
+		remote->handler.key_button(button::MOUSE_RIGHT, false);
+		return 0;
+	case WM_MBUTTONDOWN:
+		remote->handler.key_button(button::MOUSE_MIDDLE, true);
+		return 0;
+	case WM_MBUTTONUP:
+		remote->handler.key_button(button::MOUSE_MIDDLE, false);
+		return 0;
+	case WM_CLOSE:
+		remote->winquit_ = true;
+		return 0;
+	case WM_ERASEBKGND:
+		return 0;
+	default:
+		return DefWindowProc(hwnd, msg, wp, lp);
 	}
 
 	win::bug("late return from wndproc");
@@ -921,7 +876,9 @@ void win::display::finalize()
 
 	remote.reset();
 }
+}
 
 #else
 #error "unsupported platform"
 #endif
+}

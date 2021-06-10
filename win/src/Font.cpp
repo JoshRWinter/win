@@ -12,52 +12,53 @@
 static constexpr int cols = 16;
 static constexpr int rows = 6;
 
-win::font::font(const font_renderer &parent, data file, float fontsize)
+namespace win
 {
-	remote.reset(new font_remote);
-	remote->fontsize = fontsize;
+
+Font::Font(const FontRenderer &parent, AssetRollStream file, float size)
+{
+	fontsize = size;
 
 	std::vector<unsigned char> chunk(file.size());
-	if(file.read(chunk.data(), file.size()) != file.size())
-		bug("Could not read entire font file");
+	file.read(chunk.data(), file.size());
 
-	const int pixelsize = (fontsize / (parent.remote->right_ - parent.remote->left_)) * parent.remote->display_width_;
+	const int pixelsize = (fontsize / (parent.right - parent.left)) * parent.display_width;
 
 	int error;
 	FT_Library library;
 	error=FT_Init_FreeType(&library);
 	if(error)
-		throw exception("Error initializing freetype");
+		win::bug("Error initializing freetype");
 
 	FT_Face face;
 	error=FT_New_Memory_Face(library,chunk.data(),chunk.size(),0,&face);
 	if(error)
-		throw exception("Error creating face");
+		win::bug("Error creating face");
 
 	error=FT_Set_Pixel_Sizes(face,0,pixelsize);
 	if(error)
-		throw exception("Error setting pixel size");
+		win::bug("Error setting pixel size");
 
-	remote->vertical = (((float)(face->size->metrics.height >> 6)) / parent.remote->display_width_) * (parent.remote->right_ - parent.remote->left_);
+	vertical = (((float)(face->size->metrics.height >> 6)) / parent.display_width) * (parent.right - parent.left);
 
 	// get largest width and height
 	int bitmap_width = 0;
 	int bitmap_height = 0;
-	remote->max_bearing_y = 0.0f;
+	max_bearing_y = 0.0f;
 	for(char x = ' '; x <= '~'; ++x)
 	{
 		error = FT_Load_Char(face, x, FT_LOAD_BITMAP_METRICS_ONLY);
 		if(error)
-			throw exception("Could not render glyph " + std::to_string(x));
+			win::bug("Could not render glyph " + std::to_string(x));
 
 		// fill in the metrics
 		const int metric_index = x - ' ';
-		remote->metrics.at(metric_index).advance = ((float)(face->glyph->metrics.horiAdvance >> 6) / parent.remote->display_width_) * (parent.remote->right_ - parent.remote->left_);
-		remote->metrics[metric_index].bearing_y = (((float)((face->bbox.yMax / 2048.0f) * face->size->metrics.y_ppem) - (face->glyph->metrics.horiBearingY >> 6)) / parent.remote->display_height_) * (parent.remote->bottom_ - parent.remote->top_);
-		remote->metrics[metric_index].bitmap_left = ((float)face->glyph->bitmap_left / parent.remote->display_width_) * (parent.remote->right_ - parent.remote->left_);
+		metrics.at(metric_index).advance = ((float)(face->glyph->metrics.horiAdvance >> 6) / parent.display_width) * (parent.right - parent.left);
+		metrics[metric_index].bearing_y = (((float)((face->bbox.yMax / 2048.0f) * face->size->metrics.y_ppem) - (face->glyph->metrics.horiBearingY >> 6)) / parent.display_height) * (parent.bottom - parent.top);
+		metrics[metric_index].bitmap_left = ((float)face->glyph->bitmap_left / parent.display_width) * (parent.right - parent.left);
 
-		if(remote->metrics[metric_index].bearing_y < remote->max_bearing_y)
-			remote->max_bearing_y = remote->metrics[metric_index].bearing_y;
+		if(metrics[metric_index].bearing_y < max_bearing_y)
+			max_bearing_y = metrics[metric_index].bearing_y;
 
 		if((int)face->glyph->bitmap.width > bitmap_width)
 			bitmap_width = (int)face->glyph->bitmap.width;
@@ -65,8 +66,8 @@ win::font::font(const font_renderer &parent, data file, float fontsize)
 			bitmap_height = (int)face->glyph->bitmap.rows;
 	}
 
-	remote->box_width = ((float)bitmap_width / parent.remote->display_width_) * (parent.remote->right_ - parent.remote->left_);
-	remote->box_height = ((float)bitmap_height / parent.remote->display_height_) * (parent.remote->bottom_ - parent.remote->top_);
+	box_width = ((float)bitmap_width / parent.display_width) * (parent.right - parent.left);
+	box_height = ((float)bitmap_height / parent.display_height) * (parent.bottom - parent.top);
 
 	std::vector<unsigned char> bitmap(bitmap_width * bitmap_height * rows * cols * 4);
 	memset(bitmap.data(), 0, bitmap.size());
@@ -74,7 +75,7 @@ win::font::font(const font_renderer &parent, data file, float fontsize)
 	{
 		error = FT_Load_Char(face,character,FT_LOAD_RENDER);
 		if(error)
-			throw exception(std::string("Error rendering char ") + std::to_string((int)character) + " (" + std::to_string(character) + ")");
+			win::bug(std::string("Error rendering char ") + std::to_string((int)character) + " (" + std::to_string(character) + ")");
 
 		const unsigned char *buffer = face->glyph->bitmap.buffer;
 
@@ -92,7 +93,7 @@ win::font::font(const font_renderer &parent, data file, float fontsize)
 			{
 				char str[2] = {(char)character, 0};
 				std::cerr << "char " << (char)character << " is " << glyphheight << " rows tall, max " << (((face->bbox.yMax - face->bbox.yMin) / 2048.0f) * face->size->metrics.y_ppem) << std::endl;
-				throw exception("char " + std::to_string(character) + " (" + std::string(str) + ") out of bounds " + (i < 0 ? "negative" : "positive") + " by " + std::to_string(i < 0 ? -i : i - (bitmap_width * bitmap_height * rows * cols * 4)));
+				win::bug("char " + std::to_string(character) + " (" + std::string(str) + ") out of bounds " + (i < 0 ? "negative" : "positive") + " by " + std::to_string(i < 0 ? -i : i - (bitmap_width * bitmap_height * rows * cols * 4)));
 			}
 
 			int level = buffer[j];
@@ -119,8 +120,9 @@ win::font::font(const font_renderer &parent, data file, float fontsize)
 		}
 	}
 
-	glGenTextures(1, &remote->atlas);
-	glBindTexture(GL_TEXTURE_2D, remote->atlas);
+	GLuint tex;
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
@@ -129,28 +131,13 @@ win::font::font(const font_renderer &parent, data file, float fontsize)
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
+
+	atlas = Texture(tex);
 }
 
-win::font::font(font &&rhs)
+float Font::size() const
 {
-	remote = std::move(rhs.remote);
-}
-
-win::font::~font()
-{
-	finalize();
-}
-
-win::font &win::font::operator=(font &&rhs)
-{
-	finalize();
-	remote = std::move(rhs.remote);
-	return *this;
-}
-
-float win::font::size() const
-{
-	return remote->fontsize;
+	return fontsize;
 }
 
 static inline float alignx(int iwidth, float fwidth, float xpos)
@@ -161,16 +148,6 @@ static inline float alignx(int iwidth, float fwidth, float xpos)
 static inline float aligny(int iheight, float fheight, float ypos)
 {
 	return ((((int)((ypos / fheight) * iheight)) / (float)iheight) * fheight);
-}
-
-void win::font::finalize()
-{
-	if(!remote)
-		return;
-
-	glDeleteTextures(1, &remote->atlas);
-
-	remote.reset();
 }
 
 // font shaders
@@ -199,43 +176,34 @@ static const char *vertexshader =
 "}\n"
 ;
 
-win::font_renderer::font_renderer(int iwidth, int iheight, float left, float right, float bottom, float top)
+FontRenderer::FontRenderer(int iwidth, int iheight, float left, float right, float bottom, float top)
 {
-	remote.reset(new font_renderer_remote);
-
-	remote->display_width_ = iwidth;
-	remote->display_height_ = iheight;
-	remote->left_ = left;
-	remote->right_ = right;
-	remote->bottom_ = bottom;
-	remote->top_ = top;
+	display_width = iwidth;
+	display_height = iheight;
+	this->left = left;
+	this->right = right;
+	this->bottom = bottom;
+	this->top = top;
 
 	// shaders and uniforms
-	remote->program_ = load_shaders(vertexshader, fragmentshader);
-	glUseProgram(remote->program_);
-	remote->uniform_size_ = glGetUniformLocation(remote->program_, "size");
-	remote->uniform_color_ = glGetUniformLocation(remote->program_, "color");
-	int uniform_projection = glGetUniformLocation(remote->program_, "projection");
+	program = Program(load_shaders(vertexshader, fragmentshader));
+	glUseProgram(program.get());
+	uniform_size = glGetUniformLocation(program.get(), "size");
+	uniform_color = glGetUniformLocation(program.get(), "color");
+	int uniform_projection = glGetUniformLocation(program.get(), "projection");
 
 	float ortho_matrix[16];
 	win::init_ortho(ortho_matrix, left, right, bottom, top);
 	glUniformMatrix4fv(uniform_projection, 1, false, ortho_matrix);
 
-	// gen vaos and vbos
-	glGenVertexArrays(1, &remote->vao_);
-	glGenBuffers(1, &remote->vbo_vertex_);
-	glGenBuffers(1, &remote->vbo_position_);
-	glGenBuffers(1, &remote->vbo_texcoord_);
-	glGenBuffers(1, &remote->ebo_);
-
-	glBindVertexArray(remote->vao_);
+	glBindVertexArray(vao.get());
 
 	// element indices
 	unsigned int indices[] =
 	{
 		0, 1, 3, 3, 1, 2
 	};
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, remote->ebo_);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo.get());
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	const float half_pixel_width = (1 / 752.0f) / 2.0f;
@@ -250,7 +218,7 @@ win::font_renderer::font_renderer(int iwidth, int iheight, float left, float rig
 		0.5f, 0.5f, (1.0f / cols) - half_pixel_width, (1.0f / rows) - half_pixel_height
 	};
 
-	glBindBuffer(GL_ARRAY_BUFFER, remote->vbo_vertex_);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex.get());
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
@@ -258,48 +226,31 @@ win::font_renderer::font_renderer(int iwidth, int iheight, float left, float rig
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(float) * 4, (void*)(sizeof(float) * 2));
 
 	// generic attributes
-	glBindBuffer(GL_ARRAY_BUFFER, remote->vbo_position_);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position.get());
 	glEnableVertexAttribArray(2);
 	glVertexAttribDivisor(2, 1);
 	glVertexAttribPointer(2, 2, GL_FLOAT, false, 0, NULL);
 
-	glBindBuffer(GL_ARRAY_BUFFER, remote->vbo_texcoord_);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord.get());
 	glEnableVertexAttribArray(3);
 	glVertexAttribDivisor(3, 1);
 	glVertexAttribPointer(3, 2, GL_UNSIGNED_SHORT, true, 0, NULL);
 }
 
-win::font_renderer::font_renderer(font_renderer &&rhs)
-{
-	remote = std::move(rhs.remote);
-}
-
-win::font_renderer::~font_renderer()
-{
-	finalize();
-}
-
-win::font_renderer &win::font_renderer::operator=(font_renderer &&rhs)
-{
-	finalize();
-	remote = std::move(rhs.remote);
-	return *this;
-}
-
-void win::font_renderer::draw(const font &fnt, const char *text, float xpos, float ypos, const color &clr, int flags)
+void FontRenderer::draw(const Font &fnt, const char *text, float xpos, float ypos, const Color &clr, bool centered)
 {
 	const int textlen = strlen(text);
 
-	remote->pos_buffer.clear();
-	remote->texcoord_buffer.clear();
+	pos_buffer.clear();
+	texcoord_buffer.clear();
 
 	// fill vbos
 	float xoffset;
-	if(flags & CENTERED)
+	if(centered)
 		xoffset = xpos - (line_length(fnt, text, 0) / 2.0f);
 	else
 		xoffset = xpos;
-	float yoffset = ypos - fnt.remote->max_bearing_y;
+	float yoffset = ypos - fnt.max_bearing_y;
 	int charcount = 0;
 	for(int i = 0; i < textlen; ++i)
 	{
@@ -307,8 +258,8 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 
 		if(text[i] == '\n')
 		{
-			yoffset += fnt.remote->vertical;
-			if(flags & CENTERED)
+			yoffset += fnt.vertical;
+			if(centered)
 				xoffset = xpos - (line_length(fnt, text, i + 1) / 2.0f);
 			else
 				xoffset = xpos;
@@ -316,54 +267,49 @@ void win::font_renderer::draw(const font &fnt, const char *text, float xpos, flo
 		}
 		else if(text[i] == ' ')
 		{
-			xoffset += fnt.remote->metrics.at(metrics_index).advance - fnt.remote->metrics.at(metrics_index).bitmap_left;
+			xoffset += fnt.metrics.at(metrics_index).advance - fnt.metrics.at(metrics_index).bitmap_left;
 			continue;
 		}
 
 		if(text[i] < ' ' || text[i] > '~')
-			throw exception("non printing ascii character: " + std::to_string((int)text[i]) + " found in text string");
+			win::bug("non printing ascii character: " + std::to_string((int)text[i]) + " found in text string");
 
 		// pos vbo
-		remote->pos_buffer.push_back(alignx(remote->display_width_, remote->right_ - remote->left_, xoffset));
-		remote->pos_buffer.push_back(aligny(remote->display_height_, remote->top_ - remote->bottom_, yoffset + fnt.remote->metrics.at(metrics_index).bearing_y));
+		pos_buffer.push_back(alignx(display_width, right - left, xoffset));
+		pos_buffer.push_back(aligny(display_height, top - bottom, yoffset + fnt.metrics.at(metrics_index).bearing_y));
 
 		// texcoord vbo
 		const float xnormal = 1.0f / cols;
 		const float ynormal = 1.0f / rows;
 		unsigned short xcoord = ((float)((text[i] - ' ') % 16) * xnormal) * USHRT_MAX;
 		unsigned short ycoord = ((float)((text[i] - ' ') / 16) * ynormal) * USHRT_MAX;
-		remote->texcoord_buffer.push_back(xcoord);
-		remote->texcoord_buffer.push_back(USHRT_MAX - ycoord);
+		texcoord_buffer.push_back(xcoord);
+		texcoord_buffer.push_back(USHRT_MAX - ycoord);
 
-		xoffset += fnt.remote->metrics[metrics_index].advance - fnt.remote->metrics.at(metrics_index).bitmap_left;
+		xoffset += fnt.metrics[metrics_index].advance - fnt.metrics.at(metrics_index).bitmap_left;
 
 		++charcount;
 	}
 
-	glBindVertexArray(remote->vao_);
-	glUseProgram(remote->program_);
+	glBindVertexArray(vao.get());
+	glUseProgram(program.get());
 
-	glUniform2f(remote->uniform_size_, fnt.remote->box_width, fnt.remote->box_height);
-	glUniform4f(remote->uniform_color_, clr.red, clr.green, clr.blue, clr.alpha);
+	glUniform2f(uniform_size, fnt.box_width, fnt.box_height);
+	glUniform4f(uniform_color, clr.red, clr.green, clr.blue, clr.alpha);
 
-	glBindBuffer(GL_ARRAY_BUFFER, remote->vbo_position_);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * charcount * 2, remote->pos_buffer.data(), GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position.get());
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * charcount * 2, pos_buffer.data(), GL_DYNAMIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, remote->vbo_texcoord_);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned short) * 2 * charcount, remote->texcoord_buffer.data(), GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord.get());
+	glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned short) * 2 * charcount, texcoord_buffer.data(), GL_DYNAMIC_DRAW);
 
-	glBindTexture(GL_TEXTURE_2D, fnt.remote->atlas);
+	glBindTexture(GL_TEXTURE_2D, fnt.atlas.get());
 
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, charcount);
 }
 
-win::font win::font_renderer::make_font(data file, float size)
-{
-	return font(*this, std::move(file), size);
-}
-
 // calculate line length, only up to the first newline after <start>
-float win::font_renderer::line_length(const font &fnt, const char *text, int start) const
+float FontRenderer::line_length(const Font &fnt, const char *text, int start) const
 {
 	const int len = strlen(text);
 	float length = 0.0f;
@@ -373,23 +319,10 @@ float win::font_renderer::line_length(const font &fnt, const char *text, int sta
 		if(text[i] == '\n')
 			break;
 
-		length += fnt.remote->metrics[text[i] - ' '].advance - fnt.remote->metrics[text[i] - ' '].bitmap_left;
+		length += fnt.metrics[text[i] - ' '].advance - fnt.metrics[text[i] - ' '].bitmap_left;
 	}
 
 	return length;
 }
 
-void win::font_renderer::finalize()
-{
-	if(!remote)
-		return;
-
-	glDeleteVertexArrays(1, &remote->vao_);
-	glDeleteBuffers(1, &remote->vbo_vertex_);
-	glDeleteBuffers(1, &remote->vbo_position_);
-	glDeleteBuffers(1, &remote->vbo_texcoord_);
-
-	glDeleteProgram(remote->program_);
-
-	remote.reset();
 }

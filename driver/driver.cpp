@@ -40,65 +40,36 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 int main()
 #endif
 {
-	try
-	{
-		return go();
-	}
-	catch(const std::exception &e)
-	{
-#ifdef WINPLAT_WINDOWS
-		MessageBox(NULL, ("A critical error was encountered:\n"s + e.what()).c_str(), "Critical Error", MB_ICONEXCLAMATION);
-#else
-		std::cerr << "A critical error was encountered:\n"s + e.what() << std::endl;
-#endif
-		return 1;
-	}
-}
-
-int go()
-{
-	win::system system;
-	win::display display2;
-	display2 = system.make_display("window caption", 800, 600);
-	win::display display = std::move(display2);
+	win::Display display("window caption", 800, 600);
 	display.cursor(false);
 
 #if defined WINPLAT_LINUX
-	win::roll roll2;
-	roll2 = "/home/josh/programming/win/driver/assets.roll";
+	win::AssetRoll roll("/home/josh/programming/win/driver/assets.roll");
 #elif defined WINPLAT_WINDOWS
 	win::roll roll2;
 	roll2 = "c:\\users\\josh\\desktop\\win\\driver\\assets.roll";
 #endif
-	win::roll roll = std::move(roll2);
 
-	win::texture texture2;
-	texture2 = roll["../../fishtank/assets_local/beacon_1.tga"];
-	win::texture texture = std::move(texture2);
+	win::Texture texture;
+	win::Texture texture2 = (roll["../../fishtank/assets_local/beacon_1.tga"], win::TextureMode::linear);
+	texture = std::move(texture2);
 
-	win::atlas atlas2;
-	atlas2 = win::atlas(roll["main.atlas"]);
-	win::atlas atlas = std::move(atlas2);
+	win::Atlas atlas(roll["main.atlas"]);
 
-	win::sound music2, effect2;
-	music2 = roll["../../fishtank/assets_local/Motions.ogg"];
-	effect2 = roll["../../fishtank/assets_local/platform_destroy.ogg"];
-	win::sound music = std::move(music2);
-	win::sound effect = std::move(effect2);
+	win::Sound music(roll["../../fishtank/assets_local/Motions.ogg"]);
+	win::Sound effect(roll["../../fishtank/assets_local/platform_destroy.ogg"]);
 
-	win::audio_engine audio_engine2;
-	audio_engine2 = display.make_audio_engine(sound_config);
-	win::audio_engine audio_engine = std::move(audio_engine2);
+	win::AudioEngine audio_engine;
+	win::AudioEngine audio_engine2(display, sound_config);
+	audio_engine = std::move(audio_engine2);
 
-	win::font_renderer font_renderer2;
-	font_renderer2 = display.make_font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
-	win::font_renderer font_renderer = std::move(font_renderer2);
-	win::font font12;
-	font12 = font_renderer.make_font(roll["../../fishtank/assets/arial.ttf"], 0.5f);
-	win::font font1 = std::move(font12);
+	win::FontRenderer font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
+	win::Font font1;
+	win::Font font2(font_renderer, roll["../../fishtank/assets/arial.ttf"], 0.5f);
+	font1 = std::move(font2);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
-	std::cerr << "screen width is " << win::display::screen_width() << " and screen height is " << win::display::screen_height() << std::endl;
+	std::cerr << "screen width is " << win::Display::display_width() << " and screen height is " << win::Display::display_height() << std::endl;
 
 	const unsigned short *const coords = atlas.coords(3);
 	const float verts[] =
@@ -113,31 +84,28 @@ int go()
 		0, 1, 2, 0, 2, 3
 	};
 
-	win::program program2 = win::load_shaders(roll["vertex.vert"], roll["fragment.frag"]);
-	glUseProgram(program2);
-	win::program program = std::move(program2);
-	int uniform_projection, uniform_size;
+	win::Program program;
+	win::Program program2(win::load_shaders(roll["vertex.vert"], roll["fragment.frag"]));
+	program = std::move(program2);
+	glUseProgram(program.get());
 	float ortho_matrix[16];
 	win::init_ortho(ortho_matrix, -4.0f, 4.0f, 3.0f, -3.0f);
-	uniform_projection = glGetUniformLocation(program, "projection");
-	uniform_size = glGetUniformLocation(program, "size");
+	const int uniform_projection = glGetUniformLocation(program.get(), "projection");
+	const int uniform_size = glGetUniformLocation(program.get(), "size");
 	glUniformMatrix4fv(uniform_projection, 1, false, ortho_matrix);
 	glUniform1f(uniform_size, Block::SIZE);
 
-	win::vao vao2;
-	glBindVertexArray(vao2);
-	win::vao vao = std::move(vao2);
+	win::Vao vao;
+	glBindVertexArray(vao.get());
 
 	// element buffer
-	win::ebo ebo2;
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo2);
-	win::ebo ebo = std::move(ebo2);
+	win::Vbo ebo;
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo.get());
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// vertex buffer
-	win::vbo vbo_vertex2;
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex2);
-	win::vbo vbo_vertex = std::move(vbo_vertex2);
+	win::Vbo vbo_vertex;
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex.get());
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 4, NULL);
 	glVertexAttribPointer(3, 2, GL_FLOAT, false, sizeof(float) * 4, (void*)(sizeof(float) * 2));
@@ -145,17 +113,15 @@ int go()
 	glEnableVertexAttribArray(3);
 
 	// position buffer
-	win::vbo vbo_position2;
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_position2);
-	win::vbo vbo_position = std::move(vbo_position2);
+	win::Vbo vbo_position;
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position.get());
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, NULL);
 	glVertexAttribDivisor(1, 1);
 	glEnableVertexAttribArray(1);
 
 	// color buffer
-	win::vbo vbo_color2;
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_color2);
-	win::vbo vbo_color = std::move(vbo_color2);
+	win::Vbo vbo_color;
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_color.get());
 	glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, false, 0, NULL);
 	glVertexAttribDivisor(2, 1);
 	glEnableVertexAttribArray(2);
@@ -170,13 +136,13 @@ int go()
 
 	bool quit = false;
 	bool paused = false;
-	display.event_button([&effect, &quit, &paused, &audio_engine](win::button button, bool press)
+	display.register_button_handler([&effect, &quit, &paused, &audio_engine](win::Button button, bool press)
 	{
 		if(press)
 			std::cerr << "key: " << win::key_name(button) << std::endl;
-		if(press && button == win::button::ESC)
+		if(press && button == win::Button::ESC)
 			quit = true;
-		else if(press && button == win::button::SPACE)
+		else if(press && button == win::Button::SPACE)
 		{
 			paused = !paused;
 			if(paused)
@@ -184,52 +150,22 @@ int go()
 			else
 				audio_engine.resume();
 		}
-		else if(press && button == win::button::LALT)
+		else if(press && button == win::Button::LALT)
 			audio_engine.listener(0, 0);
 		else if(press)
 			audio_engine.play(effect);
 	});
 
 	float mousex = 0.0f, mousey = 0.0f;
-	display.event_mouse([&mousex, &mousey](int x, int y)
+	display.register_mouse_handler([&mousex, &mousey](int x, int y)
 	{
 		mousex = ((x / 800.0f) * 8.0f) - 4.0f;
 		mousey = ((y / 600.0f) * 6.0f) - 3.0f;
 	});
 
-	// display.event_character([](int key)
+	// display.register_character_handle([](int key)
 	// {
 	// 	std::cerr << (char)key;
-	// });
-
-	// display.event_joystick([](win::joystick_axis axis, int value)
-	// {
-	// 	switch(axis)
-	// 	{
-	// 		case win::joystick_axis::RIGHT_X:
-	// 			std::cerr << "axis right x, value " << value << std::endl;
-	// 			break;
-	// 		case win::joystick_axis::RIGHT_Y:
-	// 			std::cerr << "axis right y, value " << value << std::endl;
-	// 			break;
-	// 		case win::joystick_axis::LEFT_X:
-	// 			std::cerr << "axis left x, value " << value << std::endl;
-	// 			break;
-	// 		case win::joystick_axis::LEFT_Y:
-	// 			std::cerr << "axis left y, value " << value << std::endl;
-	// 			break;
-	// 		case win::joystick_axis::RIGHT_TRIGGER:
-	// 			std::cerr << "axis right trigger, value " << value << std::endl;
-	// 			break;
-	// 		case win::joystick_axis::LEFT_TRIGGER:
-	// 			std::cerr << "axis left trigger, value " << value << std::endl;
-	// 			break;
-	// 	}
-	// });
-
-	// display.event_mouse([&quit](int x, int y)
-	// {
-	// 	fprintf(stderr, "x: %d, y: %d\n", x, y);
 	// });
 
 	const int block_sid = audio_engine.play(music, block.x, block.y, true);
@@ -274,14 +210,14 @@ int go()
 			block_color[1] = 1.0f;
 			block_color[2] = 1.0f;
 
-			glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_position.get());
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_position), block_position, GL_DYNAMIC_DRAW);
-			glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_color.get());
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_color), block_color, GL_DYNAMIC_DRAW);
 			if(block.use_atlas)
 				glBindTexture(GL_TEXTURE_2D, atlas.texture());
 			else
-				glBindTexture(GL_TEXTURE_2D, texture);
+				glBindTexture(GL_TEXTURE_2D, texture.get());
 
 			glClear(GL_COLOR_BUFFER_BIT);
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL, 1);
@@ -289,13 +225,13 @@ int go()
 
 		const time_t now = time(NULL);
 		struct tm *tm = localtime(&now);
-		char formatted[50];
+		char formatted[100];
 		if(0 == strftime(formatted, sizeof(formatted), "Today is %A, %B %d\n%I:%M:%S %p", tm))
 			strcpy(formatted, "null");
 
-		font_renderer.draw(font1, formatted, mousex - 1.0f, mousey - 1.0f, win::color(1.0f, 1.0f, 0.0f), win::font_renderer::CENTERED);
-		glBindVertexArray(vao);
-		glUseProgram(program);
+		font_renderer.draw(font1, formatted, mousex - 1.0f, mousey - 1.0f, win::Color(1.0f, 1.0f, 0.0f), true);
+		glBindVertexArray(vao.get());
+		glUseProgram(program.get());
 
 		display.swap();
 

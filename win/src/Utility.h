@@ -61,144 +61,86 @@ WIN_EXTERN PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 namespace win
 {
 
-struct color
+struct Color
 {
-	constexpr color()
+	constexpr Color()
 		: red(0.5f), green(0.5f), blue(0.5f), alpha(1.0f) {}
-	constexpr color(float r, float g, float b, float a = 1.0f)
+	constexpr Color(float r, float g, float b, float a = 1.0f)
 		: red(r), green(g), blue(b), alpha(a) {}
-	constexpr color(int r, int g, int b, int a = 255.0f)
+	constexpr Color(int r, int g, int b, int a = 255.0f)
 		: red(r / 255.0f), green(g / 255.0f), blue(b / 255.0f), alpha(a / 255.0f) {}
 
 	float red, green, blue, alpha;
 };
 
-struct area
+struct Area
 {
-	area()
+	Area()
 		: left(-1.0f), right(1.0f), bottom(1.0f), top(-1.0f) {}
-	area(const float l, const float r, const float b, const float t)
+	Area(const float l, const float r, const float b, const float t)
 		: left(l), right(r), bottom(b), top(t) {}
 
 	float left, right, bottom, top;
 };
 
-struct point
+struct Point
 {
-	point() : x(0.0f), y(0.0f) {}
-	point(float xx, float yy) : x(xx), y(yy) {}
+	Point() : x(0.0f), y(0.0f) {}
+	Point(float xx, float yy) : x(xx), y(yy) {}
 
 	float x;
 	float y;
 };
 
-class data
+struct Program
 {
-public:
-	data() noexcept;
-	// TAKES OWNERSHIP OF MEMORY
-	data(unsigned char*, unsigned long long) noexcept;
-	data(const data&) = delete;
-	data(data&&) noexcept;
-	~data();
+	Program();
+	Program(GLuint);
+	Program(const Program&) = delete;
+	Program(Program&&);
+	~Program();
 
-	void operator=(const data&) = delete;
-	data &operator=(data&&) noexcept;
-	bool operator!() const noexcept;
+	void operator=(const Program&) = delete;
+	Program &operator=(Program&&);
 
-	const unsigned char *get() const noexcept;
-	unsigned char *release() noexcept;
-	unsigned long long size() const noexcept;
-	unsigned long long read(void*, size_t) noexcept;
-	unsigned long long tell() const noexcept;
-	void seek(size_t) noexcept;
-	void finalize();
-
-private:
-	unsigned char *data_;
-	unsigned long long size_;
-	unsigned long long stream_position_;
+	GLuint get() const;
+	GLuint object;
 };
 
-class roll;
-class data_list
+struct Vao
 {
-public:
-	data_list(roll*);
+	Vao();
+	Vao(const Vao&) = delete;
+	Vao(Vao&&);
+	~Vao();
 
-	void add(const std::string&);
-	data get(int) const;
-	const std::string &name(int) const;
-	int count() const;
+	void operator=(const Vao&) = delete;
+	Vao &operator=(Vao&&);
 
-private:
-	std::vector<std::string> filenames_;
-	roll *parent_;
+	GLuint get() const;
+	GLuint object;
 };
 
-struct program
+struct Vbo
 {
-	program();
-	program(GLuint);
-	program(const program&) = delete;
-	program(program&&);
-	~program();
-	void operator=(const program&) = delete;
-	program &operator=(program&&);
-	operator GLuint();
-	void finalize();
+	Vbo();
+	Vbo(const Vbo&) = delete;
+	Vbo(Vbo&&);
+	~Vbo();
 
-	GLuint program_;
-};
+	void operator=(const Vbo&) = delete;
+	Vbo &operator=(Vbo&&);
 
-struct vao
-{
-	vao();
-	vao(const vao&) = delete;
-	vao(vao&&);
-	~vao();
-	void operator=(const vao&) = delete;
-	vao &operator=(vao&&);
-	operator GLuint();
-	void finalize();
-
-	GLuint vao_;
-};
-
-struct vbo
-{
-	vbo();
-	vbo(const vbo&) = delete;
-	vbo(vbo&&);
-	~vbo();
-	void operator=(const vbo&) = delete;
-	vbo &operator=(vbo&&);
-	operator GLuint();
-	void finalize();
-
-	GLuint vbo_;
-};
-
-struct ebo
-{
-	ebo();
-	ebo(const ebo&) = delete;
-	ebo(ebo&&);
-	~ebo();
-	void operator=(const ebo&) = delete;
-	ebo &operator=(ebo&&);
-	operator GLuint();
-	void finalize();
-
-	GLuint ebo_;
+	GLuint get() const;
+	GLuint object;
 };
 
 void load_extensions();
 unsigned load_shaders(const char*, int, const char*, int);
 unsigned load_shaders(const char*, const char*);
-unsigned load_shaders(const data&, const data&);
+unsigned load_shaders(AssetRollStream, AssetRollStream);
 void init_ortho(float *matrix, float, float, float, float);
-const char *key_name(button);
+const char *key_name(Button);
 
 // random useful utilities
 float distance(float, float, float, float);

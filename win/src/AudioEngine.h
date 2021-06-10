@@ -44,26 +44,26 @@ struct clip
 #endif
 };
 
-struct audio_engine_remote;
-class audio_engine
+class Display;
+
+class AudioEngine
 {
-	friend display;
+	typedef void (*SoundConfigFn)(float, float, float, float, float*, float*);
+	static constexpr int MAX_SOUNDS = 32;
 
 public:
-	static constexpr int MAX_SOUNDS = 32;
-	typedef void (*sound_config_fn)(float, float, float, float, float*, float*);
+	AudioEngine();
+	AudioEngine(const Display&, SoundConfigFn);
+	AudioEngine(const AudioEngine&) = delete;
+	AudioEngine(AudioEngine&&);
+	~AudioEngine();
 
-	audio_engine() = default;
-	audio_engine(const audio_engine&) = delete;
-	audio_engine(audio_engine&&);
-	~audio_engine();
+	void operator=(const AudioEngine&) = delete;
+	AudioEngine &operator=(AudioEngine&&);
 
-	void operator=(const audio_engine&) = delete;
-	audio_engine &operator=(audio_engine&&);
-
-	int play(sound&, bool = false); // ambient
-	int play(sound&, float, float, bool = false); // stereo
-	int play(sound&, bool, bool, float, float); // fully dressed function
+	int play(Sound&, bool = false); // ambient
+	int play(Sound&, float, float, bool = false); // stereo
+	int play(Sound&, bool, bool, float, float); // fully dressed function
 	void pause();
 	void resume();
 	void pause(int);
@@ -72,44 +72,32 @@ public:
 	void listener(float, float);
 
 private:
-	std::unique_ptr<audio_engine_remote> remote;
+	void finalize();
+	void move(AudioEngine&);
 
 #if defined WINPLAT_WINDOWS
-	audio_engine(sound_config_fn, display*);
 	static void poke(audio_engine_remote*);
 	void cleanup();
+
+	IDirectSound8 *context;
+	IDirectSoundBuffer *primary;
+	std::list<clip> clips;
+	std::chrono::time_point<std::chrono::high_resolution_clock> last_poke;
 #elif defined WINPLAT_LINUX
-	audio_engine(sound_config_fn);
 	void cleanup(bool);
+
+	pa_context *context;
+	pa_threaded_mainloop *loop;
+	std::list<clip> clips;
 #endif
 	void get_config(float, float, float, float, float*, float*);
-	void finalize();
-};
 
-struct audio_engine_remote
-{
-	audio_engine_remote() = default;
-	audio_engine_remote(const audio_engine_remote&) = delete;
-	audio_engine_remote(audio_engine_remote&&) = delete;
-	void operator=(audio_engine_remote&) = delete;
-	void operator=(audio_engine_remote&&) = delete;
+	const Display *parent;
+	int next_id;
+	float listener_x;
+	float listener_y;
+	SoundConfigFn config_fn;
 
-	int next_id_;
-	float listener_x_;
-	float listener_y_;
-	win::audio_engine::sound_config_fn config_fn_;
-
-#if defined WINPLAT_LINUX
-	pa_context *context_;
-	pa_threaded_mainloop *loop_;
-	std::list<clip> clips_;
-#elif defined WINPLAT_WINDOWS
-	display *parent_;
-	IDirectSound8 *context_;
-	IDirectSoundBuffer *primary_;
-	std::list<clip> clips_;
-	std::chrono::time_point<std::chrono::high_resolution_clock> last_poke_;
-#endif
 };
 
 }

@@ -10,7 +10,7 @@
 namespace win
 {
 
-enum class button
+enum class Button
 {
 	UNDEFINED,
 
@@ -55,19 +55,6 @@ enum class button
 	NUM_PLUS, NUM_DEL,
 	NUM0, NUM1, NUM2, NUM3, NUM4, NUM5,
 	NUM6, NUM7, NUM8, NUM9,
-
-	// joystick
-	JS_A, JS_B, JS_Y, JS_X,
-	JS_RBUMP, JS_LBUMP,
-	JS_PAD_LEFT, JS_PAD_RIGHT, JS_PAD_DOWN, JS_PAD_UP,
-	JS_RSTICK, JS_LSTICK,
-	JS_SELECT, JS_START,
-	JS_GAMEPAD // ("xbox" button)
-};
-
-enum class joystick_axis
-{
-	RIGHT_X, RIGHT_Y, LEFT_X, LEFT_Y, RIGHT_TRIGGER, LEFT_TRIGGER
 };
 
 }

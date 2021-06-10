@@ -4,29 +4,25 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/CMakeModule
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(win STATIC
-	src/sound.cpp
-	src/atlas.cpp
-	src/audio_engine.cpp
-	src/display.cpp
-	src/font.cpp
-	src/joystick.cpp
-	src/roll.cpp
-	src/system.cpp
-	src/texture.cpp
-	src/utility.cpp
+	src/Sound.cpp
+	src/Atlas.cpp
+	src/AudioEngine.cpp
+	src/Display.cpp
+	src/Font.cpp
+	src/AssetRoll.cpp
+	src/Texture.cpp
+	src/Utility.cpp
 
-	src/sound.h
-	src/atlas.h
-	src/audio_engine.h
-	src/display.h
-	src/font.h
-	src/joystick.h
-	src/roll.h
-	src/system.h
-	src/texture.h
-	src/utility.h
+	src/Sound.h
+	src/Atlas.h
+	src/AudioEngine.h
+	src/Display.h
+	src/Font.h
+	src/AssetRoll.h
+	src/Texture.h
+	src/Utility.h
 	src/event.h
-)
+	)
 
 if(WIN32)
 	find_package(OpenGL REQUIRED)
@@ -34,26 +30,26 @@ if(WIN32)
 
 	target_include_directories(win
 		PUBLIC
-			include
-			${OPENGL_INCLUDE_DIRS}
-			${DSOUND_INCLUDE_DIRS}
+		include
+		${OPENGL_INCLUDE_DIRS}
+		${DSOUND_INCLUDE_DIRS}
 		PRIVATE
-			include/freetype
-			include/ogg
-			include/vorbis
-			include/zlib
-	)
+		include/freetype
+		include/ogg
+		include/vorbis
+		include/zlib
+		)
 
 	target_link_libraries(win
 		PRIVATE
-			${OPENGL_LIBRARIES}
-			${DSOUND_LIBRARIES}
-			dxguid.lib
-			${CMAKE_CURRENT_LIST_DIR}/lib/zlib.lib
-			${CMAKE_CURRENT_LIST_DIR}/lib/freetype.lib
-			${CMAKE_CURRENT_LIST_DIR}/lib/ogg.lib
-			${CMAKE_CURRENT_LIST_DIR}/lib/vorbis.lib
-	)
+		${OPENGL_LIBRARIES}
+		${DSOUND_LIBRARIES}
+		dxguid.lib
+		${CMAKE_CURRENT_LIST_DIR}/lib/zlib.lib
+		${CMAKE_CURRENT_LIST_DIR}/lib/freetype.lib
+		${CMAKE_CURRENT_LIST_DIR}/lib/ogg.lib
+		${CMAKE_CURRENT_LIST_DIR}/lib/vorbis.lib
+		)
 
 	if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
 		string(REGEX REPLACE "/W[0-4]" "/W1" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
@@ -71,19 +67,23 @@ else()
 
 	target_include_directories(win
 		PUBLIC
-			include
+		include
 		PRIVATE
-			${FREETYPE_INCLUDE_DIRS}
-	)
+		${FREETYPE_INCLUDE_DIRS}
+		)
 
 	target_link_libraries(win
 		PRIVATE
-			${FREETYPE_LIBRARIES}
-			${X11_LIBRARIES}
-			${OPENGL_LIBRARIES}
-			${CMAKE_THREAD_LIBS_INIT}
-			${ZLIB_LIBRARIES}
-			${OGGVORBIS_LIBRARIES}
-			${PULSEAUDIO_LIBRARIES}
-	)
+		${FREETYPE_LIBRARIES}
+		${X11_LIBRARIES}
+		${OPENGL_LIBRARIES}
+		${CMAKE_THREAD_LIBS_INIT}
+		${ZLIB_LIBRARIES}
+		${OGGVORBIS_LIBRARIES}
+		${PULSEAUDIO_LIBRARIES}
+		)
+
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(win PRIVATE -fno-exceptions)
+	endif()
 endif()
