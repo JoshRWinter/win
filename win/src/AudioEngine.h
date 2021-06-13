@@ -50,16 +50,16 @@ class AudioEngine
 {
 	typedef void (*SoundConfigFn)(float, float, float, float, float*, float*);
 	static constexpr int MAX_SOUNDS = 32;
+	friend class Display;
 
 public:
-	AudioEngine();
-	AudioEngine(const Display&, SoundConfigFn);
+	AudioEngine(Display&, SoundConfigFn);
 	AudioEngine(const AudioEngine&) = delete;
-	AudioEngine(AudioEngine&&);
+	AudioEngine(AudioEngine&&) = delete;
 	~AudioEngine();
 
 	void operator=(const AudioEngine&) = delete;
-	AudioEngine &operator=(AudioEngine&&);
+	void operator=(AudioEngine&&) = delete;
 
 	int play(Sound&, bool = false); // ambient
 	int play(Sound&, float, float, bool = false); // stereo
@@ -72,11 +72,8 @@ public:
 	void listener(float, float);
 
 private:
-	void finalize();
-	void move(AudioEngine&);
-
 #if defined WINPLAT_WINDOWS
-	static void poke(audio_engine_remote*);
+	void poke();
 	void cleanup();
 
 	IDirectSound8 *context;
@@ -92,7 +89,6 @@ private:
 #endif
 	void get_config(float, float, float, float, float*, float*);
 
-	const Display *parent;
 	int next_id;
 	float listener_x;
 	float listener_y;

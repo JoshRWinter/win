@@ -107,7 +107,7 @@ bool AssetRoll::exists(const char *resourcename) const
 AssetRollStream::AssetRollStream(const AssetRollResource &resource)
 	: resource(resource)
 {
-	std::ifstream rollstream(resource.assetroll);
+	std::ifstream rollstream(resource.assetroll, std::ifstream::binary);
 	rollstream.seekg(resource.begin);
 
 	if (resource.compressed)
@@ -115,7 +115,7 @@ AssetRollStream::AssetRollStream(const AssetRollResource &resource)
 		kind = AssetRollStreamKind::memory;
 		position = 0;
 
-		auto uncompressed_size = resource.uncompressed_size;
+		uLongf uncompressed_size = resource.uncompressed_size;
 
 		auto compressed_data = std::make_unique<unsigned char[]>(resource.size);
 		memory = std::make_unique<unsigned char[]>(uncompressed_size);

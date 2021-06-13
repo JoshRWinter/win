@@ -1,5 +1,8 @@
 #include <win.h>
+
+#ifdef WINPLAT_LINUX
 #include <unistd.h>
+#endif
 
 static void default_sound_config_fn(float, float, float, float, float *volume, float *balance)
 {
@@ -495,16 +498,16 @@ static void write_buffer(win::clip &snd, const DWORD offset, const int bytes)
 	DWORD size2 = 0;
 
 	if(snd.stream->Lock(offset, bytes, &buffer1, &size1, &buffer2, &size2, 0) != DS_OK)
-		throw win::exception("DirectSound: Couldn't lock buffer for writing");
+		win::bug("DirectSound: Couldn't lock buffer for writing");
 
 	if(size1 + size2 != bytes)
-		throw win::exception("DirectSound: Requested write = " + std::to_string(bytes) + ", actual write = " + std::to_string(size1 + size2));
+		win::bug("DirectSound: Requested write = " + std::to_string(bytes) + ", actual write = " + std::to_string(size1 + size2));
 
 	memcpy(buffer1, (char*)snd.pcm + snd.start, size1);
 	memcpy(buffer2, (char*)snd.pcm + snd.start + size1, size2);
 
 	if(snd.stream->Unlock(buffer1, size1, buffer2, size2) != DS_OK)
-		throw win::exception("DirectSound: Couldn't unlock buffer after writing");
+		win::bug("DirectSound: Couldn't unlock buffer after writing");
 }
 
 static void write_directsound(win::clip &snd)
@@ -517,7 +520,7 @@ static void write_directsound(win::clip &snd)
 	const int offset = snd.write_cursor;
 
 	if(offset >= SOUND_BUFFER_SIZE)
-		throw win::exception("offset too big");
+		win::bug("offset too big");
 
 	write_buffer(snd, offset, want_to_write);
 
@@ -525,23 +528,20 @@ static void write_directsound(win::clip &snd)
 	snd.write_cursor = (snd.write_cursor + want_to_write) % SOUND_BUFFER_SIZE;
 }
 
-win::audio_engine::audio_engine(sound_config_fn fn, display *parent)
+AudioEngine::AudioEngine(Display &parent, SoundConfigFn fn)
 {
-	remote.reset(new audio_engine_remote);
+	parent.directsound = this;
+	last_poke = std::chrono::high_resolution_clock::now();
+	next_id = 1;
+	listener_x = 0.0f;
+	listener_y = 0.0f;
+	config_fn = fn;
 
-	parent->remote->directsound_ = remote.get();
-	remote->parent_ = parent;
-	remote->last_poke_ = std::chrono::high_resolution_clock::now();
-	remote->next_id_ = 1;
-	remote->listener_x_ = 0.0f;
-	remote->listener_y_ = 0.0f;
-	remote->config_fn_ = fn;
+	if(DirectSoundCreate8(NULL, &context, NULL) != DS_OK)
+		win::bug("Could not initialize DirectSound");
 
-	if(DirectSoundCreate8(NULL, &remote->context_, NULL) != DS_OK)
-		throw exception("Could not initialize DirectSound");
-
-	if(remote->context_->SetCooperativeLevel(parent->remote->window_, DSSCL_PRIORITY) != DS_OK)
-		throw exception("DirectSound: Could not set cooperation level");
+	if(context->SetCooperativeLevel(parent.window, DSSCL_PRIORITY) != DS_OK)
+		win::bug("DirectSound: Could not set cooperation level");
 
 	DSBUFFERDESC buffer;
 	buffer.dwSize = sizeof(buffer);
@@ -551,8 +551,8 @@ win::audio_engine::audio_engine(sound_config_fn fn, display *parent)
 	buffer.lpwfxFormat = NULL;
 	buffer.guid3DAlgorithm = GUID_NULL;
 
-	if(remote->context_->CreateSoundBuffer(&buffer, &remote->primary_, NULL) != DS_OK)
-		throw exception("DirectSound: Could not create the primary sound buffer");
+	if(context->CreateSoundBuffer(&buffer, &primary, NULL) != DS_OK)
+		win::bug("DirectSound: Could not create the primary sound buffer");
 
 	WAVEFORMATEX format;
 	format.wFormatTag = WAVE_FORMAT_PCM;
@@ -563,26 +563,33 @@ win::audio_engine::audio_engine(sound_config_fn fn, display *parent)
 	format.wBitsPerSample = 16;
 	format.cbSize = 0;
 
-	if(remote->primary_->SetFormat(&format) != DS_OK)
-		throw exception("DirectSound: Could not set the primary buffer format");
+	if(primary->SetFormat(&format) != DS_OK)
+		win::bug("DirectSound: Could not set the primary buffer format");
 }
 
-int win::audio_engine::play(win::sound &snd, bool loop)
+AudioEngine::~AudioEngine()
+{
+	cleanup();
+	primary->Release();
+	context->Release();
+}
+
+int AudioEngine::play(Sound &snd, bool loop)
 {
 	return play(snd, true, loop, 0.0f, 0.0f);
 }
 
-int win::audio_engine::play(win::sound &snd, float x, float y, bool loop)
+int AudioEngine::play(Sound &snd, float x, float y, bool loop)
 {
 	return play(snd, false, loop, x, y);
 }
 
-int win::audio_engine::play(win::sound &src, bool ambient, bool looping, float x, float y)
+int AudioEngine::play(Sound &src, bool ambient, bool looping, float x, float y)
 {
-	if(remote->clips_.size() >= MAX_SOUNDS)
+	if(clips.size() >= MAX_SOUNDS)
 		return -1;
 
-	const unsigned long long size = src.remote->size.load();
+	const unsigned long long size = src.size.load();
 
 	WAVEFORMATEX format;
 	format.wFormatTag = WAVE_FORMAT_PCM;
@@ -602,14 +609,14 @@ int win::audio_engine::play(win::sound &src, bool ambient, bool looping, float x
 	buffer.guid3DAlgorithm = GUID_NULL;
 
 	IDirectSoundBuffer *tmp;
-	if(remote->context_->CreateSoundBuffer(&buffer, &tmp, NULL) != DS_OK)
-		throw exception("DirectSound: Could not create temp buffer");
+	if(context->CreateSoundBuffer(&buffer, &tmp, NULL) != DS_OK)
+		win::bug("DirectSound: Could not create temp buffer");
 
 	IDirectSoundBuffer8 *stream;
 	tmp->QueryInterface(IID_IDirectSoundBuffer8, (void**)&stream);
 	tmp->Release();
 
-	clip &snd = remote->clips_.emplace_back(remote->next_id_++, looping, 0, src.remote->buffer.get(), &src.remote->size, src.remote->target_size, ambient, x, y, stream);
+	clip &snd = clips.emplace_back(next_id++, looping, 0, src.buffer.get(), &src.size, src.target_size, ambient, x, y, stream);
 
 	write_directsound(snd);
 
@@ -618,59 +625,47 @@ int win::audio_engine::play(win::sound &src, bool ambient, bool looping, float x
 	return snd.id;
 }
 
-void win::audio_engine::pause()
+void AudioEngine::pause()
 {
 }
 
-void win::audio_engine::resume()
+void AudioEngine::resume()
 {
 }
 
-void win::audio_engine::pause(int)
+void AudioEngine::pause(int)
 {
 }
 
-void win::audio_engine::resume(int)
+void AudioEngine::resume(int)
 {
 }
 
-void win::audio_engine::source(int, float, float)
+void AudioEngine::source(int, float, float)
 {
 }
 
-void win::audio_engine::listener(float x, float y)
+void AudioEngine::listener(float x, float y)
 {
-	remote->listener_x_ = x;
-	remote->listener_y_ = y;
+	listener_x = x;
+	listener_y = y;
 }
 
 
-void win::audio_engine::finalize()
-{
-	if(!remote)
-		return;
-
-	cleanup();
-	remote->primary_->Release();
-	remote->context_->Release();
-
-	remote.reset();
-}
-
-void win::audio_engine::poke(audio_engine_remote *const remote)
+void AudioEngine::poke()
 {
 	const auto now = std::chrono::high_resolution_clock::now();
 
-	if(std::chrono::duration<double, std::milli>(now - remote->last_poke_).count() < 10)
+	if(std::chrono::duration<double, std::milli>(now - last_poke).count() < 10)
 		return;
 
-	remote->last_poke_ = now;
+	last_poke = now;
 
-	for(auto snd = remote->clips_.begin(); snd != remote->clips_.end();)
+	for(auto snd = clips.begin(); snd != clips.end();)
 	{
 		DWORD play_cursor = 0;
 		if(snd->stream->GetCurrentPosition(&play_cursor, NULL) != DS_OK)
-			throw exception("DirectSound: Couldn't determine play cursor position");
+			win::bug("DirectSound: Couldn't determine play cursor position");
 
 		const int write_cursor = snd->write_cursor < play_cursor ? (snd->write_cursor + SOUND_BUFFER_SIZE) : snd->write_cursor;
 		const int bytes_left = write_cursor - play_cursor;
@@ -679,7 +674,7 @@ void win::audio_engine::poke(audio_engine_remote *const remote)
 		if(bytes_left > MAX_WRITE_SIZE && snd->start == snd->target_size)
 		{
 			snd->finalize();
-			snd = remote->clips_.erase(snd);
+			snd = clips.erase(snd);
 			continue;
 		}
 
@@ -691,12 +686,12 @@ void win::audio_engine::poke(audio_engine_remote *const remote)
 		std::cerr << "took longer than 5 milliseconds" << std::endl;
 }
 
-void win::audio_engine::cleanup()
+void AudioEngine::cleanup()
 {
-	for(auto snd = remote->clips_.begin(); snd != remote->clips_.end();)
+	for(auto snd = clips.begin(); snd != clips.end();)
 	{
 		snd->finalize();
-		snd = remote->clips_.erase(snd);
+		snd = clips.erase(snd);
 	}
 }
 

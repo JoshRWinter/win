@@ -46,8 +46,7 @@ int main()
 #if defined WINPLAT_LINUX
 	win::AssetRoll roll("/home/josh/programming/win/driver/assets.roll");
 #elif defined WINPLAT_WINDOWS
-	win::roll roll2;
-	roll2 = "c:\\users\\josh\\desktop\\win\\driver\\assets.roll";
+	win::AssetRoll roll("c:\\users\\josh\\desktop\\win\\driver\\assets.roll");
 #endif
 
 	win::Texture texture;
@@ -59,9 +58,7 @@ int main()
 	win::Sound music(roll["../../fishtank/assets_local/Motions.ogg"]);
 	win::Sound effect(roll["../../fishtank/assets_local/platform_destroy.ogg"]);
 
-	win::AudioEngine audio_engine;
-	win::AudioEngine audio_engine2(display, sound_config);
-	audio_engine = std::move(audio_engine2);
+	win::AudioEngine audio_engine(display, sound_config);
 
 	win::FontRenderer font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::Font font1;
@@ -69,7 +66,7 @@ int main()
 	font1 = std::move(font2);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
-	std::cerr << "screen width is " << win::Display::display_width() << " and screen height is " << win::Display::display_height() << std::endl;
+	std::cerr << "screen width is " << win::Display::screen_width() << " and screen height is " << win::Display::screen_height() << std::endl;
 
 	const unsigned short *const coords = atlas.coords(3);
 	const float verts[] =

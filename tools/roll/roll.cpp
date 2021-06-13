@@ -155,7 +155,7 @@ void create(const std::string &out_file, const std::vector<std::string> &in_file
 
 		// mostly placeholder data
 		h.compressed = 0;
-		h.uncompressed_size;
+		h.uncompressed_size = 0;
 		h.begin = 0;
 		h.size = 0;
 		h.filename = strip_options(in_files[i]);
