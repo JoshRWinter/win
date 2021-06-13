@@ -230,7 +230,7 @@ static Button keystring_to_button(const char *const keystring)
 	}
 }
 
-Display::Display(const char *caption, int width, int height, bool flags, window_handle parent)
+Display::Display(const char *caption, int width, int height, bool fullscreen, window_handle parent)
 {
 	button_handler = default_button_handler;
 	character_handler = default_character_handler;
@@ -272,7 +272,7 @@ Display::Display(const char *caption, int width, int height, bool flags, window_
 	XStoreName(xdisplay, window, caption);
 
 	// fullscreen
-	if(flags & FULLSCREEN)
+	if(fullscreen)
 		XChangeProperty(xdisplay, window, XInternAtom(xdisplay, "_NET_WM_STATE", False), XA_ATOM, 32, PropModeReplace, (const unsigned char*)&atom_fullscreen, 1);
 
 	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)glXGetProcAddress((unsigned char*)"glXCreateContextAttribsARB");
@@ -445,12 +445,12 @@ void Display::register_mouse_handler(MouseHandler f)
 	mouse_handler = std::move(f);
 }
 
-int Display::display_width()
+int Display::screen_width()
 {
 	return WidthOfScreen(ScreenOfDisplay(xdisplay, 0));
 }
 
-int Display::display_height()
+int Display::screen_height()
 {
 	return HeightOfScreen(ScreenOfDisplay(xdisplay, 0));
 }

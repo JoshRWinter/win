@@ -151,15 +151,8 @@ static void callback_stream_write(pa_stream *stream, const size_t bytes, void *d
 	}
 }
 
-AudioEngine::AudioEngine()
+AudioEngine::AudioEngine(Display &p, SoundConfigFn fn)
 {
-	context = NULL;
-}
-
-AudioEngine::AudioEngine(const Display &p, SoundConfigFn fn)
-{
-	parent = &p;
-
 	next_id = 1;
 	listener_x = 0.0f;
 	listener_y = 0.0f;
@@ -202,38 +195,7 @@ AudioEngine::AudioEngine(const Display &p, SoundConfigFn fn)
 	pa_threaded_mainloop_unlock(loop);
 }
 
-AudioEngine::AudioEngine(AudioEngine &&rhs)
-{
-	move(rhs);
-}
-
 AudioEngine::~AudioEngine()
-{
-	finalize();
-}
-
-AudioEngine &AudioEngine::operator=(AudioEngine &&rhs)
-{
-	finalize();
-	move(rhs);
-	return *this;
-}
-
-void AudioEngine::move(AudioEngine &rhs)
-{
-	context = rhs.context;
-	loop = rhs.loop;
-	clips = std::move(clips);
-	parent = rhs.parent;
-	next_id = rhs.next_id;
-	listener_x = rhs.listener_x;
-	listener_y = rhs.listener_y;
-	config_fn = rhs.config_fn;
-
-	rhs.context = NULL;
-}
-
-void AudioEngine::finalize()
 {
 	if (context == NULL)
 		return;

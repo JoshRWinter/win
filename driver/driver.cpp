@@ -32,8 +32,6 @@ static void sound_config(float listenerx, float listenery, float sourcex, float 
 	*balance = (sourcex - listenerx) / 15.0f;
 }
 
-static int go();
-
 #if defined WINPLAT_WINDOWS && defined NDEBUG
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #else
@@ -41,7 +39,7 @@ int main()
 #endif
 {
 	win::Display display("window caption", 800, 600);
-	display.cursor(false);
+	display.cursor(true);
 
 #if defined WINPLAT_LINUX
 	win::AssetRoll roll("/home/josh/programming/win/driver/assets.roll");
@@ -226,7 +224,7 @@ int main()
 		if(0 == strftime(formatted, sizeof(formatted), "Today is %A, %B %d\n%I:%M:%S %p", tm))
 			strcpy(formatted, "null");
 
-		font_renderer.draw(font1, formatted, mousex - 1.0f, mousey - 1.0f, win::Color(1.0f, 1.0f, 0.0f), true);
+		font_renderer.draw(font1, formatted, mousex, mousey - 0.5f, win::Color(1.0f, 1.0f, 0.0f), true);
 		glBindVertexArray(vao.get());
 		glUseProgram(program.get());
 
