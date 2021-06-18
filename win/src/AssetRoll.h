@@ -64,9 +64,11 @@ public:
 	void read_all(void*);
 	std::unique_ptr<unsigned char[]> read_all();
 	void seek(unsigned long long pos);
+	unsigned long long tell();
+
+	std::string name;
 
 private:
-
 	std::ifstream file_stream;
 
 	std::unique_ptr<unsigned char[]> memory;

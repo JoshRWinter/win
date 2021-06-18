@@ -53,10 +53,10 @@ int main()
 
 	win::Atlas atlas(roll["main.atlas"]);
 
-	win::Sound music(roll["../../fishtank/assets_local/Motions.ogg"]);
-	win::Sound effect(roll["../../fishtank/assets_local/platform_destroy.ogg"]);
+	auto music = "../../fishtank/assets_local/Motions.ogg";
+	auto effect = "../../fishtank/assets_local/platform_destroy.ogg";
 
-	win::AudioEngine audio_engine(display, sound_config);
+	win::SoundEngine audio_engine(display, roll, sound_config);
 
 	win::FontRenderer font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
 	win::Font font1;
@@ -137,16 +137,6 @@ int main()
 			std::cerr << "key: " << win::key_name(button) << std::endl;
 		if(press && button == win::Button::ESC)
 			quit = true;
-		else if(press && button == win::Button::SPACE)
-		{
-			paused = !paused;
-			if(paused)
-				audio_engine.pause();
-			else
-				audio_engine.resume();
-		}
-		else if(press && button == win::Button::LALT)
-			audio_engine.listener(0, 0);
 		else if(press)
 			audio_engine.play(effect);
 	});
@@ -170,6 +160,8 @@ int main()
 
 		if(!display.process() || quit)
 			break;
+
+		audio_engine.process();
 
 		// process entities
 		{

@@ -33,7 +33,7 @@ static float clamp_balance(float bal)
 namespace win
 {
 
-void AudioEngine::get_config(float listenerx, float listenery, float sourcex, float sourcey, float *volume_l, float *volume_r)
+void SoundEngine::get_config(float listenerx, float listenery, float sourcex, float sourcey, float *volume_l, float *volume_r)
 {
 	float volume = 0.0f, balance = 0.0f;
 
@@ -77,7 +77,7 @@ static void callback_stream(pa_stream*, void *loop)
 	pa_threaded_mainloop_signal((pa_threaded_mainloop*)loop, 0);
 }
 
-static size_t channel_dupe(void *d, const void *s, size_t len)
+static void channel_dupe(void *d, const void *s, const size_t len)
 {
 	if(len % 4 != 0)
 		win::bug("len not divisible by 4: " + std::to_string(len));
@@ -92,70 +92,16 @@ static size_t channel_dupe(void *d, const void *s, size_t len)
 		dest[i + 2] = source[(i / 2) + 0];
 		dest[i + 3] = source[(i / 2) + 1];
 	}
-
-	return len;
 }
 
-static void callback_stream_write(pa_stream *stream, const size_t bytes, void *data)
+SoundEngine::SoundEngine(Display &p, AssetRoll &asset_roll, SoundConfigFn fn)
+	: soundbank(asset_roll)
 {
-	win::clip *const snd = (win::clip*)data;
-
-	if(snd->start == snd->target_size)
-		return;
-
-	size_t total_written = 0;
-	while(total_written != bytes)
-	{
-		// see if there even is any more data in the source buffer
-		if(snd->start == snd->target_size)
-			break;
-
-		// spinlock until more data is ready
-		while(snd->size->load() - snd->start == 0);
-
-		const size_t left_to_write = bytes - total_written; // how many more bytes i owe pulseaudio
-		const size_t total_size = snd->size->load(); // total size of the (decoded) source buffer
-		const size_t i_have = total_size - snd->start; // i have this many bytes from the source buffer ready to write
-		size_t take = left_to_write / 2; // i want to give pulseaudio this much data taken from the source buffer
-		if(take > i_have)
-			take = i_have; // i must readjust how much i want to take from source buffer
-		size_t give = take * 2; // how much data pulseaudio will get from me
-		char *dest = NULL;
-
-		if(pa_stream_begin_write(snd->stream, (void**)&dest, &give) || dest == NULL)
-			win::bug("pa_stream_begin_write() failure");
-
-		take = give / 2; // pulseaudio has changed its mind about how much it wants
-		channel_dupe(dest, ((char*)snd->pcm) + snd->start, give);
-
-		if(pa_stream_write(snd->stream, dest, give, NULL, 0, PA_SEEK_RELATIVE))
-			win::bug("pa_stream_write() failure");
-
-		// update
-		snd->start += take;
-		total_written += give;
-	}
-
-	// see if the stream is done
-	if(snd->start == snd->target_size)
-	{
-		if(snd->looping)
-		{
-			snd->start = 0;
-
-			if(total_written < bytes)
-				callback_stream_write(stream, bytes - total_written, data); // recurse
-		}
-		else
-			snd->finished.store(true);
-	}
-}
-
-AudioEngine::AudioEngine(Display &p, SoundConfigFn fn)
-{
+	sample_buffer_samples_count = 0;
 	next_id = 1;
 	listener_x = 0.0f;
 	listener_y = 0.0f;
+	//last_process = std::chrono::high_resolution_clock::now();
 	if(fn == NULL)
 		config_fn = default_sound_config_fn;
 	else
@@ -195,16 +141,13 @@ AudioEngine::AudioEngine(Display &p, SoundConfigFn fn)
 	pa_threaded_mainloop_unlock(loop);
 }
 
-AudioEngine::~AudioEngine()
+SoundEngine::~SoundEngine()
 {
-	if (context == NULL)
-		return;
-
 	pa_threaded_mainloop_lock(loop);
 	cleanup(true);
 	pa_threaded_mainloop_unlock(loop);
 
-	if(clips.size() != 0)
+	if(sounds.size() != 0)
 		win::bug("could not sweep up all streams");
 
 	pa_threaded_mainloop_stop(loop);
@@ -213,29 +156,103 @@ AudioEngine::~AudioEngine()
 	pa_context_unref(context);
 }
 
+void SoundEngine::write_to_stream(ActiveSound &sound, const size_t bytes)
+{
+	const auto requested_samples = bytes / sizeof(std::int16_t);
+
+	if(sound.sound->is_stream_completed())
+	{
+		if(sound.looping)
+		{
+			std::string name = sound.sound->name;
+			soundbank.unload(*sound.sound);
+			sound.sound = &soundbank.load(name.c_str());
+		}
+		else
+			return;
+	}
+
+	if(requested_samples * 3 > sample_buffer_samples_count)
+	{
+		sample_buffer = std::move(std::make_unique<std::int16_t[]>(requested_samples * 3));
+		sample_buffer_samples_count = requested_samples * 3;
+	}
+
+	if(sound.sound->channels.load() == 1)
+	{
+		// supe it up to 2 channels
+		const auto mono_requested_samples = requested_samples / 2;
+
+		auto readbuffer = sample_buffer.get();
+		auto stereobuffer = sample_buffer.get() + (mono_requested_samples * 2);
+		const auto samples_actually_read = sound.sound->read(readbuffer, mono_requested_samples);
+
+		channel_dupe(stereobuffer, readbuffer, samples_actually_read * sizeof(std::int16_t) * 2);
+
+		if(pa_stream_write(sound.stream, stereobuffer, samples_actually_read * sizeof(std::int16_t) * 2, NULL, 0, PA_SEEK_RELATIVE))
+			win::bug("pa_stream_write() failure");
+	}
+	else if(sound.sound->channels.load() == 2)
+	{
+		const auto samples_actually_read = sound.sound->read(sample_buffer.get(), requested_samples);
+
+		if(pa_stream_write(sound.stream, sample_buffer.get(), samples_actually_read * sizeof(std::int16_t), NULL, 0, PA_SEEK_RELATIVE))
+			win::bug("pa_stream_write() failure");
+	}
+}
+
+void SoundEngine::process()
+{
+	/*
+	const auto now = std::chrono::high_resolution_clock::now();
+	if(std::chrono::duration<double, std::milli>(now - last_process).count() < 10)
+		return;
+	last_process = now;
+	*/
+
+	pa_threaded_mainloop_lock(loop);
+
+	cleanup(false);
+
+	for (auto &sound : sounds)
+	{
+		const auto requested_bytes = pa_stream_writable_size(sound.stream);
+		if (requested_bytes == (size_t)-1)
+			continue;
+		if (requested_bytes == 0)
+			continue;
+
+		write_to_stream(sound, requested_bytes);
+	}
+
+	pa_threaded_mainloop_unlock(loop);
+}
+
 // ambient (for music)
-int AudioEngine::play(Sound &sound, bool looping)
+int SoundEngine::play(const char *path, bool looping)
 {
-	return play(sound, true, looping, 0.0f, 0.0f);
+	return play(path, true, looping, 0.0f, 0.0f);
 }
 
-// stero (for in-world sounds)
-int AudioEngine::play(Sound &sound, float x, float y, bool looping)
+// stereo (for in-world sounds)
+int SoundEngine::play(const char *path, float x, float y, bool looping)
 {
-	return play(sound, false, looping, x, y);
+	return play(path, false, looping, x, y);
 }
 
-int AudioEngine::play(Sound &sound, bool ambient, bool looping, float x, float y)
+int SoundEngine::play(const char *path, bool ambient, bool looping, float x, float y)
 {
 	pa_threaded_mainloop_lock(loop);
 
 	cleanup(false);
 
-	if(clips.size() > MAX_SOUNDS)
+	if(sounds.size() > MAX_SOUNDS)
 	{
 		pa_threaded_mainloop_unlock(loop);
 		return -1;
 	}
+
+	auto &sound = soundbank.load(path);
 
 	const int sid = next_id++;
 	char namestr[16];
@@ -252,17 +269,16 @@ int AudioEngine::play(Sound &sound, bool ambient, bool looping, float x, float y
 	attr.prebuf = (std::uint32_t) -1;
 	attr.minreq = (std::uint32_t) -1;
 
-	// cleanup dead streams
-	cleanup(false);
-
 	pa_stream *stream = pa_stream_new(context, namestr, &spec, NULL);
 	if(stream == NULL)
 		win::bug("Could not create stream object");
 
-	clip &stored = clips.emplace_front(sid, looping, 0, sound.buffer.get(), &sound.size, sound.target_size, stream, ambient, x, y);
+	sounds.emplace_back(sound, stream, sid, ambient, looping, x, y);
+
+	// wait for channels property to get filled in by another thread
+	while(sound.channels == -1) ;
 
 	pa_stream_set_state_callback(stream, callback_stream, loop);
-	pa_stream_set_write_callback(stream, callback_stream_write, &stored);
 
 	if(pa_stream_connect_playback(stream, NULL, &attr, (pa_stream_flags)0, NULL, NULL))
 		win::bug("Could not connect the playback stream");
@@ -282,40 +298,16 @@ int AudioEngine::play(Sound &sound, bool ambient, bool looping, float x, float y
 	pa_cvolume_set(&volume, 2, PA_VOLUME_NORM);
 	pa_operation_unref(pa_context_set_sink_input_volume(context, pa_stream_get_index(stream), &volume, NULL, NULL));
 
-	// register a drain notification
-	stored.drain = pa_stream_drain(stream, NULL, NULL);
-	if(stored.drain == NULL)
-		win::bug("couldn't start a drain op");
-
 	pa_threaded_mainloop_unlock(loop);
 
 	return sid;
 }
 
-void AudioEngine::pause()
-{
-	pa_threaded_mainloop_lock(loop);
-	for(clip &snd : clips)
-		pa_operation_unref(pa_stream_cork(snd.stream, 1, NULL, NULL));
-
-	pa_threaded_mainloop_unlock(loop);
-}
-
-void AudioEngine::resume()
+void SoundEngine::pause(int id)
 {
 	pa_threaded_mainloop_lock(loop);
 
-	for(clip &snd : clips)
-		pa_operation_unref(pa_stream_cork(snd.stream, 0, NULL, NULL));
-
-	pa_threaded_mainloop_unlock(loop);
-}
-
-void AudioEngine::pause(int id)
-{
-	pa_threaded_mainloop_lock(loop);
-
-	for(clip &snd : clips)
+	for(auto &snd : sounds)
 	{
 		if(id != snd.id)
 			continue;
@@ -329,11 +321,11 @@ void AudioEngine::pause(int id)
 	pa_threaded_mainloop_unlock(loop);
 }
 
-void AudioEngine::resume(int id)
+void SoundEngine::resume(int id)
 {
 	pa_threaded_mainloop_lock(loop);
 
-	for(clip &snd : clips)
+	for(auto &snd : sounds)
 	{
 		if(id != snd.id)
 			continue;
@@ -347,11 +339,31 @@ void AudioEngine::resume(int id)
 	pa_threaded_mainloop_unlock(loop);
 }
 
-void AudioEngine::source(int id, float x, float y)
+void SoundEngine::stop(int id)
 {
 	pa_threaded_mainloop_lock(loop);
 
-	for(clip &snd : clips)
+	for(auto &snd : sounds)
+	{
+		if(id != snd.id)
+			continue;
+
+		if(!pa_stream_is_corked(snd.stream))
+			pa_operation_unref(pa_stream_cork(snd.stream, 1, NULL, NULL));
+
+		snd.stop = true;
+
+		continue;
+	}
+
+	pa_threaded_mainloop_unlock(loop);
+}
+
+void SoundEngine::source(int id, float x, float y)
+{
+	pa_threaded_mainloop_lock(loop);
+
+	for(auto &snd : sounds)
 	{
 		if(snd.id != id)
 			continue;
@@ -375,14 +387,14 @@ void AudioEngine::source(int id, float x, float y)
 	pa_threaded_mainloop_unlock(loop);
 }
 
-void AudioEngine::listener(float x, float y)
+void SoundEngine::listener(float x, float y)
 {
 	listener_x = x;
 	listener_y = y;
 
 	pa_threaded_mainloop_lock(loop);
 
-	for(clip &snd : clips)
+	for(auto &snd : sounds)
 	{
 		float volume_left;
 		float volume_right;
@@ -399,46 +411,61 @@ void AudioEngine::listener(float x, float y)
 	pa_threaded_mainloop_unlock(loop);
 }
 
-void win::AudioEngine::cleanup(bool all)
+void SoundEngine::cleanup(bool all)
 {
-	for(auto it = clips.begin(); it != clips.end();)
+	pa_threaded_mainloop_lock(loop);
+	for(auto it = sounds.begin(); it != sounds.end();)
 	{
-		clip &snd = *it;
-
-		const bool done = pa_operation_get_state(snd.drain) == PA_OPERATION_DONE && snd.finished.load();
+		auto &sound = *it;
 
 		if(!all) // only cleaning up sounds that have finished
-			if(!done)
+		{
+			// check if this sound has fully exhausted its source stream
+			const bool completed = sound.sound->is_stream_completed() && !sound.looping;
+
+			if (!completed && !sound.stop)
 			{
 				++it;
-				continue; // skip it if it's not done playing
+				continue;
 			}
 
-		// prevent pulseaudio from being a bastard
-		pa_stream_set_state_callback(snd.stream, [](pa_stream*, void*){}, NULL);
-		pa_stream_set_write_callback(snd.stream, [](pa_stream*, size_t, void*){}, NULL);
+			if(!sound.stop)
+			{
+				// check if a drain operation has been issued yet
+				if(sound.drain_op == NULL)
+					sound.drain_op = pa_stream_drain(sound.stream, [](pa_stream*, int success, void *data){ ((ActiveSound*)data)->drained = success != 0; }, &sound);
 
-		pa_operation *op_flush = pa_stream_flush(snd.stream, NULL, NULL);
-		if(!op_flush)
-			win::bug("Couldn't flush the stream");
+				bool drained = false;
+				if(sound.drain_op != NULL)
+				{
+					bool op_completed = pa_operation_get_state(sound.drain_op) == PA_OPERATION_DONE;
+					drained = op_completed && sound.drained;
 
-		// wait for flush & drain
-		while(pa_operation_get_state(op_flush) != PA_OPERATION_DONE && pa_operation_get_state(snd.drain) != PA_OPERATION_DONE)
-		{
-			pa_threaded_mainloop_unlock(loop);
-			usleep(50);
-			pa_threaded_mainloop_lock(loop);
+					if(op_completed)
+					{
+						pa_operation_unref(sound.drain_op);
+						sound.drain_op = NULL;
+					}
+				}
+
+				if(!drained)
+				{
+					++it;
+					continue; // skip it if it's not done playing
+				}
+			}
 		}
 
-		pa_operation_unref(op_flush);
-		pa_operation_unref(snd.drain);
+		pa_stream_set_state_callback(sound.stream, [](pa_stream*, void*){}, NULL);
 
-		if(pa_stream_disconnect(snd.stream))
+		if(pa_stream_disconnect(sound.stream))
 			win::bug("Couldn't disconnect stream");
-		pa_stream_unref(snd.stream);
+		pa_stream_unref(sound.stream);
 
-		it = clips.erase(it);
+		soundbank.unload(*sound.sound);
+		it = sounds.erase(it);
 	}
+	pa_threaded_mainloop_unlock(loop);
 }
 
 #elif defined WINPLAT_WINDOWS

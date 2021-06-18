@@ -1,61 +1,224 @@
+#include <algorithm>
+
 #include <math.h>
+#include <unistd.h>
 
 #include <ogg/ogg.h>
 #include <vorbis/vorbisfile.h>
 
 #include <win.h>
 
-static void decodeogg(std::unique_ptr<unsigned char[]>, unsigned long long, short*, unsigned long long, std::atomic<unsigned long long>*);
-
 namespace win
 {
 
-Sound::Sound(AssetRollStream raw)
+SoundPage::SoundPage(bool cache_this_page)
 {
-	from_roll(raw);
+	this->cache_this_page = cache_this_page;
+	read_only = false;
+	samples_filled = 0;
+	fake_samples_filled = 0;
+	samples_consumed = 0;
+	samples_owner.reset(new std::int16_t[PAGE_SAMPLE_COUNT]);
+	samples = samples_owner.get();
+}
+
+SoundPage::SoundPage(std::int16_t *cached_samples, unsigned long long cached_samples_count)
+{
+	cache_this_page = false;
+	read_only = true;
+	samples_filled = cached_samples_count;
+	fake_samples_filled = 0;
+	samples_consumed = 0;
+	samples = cached_samples;
+}
+
+Sound::Sound(AssetRollStream &&sourcefile, SoundBank *parent)
+	: parent(parent)
+{
+	name = sourcefile.name;
+	channels = -1;
+	writing_completed = false;
+
+	// create the first page now
+	pages.emplace_back(true);
+
+	// decode
+	decoder_worker_cancel.store(false);
+	decoder_worker = std::thread(decodeogg, std::move(sourcefile), this, &decoder_worker_cancel);
+}
+
+Sound::Sound(const std::string &name, AssetRollStream *sourcefile, int channels, std::int16_t *samples, unsigned long long samples_count)
+	: parent(NULL)
+{
+	const bool need_to_start_decoder = sourcefile != NULL;
+	this->name = name;
+	this->channels = channels;
+	writing_completed = !need_to_start_decoder;
+
+	// create the first page now
+	pages.emplace_back(samples,  samples_count);
+
+	// decode
+	decoder_worker_cancel.store(false);
+	if(need_to_start_decoder)
+		decoder_worker = std::thread(decodeogg, std::move(*sourcefile), this, &decoder_worker_cancel);
 }
 
 Sound::~Sound()
 {
-	if(thread.joinable())
-		thread.join();
+	decoder_worker_cancel.store(true);
+	if(decoder_worker.joinable())
+		decoder_worker.join();
+
+	if(parent != NULL && pages.size() > 0)
+	{
+		auto &frontpage = pages.front();
+		if(frontpage.cache_this_page)
+		{
+			if(parent->cache_sound(name, channels, frontpage.samples, frontpage.samples_filled))
+				frontpage.samples_owner.release(); // samples buffer is now owned by soundbank, need to release this
+		}
+	}
 }
 
-Sound &Sound::operator=(AssetRollStream &raw)
+unsigned long long Sound::write(const std::int16_t *buffer, unsigned long long samples_to_write)
 {
-	from_roll(raw);
-	return *this;
+	SoundPage *write_page;
+	int page_count;
+
+	{
+		std::lock_guard lock(pages_lock);
+
+		page_count = pages.size();
+
+		if (page_count == 0)
+			pages.emplace_back();
+
+		write_page = &pages.back();
+	}
+
+	if(write_page->read_only)
+		return fake_write(buffer, samples_to_write, write_page);
+
+	const unsigned long long samples_written = std::min(SoundPage::PAGE_SAMPLE_COUNT - write_page->samples_filled.load(), samples_to_write);
+
+	memcpy(write_page->samples + write_page->samples_filled, buffer, samples_written * sizeof(std::int16_t));
+	write_page->samples_filled += samples_written;
+
+#ifndef NDEBUG
+	if (write_page->samples_filled > SoundPage::PAGE_SAMPLE_COUNT)
+		win::bug("Overwrote end of sound page");
+#endif
+
+	// make a new page if need be
+	if(write_page->samples_filled == SoundPage::PAGE_SAMPLE_COUNT && page_count < MAX_PAGES)
+	{
+		{
+			std::lock_guard lock(pages_lock);
+			pages.emplace_back();
+		}
+
+		return samples_written + write(buffer + samples_written, samples_to_write - samples_written);
+	}
+
+	return samples_written;
 }
 
-void Sound::from_roll(AssetRollStream &raw)
+unsigned long long Sound::fake_write(const std::int16_t *buffer, unsigned long long samples_to_write, SoundPage *write_page)
 {
-	const unsigned long long file_size = raw.size();
-	size = 0;
-	encoded = std::move(raw.read_all());
+	const unsigned long long fake_samples_written = std::min(SoundPage::PAGE_SAMPLE_COUNT - write_page->fake_samples_filled.load(), samples_to_write);
+	write_page->fake_samples_filled += fake_samples_written;
 
-	// eventual size of decoded data
-	unsigned long long index = file_size - 1;
-	while(index - 3 >= 0 && !(encoded[index] == 'S' && encoded[index - 1] == 'g' && encoded[index - 2] == 'g' && encoded[index - 3] == 'O'))
-		--index;
-	unsigned long long samplecount;
-	memcpy(&samplecount, &encoded[index + 3], sizeof(samplecount));
-	target_size = samplecount * sizeof(short);
+#ifndef NDEBUG
+	if(write_page->fake_samples_filled > SoundPage::PAGE_SAMPLE_COUNT)
+		win::bug("Fake overwrote end of sound page");
+#endif
 
-	buffer = std::make_unique<short[]>(samplecount);
+	if(write_page->fake_samples_filled == SoundPage::PAGE_SAMPLE_COUNT)
+	{
+		{
+			std::lock_guard lock(pages_lock);
+			pages.emplace_back();
+		}
 
-	// decode
-	thread = std::thread(decodeogg, std::move(encoded), file_size, buffer.get(), target_size, &size);
+		return fake_samples_written + write(buffer + fake_samples_written, samples_to_write - fake_samples_written);
+	}
+
+	return fake_samples_written;
+}
+
+void Sound::complete_writing()
+{
+	writing_completed = true;
+}
+
+unsigned long long Sound::read(std::int16_t *buffer, unsigned long long request_samples)
+{
+	SoundPage *read_page;
+
+	{
+		std::lock_guard lock(pages_lock);
+
+		if (pages.size() == 0)
+			return 0;
+
+		read_page = &pages.front();
+	}
+
+	const unsigned long long can_read_samples = std::min(read_page->samples_filled.load() - read_page->samples_consumed.load(), request_samples);
+	memcpy(buffer, read_page->samples + read_page->samples_consumed, can_read_samples * sizeof(std::int16_t));
+	read_page->samples_consumed += can_read_samples;
+
+#ifndef NDEBUG
+	if (read_page->samples_consumed > SoundPage::PAGE_SAMPLE_COUNT)
+		win::bug("Overread end of sound page");
+#endif
+
+	if (read_page->samples_consumed == SoundPage::PAGE_SAMPLE_COUNT)
+	{
+		// this page is exhausted, delete it
+		{
+			std::lock_guard lock(pages_lock);
+
+			// cache the page if it's the first one
+			if(read_page->cache_this_page && parent != NULL)
+			{
+				if(parent->cache_sound(name, channels, read_page->samples, read_page->samples_filled))
+					read_page->samples_owner.release(); // samples buffer is now owned by soundbank, need to release this
+			}
+
+			pages.pop_front();
+		}
+
+		if (can_read_samples < request_samples)
+			return can_read_samples + read(buffer + can_read_samples, request_samples - can_read_samples);
+	}
+
+	return can_read_samples;
+}
+
+bool Sound::is_stream_completed()
+{
+	if(!writing_completed)
+		return false;
+
+	std::lock_guard lock(pages_lock);
+	auto &lastpage = pages.back();
+	return lastpage.samples_consumed.load() == lastpage.samples_filled.load();
 }
 
 }
 
-static void ogg_vorbis_error(const std::string &msg)
+[[noreturn]] static void ogg_vorbis_error(const std::string &msg)
 {
 	win::bug("Ogg-Vorbis: " + msg);
 }
 
-void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long long encoded_size, short *const decoded, const unsigned long long decoded_size, std::atomic<unsigned long long> *const size){
-	const unsigned char *const encoded = encoded_ptr.get();
+// this is copied from a vorbis decoder sample, god have mercy on ye
+void decodeogg(win::AssetRollStream source, win::Sound *sound_p, std::atomic<bool> *cancel_p)
+{
+	std::atomic<bool> &cancel = *cancel_p;
+	win::Sound &sound = *sound_p;
 
 	ogg_sync_state state; // oy
 	ogg_stream_state stream; // os
@@ -75,9 +238,8 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 	int i;
 
 	buffer = ogg_sync_buffer(&state, 4096);
-	bytes = std::min(encoded_size, (long long unsigned)4096);
-	memcpy(buffer, encoded, bytes);
-	unsigned long long index = bytes;
+	bytes = std::min(source.size(), (long long unsigned)4096);
+	source.read(buffer, bytes);
 
 	ogg_sync_wrote(&state, bytes);
 
@@ -129,12 +291,11 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 		}
 
 		buffer = ogg_sync_buffer(&state, 4096);
-		if(encoded_size - index >= 4096)
+		if(source.size() - source.tell() >= 4096)
 			bytes = 4096;
 		else
-			bytes = encoded_size - index;
-		memcpy(buffer, encoded + index, bytes);
-		index += bytes;
+			bytes = source.size() - source.tell();
+		source.read(buffer, bytes);
 
 		if(bytes < 4096 && i < 2)
 			ogg_vorbis_error("EOF before reading all Vorbis headers");
@@ -142,109 +303,111 @@ void decodeogg(std::unique_ptr<unsigned char[]> encoded_ptr, const unsigned long
 		ogg_sync_wrote(&state, bytes);
 	}
 
-	if(info.channels != 1)
-		ogg_vorbis_error("Only mono-channels audio is supported");
+	sound.channels = info.channels;
 
 	const long long convsize = 4096 / info.channels;
-	std::unique_ptr<std::int16_t[]> convbuffer(new std::int16_t[4096]);
-	long long offset = 0; // offset into <decoded>
+	std::int16_t convbuffer[4096];
 
-	if(vorbis_synthesis_init(&dsp, &info) == 0)
+	if(vorbis_synthesis_init(&dsp, &info) != 0)
+		ogg_vorbis_error("Corrupt header during playback initialization");
+
+	vorbis_block_init(&dsp, &block);
+	while(!eos)
 	{
-		vorbis_block_init(&dsp, &block);
 		while(!eos)
 		{
-			while(!eos)
+			int result = ogg_sync_pageout(&state, &page);
+			if(result == 0)
+				break;
+			if(result < 0)
+				ogg_vorbis_error("Corrupt or missing data in the bitstream");
+
+			ogg_stream_pagein(&stream, &page);
+
+			while(1)
 			{
-				int result = ogg_sync_pageout(&state, &page);
+				result = ogg_stream_packetout(&stream, &packet);
+
 				if(result == 0)
 					break;
 				if(result < 0)
 					ogg_vorbis_error("Corrupt or missing data in the bitstream");
-				else
+
+				float **pcm;
+				int samples;
+
+				if(vorbis_synthesis(&block, &packet) == 0)
+					vorbis_synthesis_blockin(&dsp, &block);
+
+				while((samples = vorbis_synthesis_pcmout(&dsp, &pcm)) > 0)
 				{
-					ogg_stream_pagein(&stream, &page);
+					int j;
+					int bout = samples < convsize ? samples : convsize;
 
-					while(1)
+					for(i = 0; i < info.channels; ++i)
 					{
-						result = ogg_stream_packetout(&stream, &packet);
+						ogg_int16_t *ptr = convbuffer + i;
 
-						if(result == 0)
-							break;
-						if(result < 0)
-							ogg_vorbis_error("Corrupt or missing data in the bitstream");
-						else
+						float *mono = pcm[i];
+						for(j = 0; j < bout; ++j)
 						{
-							float **pcm;
-							int samples;
+							int val = floor(mono[j] * 32767.0f + 0.5f);
+							if(val > 32767)
+								val = 32767;
+							else if(val < -32768)
+								val = -32768;
 
-							if(vorbis_synthesis(&block, &packet) == 0)
-								vorbis_synthesis_blockin(&dsp, &block);
-
-							while((samples = vorbis_synthesis_pcmout(&dsp, &pcm)) > 0)
-							{
-								int j;
-								int bout = samples < convsize ? samples : convsize;
-
-								for(i = 0; i < info.channels; ++i)
-								{
-									ogg_int16_t *ptr = convbuffer.get() + i;
-
-									float *mono = pcm[i];
-									for(j = 0; j < bout; ++j)
-									{
-										int val = floor(mono[j] * 32767.0f + 0.5f);
-										if(val > 32767)
-											val = 32767;
-										else if(val < -32768)
-											val = -32768;
-
-										*ptr = val;
-										ptr += info.channels;
-									}
-								}
-
-								if(offset + (bout * 2 * info.channels) > (long long)decoded_size)
-									std::cerr << ("write overflow: size = " + std::to_string(decoded_size) + ", offset =  " + std::to_string(offset) + ", " + std::to_string(bout * 2 * info.channels) + " bytes") << std::endl;
-								else
-									memcpy((char*)(decoded) + offset, convbuffer.get(), bout * 2 * info.channels);
-								offset += bout * 2 * info.channels;
-								size->store(offset);
-
-								vorbis_synthesis_read(&dsp, bout);
-							}
+							*ptr = val;
+							ptr += info.channels;
 						}
 					}
 
-					if(ogg_page_eos(&page))
-						eos = 1;
+					unsigned long long samples_written = 0;
+					const unsigned long long want_to_write_samples = bout * info.channels;
+					for(;;)
+					{
+						samples_written += sound.write(convbuffer + samples_written, want_to_write_samples - samples_written);
+
+						if (samples_written == want_to_write_samples)
+							break;
+
+						if (cancel)
+							goto cleanup;
+
+						usleep(5000);
+					}
+
+					vorbis_synthesis_read(&dsp, bout);
 				}
 			}
 
-			if(!eos)
-			{
-				buffer = ogg_sync_buffer(&state, 4096);
-				if(encoded_size - index >= 4096)
-					bytes = 4096;
-				else
-					bytes = encoded_size - index;
-
-				memcpy(buffer, encoded + index, bytes);
-				index += bytes;
-				ogg_sync_wrote(&state, bytes);
-				if(bytes == 0)
-					eos = 1;
-			}
+			if(ogg_page_eos(&page))
+				eos = 1;
 		}
 
-		vorbis_block_clear(&block);
-		vorbis_dsp_clear(&dsp);
+		if(!eos)
+		{
+			buffer = ogg_sync_buffer(&state, 4096);
+			if(source.size() - source.tell() >= 4096)
+				bytes = 4096;
+			else
+				bytes = source.size() - source.tell();
+
+			source.read(buffer, bytes);
+			ogg_sync_wrote(&state, bytes);
+			if(bytes == 0)
+				eos = 1;
+		}
 	}
-	else
-		ogg_vorbis_error("Corrupt header during playback initialization");
+
+cleanup:
+	vorbis_block_clear(&block);
+	vorbis_dsp_clear(&dsp);
 
 	ogg_stream_clear(&stream);
 	vorbis_comment_clear(&comment);
 	vorbis_info_clear(&info);
 	ogg_sync_clear(&state);
+
+	sound.complete_writing();
 }

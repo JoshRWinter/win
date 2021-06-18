@@ -40,7 +40,9 @@ typedef Window window_handle;
 #include "../src/Font.h"
 #include "../src/Atlas.h"
 #include "../src/Sound.h"
-#include "../src/AudioEngine.h"
+#include "../src/objectpool.hpp"
+#include "../src/SoundBank.h"
+#include "../src/SoundEngine.h"
 #include "../src/Display.h"
 
 namespace win

@@ -107,6 +107,7 @@ bool AssetRoll::exists(const char *resourcename) const
 AssetRollStream::AssetRollStream(const AssetRollResource &resource)
 	: resource(resource)
 {
+	name = resource.name;
 	std::ifstream rollstream(resource.assetroll, std::ifstream::binary);
 	rollstream.seekg(resource.begin);
 
@@ -201,6 +202,18 @@ void AssetRollStream::seek(unsigned long long pos)
 		file_stream.seekg(pos + resource.begin);
 	else
 		position = pos;
+}
+
+unsigned long long AssetRollStream::tell()
+{
+	if (kind == AssetRollStreamKind::file)
+	{
+		unsigned long long strpos = file_stream.tellg();
+
+		return strpos - resource.begin;
+	}
+	else
+		return position;
 }
 
 }

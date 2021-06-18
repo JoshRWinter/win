@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 add_library(win STATIC
 	src/Sound.cpp
 	src/Atlas.cpp
-	src/AudioEngine.cpp
+	src/SoundEngine.cpp
+	src/SoundBank.cpp
 	src/Display.cpp
 	src/Font.cpp
 	src/AssetRoll.cpp
@@ -15,13 +16,15 @@ add_library(win STATIC
 
 	src/Sound.h
 	src/Atlas.h
-	src/AudioEngine.h
+	src/SoundEngine.h
+	src/SoundBank.h
 	src/Display.h
 	src/Font.h
 	src/AssetRoll.h
 	src/Texture.h
 	src/Utility.h
 	src/event.h
+	src/objectpool.hpp
 	)
 
 if(WIN32)
