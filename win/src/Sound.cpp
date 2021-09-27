@@ -1,7 +1,6 @@
 #include <algorithm>
 
 #include <math.h>
-#include <unistd.h>
 
 #include <ogg/ogg.h>
 #include <vorbis/vorbisfile.h>
@@ -374,7 +373,11 @@ void decodeogg(win::AssetRollStream source, win::Sound *sound_p, std::atomic<boo
 						if (cancel)
 							goto cleanup;
 
+#if defined WINPLAT_LINUX
 						usleep(5000);
+#elif defined WINPLAT_WINDOWS
+						Sleep(10);
+#endif
 					}
 
 					vorbis_synthesis_read(&dsp, bout);

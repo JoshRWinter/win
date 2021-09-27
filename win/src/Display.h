@@ -9,7 +9,7 @@ namespace win
 
 class Display
 {
-	friend class AudioEngine;
+	friend class SoundEngine;
 
 	typedef std::function<void(Button, bool)> ButtonHandler;
 	typedef std::function<void(int)> CharacterHandler;
@@ -50,7 +50,6 @@ private:
 	HWND window;
 	HDC hdc;
 	HGLRC context;
-	win::AudioEngine *directsound; // non-owning
 	bool winquit;
 
 	static LRESULT CALLBACK wndproc(HWND, UINT, WPARAM, LPARAM);

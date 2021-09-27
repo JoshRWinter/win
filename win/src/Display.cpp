@@ -733,7 +733,6 @@ Display::Display(const char *caption, int w, int h, bool fullscreen, window_hand
 	button_handler = default_button_handler;
 	character_handler = default_character_handler;
 	mouse_handler = default_mouse_handler;
-	directsound = NULL;
 
 	winquit = false;
 
@@ -794,10 +793,6 @@ bool Display::process()
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-
-	// poke the directsound system
-	if(directsound != NULL)
-		directsound->poke();
 
 	return !winquit;
 }
