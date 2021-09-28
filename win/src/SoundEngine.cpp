@@ -615,8 +615,7 @@ void SoundEngine::write_to_stream(ActiveSound &sound)
 	if(sound.sound->channels == 1)
 	{
 		const auto mono_write_samples = will_write_samples / 2;
-		unsigned long long got;
-		got = sound.sound->read(convbuffer.get(), mono_write_samples);
+		auto got = sound.sound->read(convbuffer.get(), mono_write_samples);
 
 		if(sound.sound->is_stream_completed() && sound.looping)
 		{
@@ -645,6 +644,40 @@ void SoundEngine::write_to_stream(ActiveSound &sound)
 			win::bug("DirectSound: couldn't unlock stream buffer");
 
 		sound.write_cursor = (sound.write_cursor + size1 + size2) % SOUND_BUFFER_BYTES;
+	}
+	else if(sound.sound->channels == 2)
+	{
+		auto got = sound.sound->read(convbuffer.get(), will_write_samples);
+
+		if(sound.sound->is_stream_completed() && sound.looping)
+		{
+			const std::string name = sound.sound->name;
+			soundbank.unload(*sound.sound);
+			sound.sound = &soundbank.load(name.c_str());
+		}
+
+		if(got == 0)
+			return;
+
+		sound.firstwrite = false;
+
+		if(sound.stream->Lock(sound.write_cursor, got * sizeof(std::int16_t), &buffer1, &size1, &buffer2, &size2, 0) != DS_OK)
+			win::bug("DirectSound: couldn't lock stream buffer");
+
+		if(size1 + size2 != got * sizeof(std::int16_t))
+			win::bug("DirectSound: sample request mismatch");
+
+		memcpy(buffer1, convbuffer.get(), size1);
+		memcpy(buffer2, convbuffer.get() + (size1 / sizeof(std::int16_t)), size2);
+
+		if(sound.stream->Unlock(buffer1, size1, buffer2, size2) != DS_OK)
+			win::bug("DirectSound: couldn't unlock stream buffer");
+
+		sound.write_cursor = (sound.write_cursor + size1 + size2) % SOUND_BUFFER_BYTES;
+	}
+	else
+	{
+		win::bug("DirectSound: unsupported channels");
 	}
 }
 
