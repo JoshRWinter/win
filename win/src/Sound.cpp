@@ -7,6 +7,10 @@
 
 #include <win.h>
 
+#ifdef WINPLAT_LINUX
+#include <unistd.h>
+#endif
+
 namespace win
 {
 

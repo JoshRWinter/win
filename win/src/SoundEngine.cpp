@@ -89,7 +89,7 @@ static void callback_stream(pa_stream*, void *loop)
 SoundEngine::SoundEngine(Display &p, AssetRoll &asset_roll, SoundConfigFn fn)
 	: soundbank(asset_roll)
 {
-	sample_buffer_samples_count = 0;
+	conversion_buffer_sample_count = 0;
 	next_id = 1;
 	listener_x = 0.0f;
 	listener_y = 0.0f;
@@ -164,10 +164,10 @@ void SoundEngine::write_to_stream(ActiveSound &sound, const size_t bytes)
 			return;
 	}
 
-	if(requested_samples * 3 > sample_buffer_samples_count)
+	if((requested_samples / 2) * 3 > conversion_buffer_sample_count)
 	{
-		sample_buffer = std::move(std::make_unique<std::int16_t[]>(requested_samples * 3));
-		sample_buffer_samples_count = requested_samples * 3;
+		conversion_buffer = std::move(std::make_unique<std::int16_t[]>((requested_samples / 2) * 3));
+		conversion_buffer_sample_count = (requested_samples / 2) * 3;
 	}
 
 	if(sound.sound->channels.load() == 1)
@@ -175,22 +175,23 @@ void SoundEngine::write_to_stream(ActiveSound &sound, const size_t bytes)
 		// supe it up to 2 channels
 		const auto mono_requested_samples = requested_samples / 2;
 
-		auto readbuffer = sample_buffer.get();
-		auto stereobuffer = sample_buffer.get() + (mono_requested_samples * 2);
+		auto readbuffer = conversion_buffer.get();
+		auto stereobuffer = conversion_buffer.get() + mono_requested_samples;
 		const auto samples_actually_read = sound.sound->read(readbuffer, mono_requested_samples);
 
-		channel_dupe(stereobuffer, readbuffer, samples_actually_read * sizeof(std::int16_t) * 2);
+		channel_dupe(stereobuffer, readbuffer, mono_requested_samples);
 
 		if(pa_stream_write(sound.stream, stereobuffer, samples_actually_read * sizeof(std::int16_t) * 2, NULL, 0, PA_SEEK_RELATIVE))
 			win::bug("pa_stream_write() failure");
 	}
 	else if(sound.sound->channels.load() == 2)
 	{
-		const auto samples_actually_read = sound.sound->read(sample_buffer.get(), requested_samples);
+		const auto samples_actually_read = sound.sound->read(conversion_buffer.get(), requested_samples);
 
-		if(pa_stream_write(sound.stream, sample_buffer.get(), samples_actually_read * sizeof(std::int16_t), NULL, 0, PA_SEEK_RELATIVE))
+		if(pa_stream_write(sound.stream, conversion_buffer.get(), samples_actually_read * sizeof(std::int16_t), NULL, 0, PA_SEEK_RELATIVE))
 			win::bug("pa_stream_write() failure");
 	}
+	else win::bug("PulseAudio: invalid channels");
 }
 
 void SoundEngine::process()

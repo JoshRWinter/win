@@ -55,10 +55,12 @@ class SoundEngine
 	typedef void (*SoundConfigFn)(float, float, float, float, float*, float*);
 	static constexpr int MAX_SOUNDS = 32;
 
+#ifdef WINPLAT_WINDOWS
 	static constexpr unsigned long long SOUND_BUFFER_BYTES = 1 * 44100 * 2 * sizeof(std::int16_t); // seconds * sample rate * channels * sample size
 	static constexpr unsigned long long SOUND_BUFFER_SAMPLES = SOUND_BUFFER_BYTES / sizeof(std::int16_t); // seconds * sample rate * sample size
 	static constexpr unsigned long long MAX_WRITE_BYTES = SOUND_BUFFER_BYTES; // half the sound buffer size
 	static constexpr unsigned long long MAX_WRITE_SAMPLES = MAX_WRITE_BYTES / sizeof(std::int16_t); // half the sound buffer size
+#endif
 
 public:
 	SoundEngine(Display&, AssetRoll&, SoundConfigFn);
