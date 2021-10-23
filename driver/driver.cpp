@@ -59,9 +59,7 @@ int main()
 	win::SoundEngine audio_engine(display, roll, sound_config);
 
 	win::FontRenderer font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
-	win::Font font1;
-	win::Font font2(font_renderer, roll["../../fishtank/assets/arial.ttf"], 0.5f);
-	font1 = std::move(font2);
+	win::Font font1(font_renderer, roll["../../fishtank/assets/arial.ttf"], 0.5f);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::Display::screen_width() << " and screen height is " << win::Display::screen_height() << std::endl;

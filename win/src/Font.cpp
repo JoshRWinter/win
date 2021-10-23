@@ -206,16 +206,13 @@ FontRenderer::FontRenderer(int iwidth, int iheight, float left, float right, flo
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo.get());
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	const float half_pixel_width = (1 / 752.0f) / 2.0f;
-	const float half_pixel_height = (1 / 282.0f) / 2.0f;
-
 	// font vertices
 	const float verts[] =
 	{
-		-0.5f, 0.5f, 0.0f + half_pixel_width, (1.0f / rows) - half_pixel_height,
-		-0.5f, -0.5f, 0.0f + half_pixel_width, 0.0f + half_pixel_height,
-		0.5f, -0.5f, (1.0f / cols) - half_pixel_width, 0.0f + half_pixel_height,
-		0.5f, 0.5f, (1.0f / cols) - half_pixel_width, (1.0f / rows) - half_pixel_height
+		-0.5f, 0.5f, 0.0f, (1.0f / rows),
+		-0.5f, -0.5f, 0.0f, 0.0f,
+		0.5f, -0.5f, (1.0f / cols), 0.0f,
+		0.5f, 0.5f, (1.0f / cols), (1.0f / rows)
 	};
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex.get());

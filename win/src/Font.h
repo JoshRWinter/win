@@ -20,13 +20,12 @@ class Font
 {
 	friend class FontRenderer;
 public:
-	Font() = default;
 	Font(const FontRenderer &parent, AssetRollStream, float);
 	Font(const Font&) = delete;
-	Font(Font&&) = default;
+	Font(Font&&) = delete;
 
 	void operator=(Font&) = delete;
-	Font &operator=(Font&&) = default;
+	Font &operator=(Font&&) = delete;
 
 	float size() const;
 
@@ -44,7 +43,6 @@ class FontRenderer
 {
 	friend class Font;
 public:
-	FontRenderer();
 	FontRenderer(int, int, float, float, float, float);
 	FontRenderer(const FontRenderer&) = delete;
 	FontRenderer(FontRenderer&&);
