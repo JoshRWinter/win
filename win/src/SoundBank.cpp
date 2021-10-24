@@ -31,7 +31,7 @@ Sound &SoundBank::load(const char *name)
 		const bool need_to_decode = cached_sound->samples_count >= SoundPage::PAGE_SAMPLE_COUNT; // good enough heuristic
 		if(need_to_decode)
 		{
-			AssetRollStream stream = std::move(roll[name]);
+			AssetRollStream stream = roll[name];
 			auto &sound = sounds.emplace_back(cached_sound->name, &stream, cached_sound->channels, cached_sound->samples.get(), cached_sound->samples_count);
 			return sound;
 		}
@@ -43,7 +43,7 @@ Sound &SoundBank::load(const char *name)
 	}
 	else
 	{
-		auto &sound = sounds.emplace_back(roll[name], this);
+		auto &sound = sounds.emplace_back(roll[name], name, this);
 		return sound;
 	}
 }

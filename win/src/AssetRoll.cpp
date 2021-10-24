@@ -42,8 +42,6 @@ AssetRoll::AssetRoll(const char *file)
 	for(int i = 0; i < file_count; ++i)
 	{
 		AssetRollResource rh;
-		rh.assetroll = file;
-
 		stream.read((char*)&rh.compressed, sizeof(rh.compressed));
 		if(stream.gcount() != sizeof(rh.compressed))
 			corrupt();
@@ -76,7 +74,7 @@ AssetRoll::AssetRoll(const char *file)
 	}
 }
 
-AssetRollResource AssetRoll::operator[](const char *resourcename)
+AssetRollStream AssetRoll::operator[](const char *resourcename)
 {
 	// make sure the file exists
 	int index = -1;
@@ -92,7 +90,26 @@ AssetRollResource AssetRoll::operator[](const char *resourcename)
 	if(index == -1)
 		win::bug("AssetRoll: no asset " + std::string(resourcename));
 
-	return resources[index];
+	const AssetRollResource &resource = resources[index];
+
+	if (resource.compressed)
+	{
+		uLongf uncompressed_size = resource.uncompressed_size;
+
+		auto compressed_data = std::make_unique<unsigned char[]>(resource.size);
+		auto data = new unsigned char[uncompressed_size];
+		stream.seekg(resource.begin);
+		stream.read((char*)compressed_data.get(), resource.size);
+
+		if(uncompress(data, &uncompressed_size, compressed_data.get(), resource.size) != Z_OK)
+			win::bug("Could not inflate " + resource.name + " (" + resourcename + ")");
+
+		return AssetRollStream(new AssetRollStreamCompressed(data, resource.uncompressed_size));
+	}
+	else
+	{
+		return AssetRollStream(new AssetRollStreamRaw(asset_roll_name, resource.begin, resource.size));
+	}
 }
 
 bool AssetRoll::exists(const char *resourcename) const
@@ -104,116 +121,36 @@ bool AssetRoll::exists(const char *resourcename) const
 	return false;
 }
 
-AssetRollStream::AssetRollStream(const AssetRollResource &resource)
-	: resource(resource)
+AssetRollStream::AssetRollStream(AssetRollStreamProvider *provider)
+	: inner(provider)
 {
-	name = resource.name;
-	std::ifstream rollstream(resource.assetroll, std::ifstream::binary);
-	rollstream.seekg(resource.begin);
-
-	if (resource.compressed)
-	{
-		kind = AssetRollStreamKind::memory;
-		position = 0;
-
-		uLongf uncompressed_size = resource.uncompressed_size;
-
-		auto compressed_data = std::make_unique<unsigned char[]>(resource.size);
-		memory = std::make_unique<unsigned char[]>(uncompressed_size);
-		rollstream.read((char*)compressed_data.get(), resource.size);
-
-		if(uncompress(memory.get(), &uncompressed_size, compressed_data.get(), resource.size) != Z_OK)
-			win::bug("Could not inflate " + resource.name + " (" + resource.assetroll + ")");
-	}
-	else
-	{
-		kind = AssetRollStreamKind::file;
-		file_stream = std::move(rollstream);
-	}
 }
 
 unsigned long long AssetRollStream::size() const
 {
-	return resource.uncompressed_size;
+	return inner->size();
 }
 
 void AssetRollStream::read(void *buf, unsigned long long len)
 {
-	if (kind == AssetRollStreamKind::file)
-	{
-		unsigned long long offset_into_stream = file_stream.tellg();
-		unsigned long long offset_into_resource = offset_into_stream - resource.begin;
-		unsigned long long left = resource.uncompressed_size - offset_into_resource;
-		if (len > left)
-			win::bug("Reading too many bytes from AssetRollStream " + resource.name + " (" + resource.assetroll + ")");
-
-		file_stream.read((char*)buf, len);
-		if (file_stream.gcount() != len)
-			win::bug("Could not read " + std::to_string(len) + " bytes from AssetRollStream " + resource.name + " (" + resource.assetroll + ")");
-	}
-	else
-	{
-		unsigned long long left = resource.uncompressed_size - position;
-		if (len > left)
-			win::bug("Reading too many bytes from AssetRollStream " + resource.name + " (" + resource.assetroll + ")");
-
-		memcpy(buf, memory.get() + position, len);
-		position += len;
-	}
-}
-
-void AssetRollStream::read_all(void *buf)
-{
-	if (kind == AssetRollStreamKind::file)
-	{
-		file_stream.seekg(resource.begin);
-		file_stream.read((char*)buf, resource.uncompressed_size);
-		if (file_stream.gcount() != resource.uncompressed_size)
-			win::bug("Reading too many bytes from AssetRollStream " + resource.name + " (" + resource.assetroll + ")");
-	}
-	else
-	{
-		memcpy(buf, memory.get(), resource.uncompressed_size);
-		position = resource.uncompressed_size;
-	}
+	inner->read(buf, len);
 }
 
 std::unique_ptr<unsigned char[]> AssetRollStream::read_all()
 {
-	auto dest = std::make_unique<unsigned char[]>(resource.uncompressed_size);
-
-	if (kind == AssetRollStreamKind::file)
-	{
-		file_stream.seekg(resource.begin);
-		file_stream.read((char*)dest.get(), resource.uncompressed_size);
-	}
-	else
-	{
-		memcpy(dest.get(), memory.get(), resource.uncompressed_size);
-		position = resource.uncompressed_size;
-	}
-
-	return dest;
+	return inner->read_all();
 }
 
 void AssetRollStream::seek(unsigned long long pos)
 {
-	if (kind == AssetRollStreamKind::file)
-		file_stream.seekg(pos + resource.begin);
-	else
-		position = pos;
+	inner->seek(pos);
 }
 
 unsigned long long AssetRollStream::tell()
 {
-	if (kind == AssetRollStreamKind::file)
-	{
-		unsigned long long strpos = file_stream.tellg();
-
-		return strpos - resource.begin;
-	}
-	else
-		return position;
+	return inner->tell();
 }
+
+AssetRollStreamProvider::~AssetRollStreamProvider() {}
 
 }

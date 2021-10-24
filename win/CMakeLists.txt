@@ -11,6 +11,8 @@ add_library(win STATIC
 	src/Display.cpp
 	src/Font.cpp
 	src/AssetRoll.cpp
+	src/AssetRollStreamRaw.cpp
+	src/AssetRollStreamCompressed.cpp
 	src/Texture.cpp
 	src/Utility.cpp
 

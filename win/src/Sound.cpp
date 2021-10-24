@@ -35,10 +35,10 @@ SoundPage::SoundPage(std::int16_t *cached_samples, unsigned long long cached_sam
 	samples = cached_samples;
 }
 
-Sound::Sound(AssetRollStream &&sourcefile, SoundBank *parent)
+Sound::Sound(AssetRollStream &&sourcefile, const std::string &soundname, SoundBank *parent)
 	: parent(parent)
 {
-	name = sourcefile.name;
+	name = soundname;
 	channels = -1;
 	writing_completed = false;
 
@@ -223,14 +223,14 @@ void decodeogg(win::AssetRollStream source, win::Sound *sound_p, std::atomic<boo
 	std::atomic<bool> &cancel = *cancel_p;
 	win::Sound &sound = *sound_p;
 
-	ogg_sync_state state; // oy
-	ogg_stream_state stream; // os
-	ogg_page page; // og
-	ogg_packet packet; // op
-	vorbis_info info; // vi
-	vorbis_comment comment; // vc
-	vorbis_dsp_state dsp; // vd
-	vorbis_block block; // vb
+	ogg_sync_state state;
+	ogg_stream_state stream;
+	ogg_page page;
+	ogg_packet packet;
+	vorbis_info info;
+	vorbis_comment comment;
+	vorbis_dsp_state dsp;
+	vorbis_block block;
 
 	char *buffer;
 	int bytes;

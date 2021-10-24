@@ -55,7 +55,7 @@ class Sound
 public:
 	static constexpr int MAX_PAGES = 3;
 
-	Sound(AssetRollStream&&, SoundBank*);
+	Sound(AssetRollStream&&, const std::string&, SoundBank*);
 	Sound(const std::string &name, AssetRollStream*, int, std::int16_t*, unsigned long long);
 	Sound(Sound&) = delete;
 	Sound(Sound&&) = delete;
