@@ -369,6 +369,8 @@ std::string trim(const std::string &s)
 			str.erase(str.begin() + i);
 			--i;
 		}
+		else
+			break;
 	}
 
 	// trim end
@@ -379,6 +381,8 @@ std::string trim(const std::string &s)
 			str.erase(str.begin() + i);
 			++i;
 		}
+		else
+			break;
 	}
 
 	return str;
