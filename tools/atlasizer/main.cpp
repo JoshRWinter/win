@@ -6,23 +6,37 @@
 #include "targa.hpp"
 #undef private
 
-static const char *vertexshader =
+static const char *vertexshader_atlasitem =
 	"#version 330 core\n"
 	"uniform mat4 projection;\n"
 	"layout (location = 0) in vec2 pos;\n"
 	"layout (location = 1) in vec2 texcoord;\n"
 	"out vec2 ftexcoord;\n"
-	"void main(){"
+	"void main(){\n"
 	"ftexcoord = texcoord;\n"
 	"gl_Position = projection * vec4(pos.xy, 0.0, 1.0);\n"
 	"}",
-	*fragmentshader =
+	*fragmentshader_atlasitem =
 	"#version 330 core\n"
 	"out vec4 color;\n"
 	"in vec2 ftexcoord;\n"
 	"uniform sampler2D tex;\n"
-	"void main(){"
+	"void main(){\n"
 	"color = /*vec4(1.0, 1.0, 0.0, 1.0);//*/texture(tex, ftexcoord);\n"
+	"}";
+
+static const char *vertexshader_guides =
+	"#version 330 core\n"
+	"uniform mat4 projection;\n"
+	"layout (location = 0) in vec2 pos;\n"
+	"void main(){\n"
+	"gl_Position = projection * vec4(pos.xy, 0.0, 1.0);\n"
+	"}",
+	*fragmentshader_guides =
+	"#version 330 core\n"
+	"out vec4 color;\n"
+	"void main(){\n"
+	"color = vec4(1.0, 0.5, 0.65, 1.0);\n"
 	"}";
 
 struct AtlasItem
@@ -184,7 +198,7 @@ int main()
 	bool grabbing = false;
 	bool panning = false;
 
-	bool refresh = false;
+	bool refresh = true;
 	float scale = 500.f;
 	float centerx = 0.0f, centery = 0.0f;
 
@@ -252,22 +266,23 @@ int main()
 		}
 	});
 
+	// opengl nonsense
 	win::load_extensions();
-	auto program = win::load_shaders(vertexshader, fragmentshader);
-	glUseProgram(program);
-	auto uniform_projection = glGetUniformLocation(program, "projection");
-	if (uniform_projection == -1)
+	auto program_atlasitem = win::load_shaders(vertexshader_atlasitem, fragmentshader_atlasitem);
+	glUseProgram(program_atlasitem);
+	auto uniform_projection_atlasitem = glGetUniformLocation(program_atlasitem, "projection");
+	if (uniform_projection_atlasitem == -1)
 		win::bug("no uniform projection");
 	float matrix[16];
 	win::init_ortho(matrix, -8.0f, 8.0f, -4.5f, 4.5f);
-	glUniformMatrix4fv(uniform_projection, 1, false, matrix);
+	glUniformMatrix4fv(uniform_projection_atlasitem, 1, false, matrix);
 
-	unsigned vao, vbo;
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &vbo);
+	unsigned vao_atlasitems, vbo_atlasitems;
+	glGenVertexArrays(1, &vao_atlasitems);
+	glGenBuffers(1, &vbo_atlasitems);
 
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindVertexArray(vao_atlasitems);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_atlasitems);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
@@ -277,8 +292,45 @@ int main()
 	std::vector verts = regenverts(items);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verts.size(), verts.data(), GL_STATIC_DRAW);
 
+
+	unsigned program_guides = win::load_shaders(vertexshader_guides, fragmentshader_guides);
+	glUseProgram(program_guides);
+	int uniform_projection_guides = glGetUniformLocation(program_guides, "projection");
+	if (uniform_projection_guides == -1)
+		win::bug("no uniform projection");
+
+	unsigned vao_guides, vbo_guides;
+	glGenVertexArrays(1, &vao_guides);
+	glGenBuffers(1, &vbo_guides);
+	glBindVertexArray(vao_guides);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_guides);
+
+	const float guide_width = 1.0f;
+	const float guide_length = 300.0f;
+	float guide_verts[] =
+	{
+		-guide_width, guide_length,
+		-guide_width, 0.0f,
+		0.0f, 0.0f,
+		-guide_width, guide_length,
+		0.0f, 0.0f,
+		0.0f, guide_length,
+
+		0.0f, 0.0f,
+		0.0f, -guide_width,
+		guide_length, -guide_width,
+		0.0f, 0.0f,
+		guide_length, -guide_width,
+		guide_length, 0.0f
+	};
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, NULL);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(guide_verts), guide_verts, GL_STATIC_DRAW);
+
 	while (display.process() && !quit)
 	{
+		// processing
 		mousex = ((mousex_raw - (display.width() / 2)) * (scale / (display.width() / 2))) + centerx;
 		mousey = (-(mousey_raw - (display.height() / 2)) * (scale / (display.height() / 2) * 0.5625)) + centery;
 
@@ -328,19 +380,29 @@ int main()
 			refresh = true;
 		}
 
-		//fprintf(stderr, "%d %d\n", mousex, mousey);
+		// rendering
 		if (refresh)
 		{
 			refresh = false;
 
 			win::init_ortho(matrix, centerx - scale, centerx + scale, centery - (scale * 0.5625f), centery + (scale * 0.5625f));
-			glUniformMatrix4fv(uniform_projection, 1, false, matrix);
+			glUseProgram(program_atlasitem);
+			glUniformMatrix4fv(uniform_projection_atlasitem, 1, false, matrix);
+			glUseProgram(program_guides);
+			glUniformMatrix4fv(uniform_projection_guides, 1, false, matrix);
 			verts = regenverts(items);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_atlasitems);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verts.size(), verts.data(), GL_STATIC_DRAW);
 		}
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glUseProgram(program_guides);
+		glBindVertexArray(vao_guides);
+		glDrawArrays(GL_TRIANGLES, 0, 12);
+
+		glUseProgram(program_atlasitem);
+		glBindVertexArray(vao_atlasitems);
 		int index = 0;
 		for (const AtlasItem &item : items)
 		{
@@ -356,9 +418,13 @@ int main()
 		display.swap();
 	}
 
-	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo);
-	glDeleteShader(program);
+	glDeleteVertexArrays(1, &vao_atlasitems);
+	glDeleteBuffers(1, &vbo_atlasitems);
+	glDeleteShader(program_atlasitem);
+
+	glDeleteShader(program_guides);
+	glDeleteVertexArrays(1, &vao_guides);
+	glDeleteBuffers(1, &vbo_guides);
 
 	return 0;
 }
