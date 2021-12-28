@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.0)
 project(wintools)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../win ${CMAKE_CURRENT_BINARY_DIR}/win)
 
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(roll roll/roll.cpp)
 
 add_executable(atlas atlas/main.cpp atlas/Targa.cpp atlas/Atlas.cpp)
+
+add_executable(atlasizer atlasizer/atlasizer.hpp atlasizer/main.cpp atlasizer/gui.cpp atlasizer/targa.cpp atlasizer/targa.hpp atlasizer/layoutexporter.cpp atlasizer/layoutexporter.hpp atlasizer/compileatlas.cpp)
+target_link_libraries(atlasizer win)
 
 if(WIN32)
 	target_include_directories(roll PRIVATE ../win/include/zlib)
@@ -18,3 +22,4 @@ else()
 
 	target_link_libraries(roll ${ZLIB_LIBRARIES})
 endif()
+

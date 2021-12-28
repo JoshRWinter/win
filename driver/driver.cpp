@@ -58,19 +58,19 @@ int main()
 
 	win::SoundEngine audio_engine(display, roll, sound_config);
 
-	win::FontRenderer font_renderer(display.width(), display.height(), -4.0f, 4.0f, 3.0f, -3.0f);
+	win::FontRenderer font_renderer(display.width(), display.height(), -4.0f, 4.0f, -3.0f, 3.0f);
 	win::Font font1(font_renderer, roll["../../fishtank/assets/arial.ttf"], 0.5f);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::Display::screen_width() << " and screen height is " << win::Display::screen_height() << std::endl;
 
-	const unsigned short *const coords = atlas.coords(3);
+	const win::AtlasItem coords = atlas.item(3);
 	const float verts[] =
 	{
-		-0.5f, -0.5f,	(float)coords[0] / USHRT_MAX, (float)coords[3] / USHRT_MAX, //0.0f, 1.0f,
-		-0.5f, 0.5f,	(float)coords[0] / USHRT_MAX, (float)coords[1] / USHRT_MAX, //0.0f, 0.0f,
-		0.5f, 0.5f,		(float)coords[2] / USHRT_MAX, (float)coords[1] / USHRT_MAX, //1.0f, 0.0f,
-		0.5f, -0.5f,	(float)coords[2] / USHRT_MAX, (float)coords[3] / USHRT_MAX //1.0f, 1.0f
+		-0.5f, 0.5f, coords.x1, coords.y2,
+		-0.5f, -0.5f, coords.x1, coords.y1,
+		0.5f, -0.5f, coords.x2, coords.y1,
+		0.5f, 0.5f,	coords.x2, coords.y2
 	};
 	const unsigned int indices[] =
 	{
@@ -82,7 +82,7 @@ int main()
 	program = std::move(program2);
 	glUseProgram(program.get());
 	float ortho_matrix[16];
-	win::init_ortho(ortho_matrix, -4.0f, 4.0f, 3.0f, -3.0f);
+	win::init_ortho(ortho_matrix, -4.0f, 4.0f, -3.0f, 3.0f);
 	const int uniform_projection = glGetUniformLocation(program.get(), "projection");
 	const int uniform_size = glGetUniformLocation(program.get(), "size");
 	glUniformMatrix4fv(uniform_projection, 1, false, ortho_matrix);
@@ -143,7 +143,7 @@ int main()
 	display.register_mouse_handler([&mousex, &mousey](int x, int y)
 	{
 		mousex = ((x / 800.0f) * 8.0f) - 4.0f;
-		mousey = ((y / 600.0f) * 6.0f) - 3.0f;
+		mousey = -(((y / 600.0f) * 6.0f) - 3.0f);
 	});
 
 	// display.register_character_handle([](int key)

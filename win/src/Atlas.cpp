@@ -8,53 +8,42 @@ namespace win
 
 Atlas::Atlas(AssetRollStream raw, Mode fm)
 {
-	int index = 0;
-
 	// check magic
 	char magic[6];
 	raw.read((unsigned char*)magic, 5);
-	index += 5;
 	magic[5] = 0;
 	if(strcmp(magic, "ATLAS"))
 		Atlas::corrupt();
 
 	// how many images
 	raw.read(&count, sizeof(count));
-	index += sizeof(count);
 
-	std::uint16_t canvas_width = 0;
-	std::uint16_t canvas_height = 0;
-
+	int canvas_width = 0;
+	int canvas_height = 0;
 	raw.read(&canvas_width, sizeof(canvas_width));
-	index += sizeof(canvas_width);
 	raw.read(&canvas_height, sizeof(canvas_height));
-	index += sizeof(canvas_height);
 
-	textures = std::make_unique<AtlasTexture[]>(count);
+	textures = std::make_unique<AtlasItem[]>(count);
 
 	for(int i = 0; i < count; ++i)
 	{
 		std::uint16_t xpos, ypos, width, height;
 
 		raw.read(&xpos, sizeof(xpos));
-		index += sizeof(xpos);
 
 		raw.read(&ypos, sizeof(ypos));
-		index += sizeof(ypos);
 
 		raw.read(&width, sizeof(width));
-		index += sizeof(width);
 
 		raw.read(&height, sizeof(height));
-		index += sizeof(height);
 
-		textures[i].coords[0] = ((float)xpos / canvas_width) * USHRT_MAX;
-		textures[i].coords[1] = ((float)ypos / canvas_height) * USHRT_MAX;
-		textures[i].coords[2] = ((float)(xpos + width) / canvas_width) * USHRT_MAX;
-		textures[i].coords[3] = ((float)(ypos + height) / canvas_height) * USHRT_MAX;
+		textures[i].x1 = (float)xpos / canvas_width;
+		textures[i].y1 = (float)ypos / canvas_height;
+		textures[i].x2 = (float)(xpos + width) / canvas_width;
+		textures[i].y2 = (float)(ypos + height) / canvas_height;
 	}
 
-	if(raw.size() - index != canvas_width * canvas_height * 4)
+	if(raw.size() - raw.tell() != canvas_width * canvas_height * 4)
 		Atlas::corrupt();
 
 	glGenTextures(1, &object);
@@ -65,7 +54,10 @@ Atlas::Atlas(AssetRollStream raw, Mode fm)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas_width, canvas_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, raw.read_all().get() + index);
+	std::unique_ptr<unsigned char[]> pixels(new unsigned char[canvas_width * canvas_height * 4]);
+	raw.read(pixels.get(), canvas_width * canvas_height * 4);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas_width, canvas_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels.get());
 }
 
 Atlas::~Atlas()
@@ -79,14 +71,14 @@ unsigned Atlas::texture() const
 	return object;
 }
 
-const unsigned short *Atlas::coords(int index) const
+const AtlasItem Atlas::item(int index) const
 {
 #ifndef NDEBUG
 	if(index >= count || index < 0)
 		bug("Bad coords index");
 #endif
 
-	return textures[index].coords;
+	return textures[index];
 }
 
 void Atlas::corrupt()
