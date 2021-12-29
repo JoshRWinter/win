@@ -187,22 +187,19 @@ int main()
 	win::Display display("Atlasizer", 1600, 900);
 
 	std::list<AtlasItem> items;
-	int selected_index = -1;
-	int selected_xoff = 0, selected_yoff = 0;
-	int pan_anchorx = 0, pan_anchory = 0;
-
-	int mousex = 0, mousey = 0;
-	int mousex_raw = 0, mousey_raw = 0;
+	int selected_index = -1; // which of the items is selected (clicked)
+	int selected_xoff = 0, selected_yoff = 0; // help maintain grab point when dragging
+	int pan_anchorx = 0, pan_anchory = 0; // help maintain grab point when panning
+	int mousex = 0, mousey = 0; // mouse position, in world coordinates
+	int mousex_raw = 0, mousey_raw = 0; // mouse position, in screen coordinates
 	bool right_clicking = false;
 	bool left_clicking = false;
 	bool grabbing = false;
 	bool panning = false;
-
-	bool refresh = true;
-	float scale = 500.f;
-	float centerx = 0.0f, centery = 0.0f;
-
+	bool refresh = true; // recalculate vertices for atlas items (for rendering on screen)
+	float scale = 500.f; // zoom level
 	const float	scale_inc = 50.0f;
+	float centerx = 450, centery = 250; // center of screen, in world coordinates
 
 	display.register_mouse_handler([&mousex_raw, &mousey_raw](int x, int y)
 	{
@@ -267,43 +264,51 @@ int main()
 	});
 
 	// opengl nonsense
-	win::load_extensions();
-	auto program_atlasitem = win::load_shaders(vertexshader_atlasitem, fragmentshader_atlasitem);
-	glUseProgram(program_atlasitem);
-	auto uniform_projection_atlasitem = glGetUniformLocation(program_atlasitem, "projection");
-	if (uniform_projection_atlasitem == -1)
+
+	struct
+	{
+		struct // opengl state for drawing atlas items
+		{
+			unsigned program;
+			unsigned vbo, vao;
+			int uniform_projection;
+		} atlasitems;
+
+		struct // opengl state for drawing the guide lines
+		{
+			unsigned program;
+			unsigned vbo, vao;
+			int uniform_projection;
+		} guides;
+	} renderstate;
+
+	renderstate.atlasitems.program = win::load_shaders(vertexshader_atlasitem, fragmentshader_atlasitem);
+	glUseProgram(renderstate.atlasitems.program);
+	renderstate.atlasitems.uniform_projection = glGetUniformLocation(renderstate.atlasitems.program, "projection");
+	if (renderstate.atlasitems.uniform_projection == -1)
 		win::bug("no uniform projection");
-	float matrix[16];
-	win::init_ortho(matrix, -8.0f, 8.0f, -4.5f, 4.5f);
-	glUniformMatrix4fv(uniform_projection_atlasitem, 1, false, matrix);
 
-	unsigned vao_atlasitems, vbo_atlasitems;
-	glGenVertexArrays(1, &vao_atlasitems);
-	glGenBuffers(1, &vbo_atlasitems);
+	glGenVertexArrays(1, &renderstate.atlasitems.vao);
+	glGenBuffers(1, &renderstate.atlasitems.vbo);
 
-	glBindVertexArray(vao_atlasitems);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_atlasitems);
+	glBindVertexArray(renderstate.atlasitems.vao);
+	glBindBuffer(GL_ARRAY_BUFFER, renderstate.atlasitems.vbo);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 4, NULL);
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(float) * 4, (void*)(sizeof(float) * 2));
 
-	std::vector verts = regenverts(items);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verts.size(), verts.data(), GL_STATIC_DRAW);
-
-
-	unsigned program_guides = win::load_shaders(vertexshader_guides, fragmentshader_guides);
-	glUseProgram(program_guides);
-	int uniform_projection_guides = glGetUniformLocation(program_guides, "projection");
-	if (uniform_projection_guides == -1)
+	renderstate.guides.program = win::load_shaders(vertexshader_guides, fragmentshader_guides);
+	glUseProgram(renderstate.guides.program);
+	renderstate.guides.uniform_projection = glGetUniformLocation(renderstate.guides.program, "projection");
+	if (renderstate.guides.uniform_projection == -1)
 		win::bug("no uniform projection");
 
-	unsigned vao_guides, vbo_guides;
-	glGenVertexArrays(1, &vao_guides);
-	glGenBuffers(1, &vbo_guides);
-	glBindVertexArray(vao_guides);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_guides);
+	glGenVertexArrays(1, &renderstate.guides.vao);
+	glGenBuffers(1, &renderstate.guides.vbo);
+	glBindVertexArray(renderstate.guides.vao);
+	glBindBuffer(GL_ARRAY_BUFFER, renderstate.guides.vbo);
 
 	const float guide_width = 1.0f;
 	const float guide_length = 300.0f;
@@ -385,24 +390,25 @@ int main()
 		{
 			refresh = false;
 
+			float matrix[16];
 			win::init_ortho(matrix, centerx - scale, centerx + scale, centery - (scale * 0.5625f), centery + (scale * 0.5625f));
-			glUseProgram(program_atlasitem);
-			glUniformMatrix4fv(uniform_projection_atlasitem, 1, false, matrix);
-			glUseProgram(program_guides);
-			glUniformMatrix4fv(uniform_projection_guides, 1, false, matrix);
-			verts = regenverts(items);
-			glBindBuffer(GL_ARRAY_BUFFER, vbo_atlasitems);
+			glUseProgram(renderstate.atlasitems.program);
+			glUniformMatrix4fv(renderstate.atlasitems.uniform_projection, 1, false, matrix);
+			glUseProgram(renderstate.guides.program);
+			glUniformMatrix4fv(renderstate.guides.uniform_projection, 1, false, matrix);
+			const std::vector verts = regenverts(items);
+			glBindBuffer(GL_ARRAY_BUFFER, renderstate.atlasitems.vbo);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verts.size(), verts.data(), GL_STATIC_DRAW);
 		}
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		glUseProgram(program_guides);
-		glBindVertexArray(vao_guides);
+		glUseProgram(renderstate.guides.program);
+		glBindVertexArray(renderstate.guides.vao);
 		glDrawArrays(GL_TRIANGLES, 0, 12);
 
-		glUseProgram(program_atlasitem);
-		glBindVertexArray(vao_atlasitems);
+		glUseProgram(renderstate.atlasitems.program);
+		glBindVertexArray(renderstate.atlasitems.vao);
 		int index = 0;
 		for (const AtlasItem &item : items)
 		{
@@ -418,13 +424,13 @@ int main()
 		display.swap();
 	}
 
-	glDeleteVertexArrays(1, &vao_atlasitems);
-	glDeleteBuffers(1, &vbo_atlasitems);
-	glDeleteShader(program_atlasitem);
+	glDeleteVertexArrays(1, &renderstate.atlasitems.vao);
+	glDeleteBuffers(1, &renderstate.atlasitems.vbo);
+	glDeleteShader(renderstate.atlasitems.program);
 
-	glDeleteShader(program_guides);
-	glDeleteVertexArrays(1, &vao_guides);
-	glDeleteBuffers(1, &vbo_guides);
+	glDeleteShader(renderstate.guides.program);
+	glDeleteVertexArrays(1, &renderstate.guides.vao);
+	glDeleteBuffers(1, &renderstate.guides.vbo);
 
 	return 0;
 }
