@@ -1,4 +1,7 @@
 #include <win.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <climits>
 
@@ -9,12 +12,13 @@
 static const char *vertexshader_atlasitem =
 	"#version 330 core\n"
 	"uniform mat4 projection;\n"
+	"uniform mat4 view;\n"
 	"layout (location = 0) in vec2 pos;\n"
 	"layout (location = 1) in vec2 texcoord;\n"
 	"out vec2 ftexcoord;\n"
 	"void main(){\n"
 	"ftexcoord = texcoord;\n"
-	"gl_Position = projection * vec4(pos.xy, 0.0, 1.0);\n"
+	"gl_Position = projection * view * vec4(pos.xy, 0.0, 1.0);\n"
 	"}",
 	*fragmentshader_atlasitem =
 	"#version 330 core\n"
@@ -28,9 +32,10 @@ static const char *vertexshader_atlasitem =
 static const char *vertexshader_guides =
 	"#version 330 core\n"
 	"uniform mat4 projection;\n"
+	"uniform mat4 view;\n"
 	"layout (location = 0) in vec2 pos;\n"
 	"void main(){\n"
-	"gl_Position = projection * vec4(pos.xy, 0.0, 1.0);\n"
+	"gl_Position = projection * view * vec4(pos.xy, 0.0, 1.0);\n"
 	"}",
 	*fragmentshader_guides =
 	"#version 330 core\n"
@@ -182,6 +187,16 @@ static int select_item(std::list<AtlasItem> &items, int x, int y, int &xoff, int
 	return items.size() - 1;
 }
 
+static void screen_to_view(const float x, const float y, const int display_width, const int display_height, const int center_x, const int center_y, const float zoom, const float world_width, float &out_x, float &out_y)
+{
+	glm::vec4 mousepos((((float)x / display_width) * world_width) - (world_width / 2.0f), -(((y / display_height) * world_width) - (world_width	/ 2.0f)) * ((float)display_height / display_width), 0.0f, 1.0f);
+	auto view_transform = glm::scale(glm::translate(glm::identity<glm::mat4>(), glm::vec3(center_x, center_y, 0.0f)), glm::vec3(1.0f / zoom, 1.0f / zoom, 1.0f / zoom));
+	mousepos = view_transform * mousepos;
+
+	out_x = mousepos.x;
+	out_y = mousepos.y;
+}
+
 int main()
 {
 	win::Display display("Atlasizer", 1600, 900);
@@ -189,17 +204,19 @@ int main()
 	std::list<AtlasItem> items;
 	int selected_index = -1; // which of the items is selected (clicked)
 	int selected_xoff = 0, selected_yoff = 0; // help maintain grab point when dragging
-	int pan_anchorx = 0, pan_anchory = 0; // help maintain grab point when panning
-	int mousex = 0, mousey = 0; // mouse position, in world coordinates
+	float pan_oldmousex = 0.0f, pan_oldmousey = 0.0f; // help maintain grab point when panning
+	float pan_oldcenterx = 0.0f, pan_oldcentery = 0.0f; // help maintain grab point when panning
+	float mousex = 0, mousey = 0; // mouse position, in world coordinates
 	int mousex_raw = 0, mousey_raw = 0; // mouse position, in screen coordinates
 	bool right_clicking = false;
 	bool left_clicking = false;
 	bool grabbing = false;
 	bool panning = false;
 	bool refresh = true; // recalculate vertices for atlas items (for rendering on screen)
-	float scale = 500.f; // zoom level
-	const float	scale_inc = 50.0f;
-	float centerx = 450, centery = 250; // center of screen, in world coordinates
+	float zoom = 1.0; // zoom level
+	const float	zoom_inc = 0.1f;
+	float centerx = 400, centery = 200; // center of screen, in world coordinates
+	//float centerx = 0, centery = 0; // center of screen, in world coordinates
 
 	display.register_mouse_handler([&mousex_raw, &mousey_raw](int x, int y)
 	{
@@ -224,18 +241,18 @@ int main()
 		case win::Button::NUM_PLUS:
 			if (press)
 			{
-				if (scale >= 51.0f)
-				{
-					scale -= scale_inc;
-					refresh = true;
-				}
+				zoom += zoom_inc;
+				refresh = true;
 			}
 			break;
 		case win::Button::NUM_MINUS:
 			if (press)
 			{
-				scale += scale_inc;
-				refresh = true;
+				if (zoom >= 0.6f)
+				{
+					zoom -= zoom_inc;
+					refresh = true;
+				}
 			}
 			break;
 		default: break;
@@ -272,6 +289,7 @@ int main()
 			unsigned program;
 			unsigned vbo, vao;
 			int uniform_projection;
+			int uniform_view;
 		} atlasitems;
 
 		struct // opengl state for drawing the guide lines
@@ -279,14 +297,23 @@ int main()
 			unsigned program;
 			unsigned vbo, vao;
 			int uniform_projection;
+			int uniform_view;
 		} guides;
 	} renderstate;
+
+	const float aspect_ratio = (float)display.height() / display.width();
+	const glm::mat4 projection = glm::ortho(-500.0f, 500.0f, -500.0f * aspect_ratio, 500.0f * aspect_ratio, -1.0f, 1.0f);
 
 	renderstate.atlasitems.program = win::load_shaders(vertexshader_atlasitem, fragmentshader_atlasitem);
 	glUseProgram(renderstate.atlasitems.program);
 	renderstate.atlasitems.uniform_projection = glGetUniformLocation(renderstate.atlasitems.program, "projection");
+	renderstate.atlasitems.uniform_view = glGetUniformLocation(renderstate.atlasitems.program, "view");
 	if (renderstate.atlasitems.uniform_projection == -1)
 		win::bug("no uniform projection");
+	if (renderstate.atlasitems.uniform_view == -1)
+		win::bug("no uniform view");
+
+	glUniformMatrix4fv(renderstate.atlasitems.uniform_projection, 1, false, glm::value_ptr(projection));
 
 	glGenVertexArrays(1, &renderstate.atlasitems.vao);
 	glGenBuffers(1, &renderstate.atlasitems.vbo);
@@ -302,31 +329,37 @@ int main()
 	renderstate.guides.program = win::load_shaders(vertexshader_guides, fragmentshader_guides);
 	glUseProgram(renderstate.guides.program);
 	renderstate.guides.uniform_projection = glGetUniformLocation(renderstate.guides.program, "projection");
+	renderstate.guides.uniform_view = glGetUniformLocation(renderstate.guides.program, "view");
 	if (renderstate.guides.uniform_projection == -1)
 		win::bug("no uniform projection");
+	if (renderstate.guides.uniform_view == -1)
+		win::bug("no uniform view");
+
+	glUniformMatrix4fv(renderstate.guides.uniform_projection, 1, false, glm::value_ptr(projection));
 
 	glGenVertexArrays(1, &renderstate.guides.vao);
 	glGenBuffers(1, &renderstate.guides.vbo);
 	glBindVertexArray(renderstate.guides.vao);
 	glBindBuffer(GL_ARRAY_BUFFER, renderstate.guides.vbo);
 
-	const float guide_width = 1.0f;
-	const float guide_length = 300.0f;
+	const float guide_width = 5.0f;
+	const float guide_length = 200.0f;
+	const float guide_start = 0.0f;
 	float guide_verts[] =
 	{
 		-guide_width, guide_length,
-		-guide_width, 0.0f,
-		0.0f, 0.0f,
+		-guide_width, guide_start,
+		guide_start, guide_start,
 		-guide_width, guide_length,
-		0.0f, 0.0f,
-		0.0f, guide_length,
+		guide_start, guide_start,
+		guide_start, guide_length,
 
-		0.0f, 0.0f,
-		0.0f, -guide_width,
+		guide_start, guide_start,
+		guide_start, -guide_width,
 		guide_length, -guide_width,
-		0.0f, 0.0f,
+		guide_start, guide_start,
 		guide_length, -guide_width,
-		guide_length, 0.0f
+		guide_length, guide_start
 	};
 
 	glEnableVertexAttribArray(0);
@@ -336,8 +369,7 @@ int main()
 	while (display.process() && !quit)
 	{
 		// processing
-		mousex = ((mousex_raw - (display.width() / 2)) * (scale / (display.width() / 2))) + centerx;
-		mousey = (-(mousey_raw - (display.height() / 2)) * (scale / (display.height() / 2) * 0.5625)) + centery;
+		screen_to_view(mousex_raw, mousey_raw, display.width(), display.height(), centerx, centery, zoom, 1000.0, mousex, mousey);
 
 		if (left_clicking)
 		{
@@ -358,16 +390,18 @@ int main()
 				if (!panning)
 				{
 					panning = true;
-					pan_anchorx = mousex_raw;
-					pan_anchory = mousey_raw;
+					pan_oldcenterx = centerx;
+					pan_oldcentery = centery;
+					pan_oldmousex = mousex;
+					pan_oldmousey = mousey;
 				}
 				else
 				{
-					centerx -= (mousex_raw - pan_anchorx);
-					centery += mousey_raw - pan_anchory;
+					float converted_mousex, converted_mousey;
+					screen_to_view(mousex_raw, mousey_raw, display.width(), display.height(), pan_oldcenterx, pan_oldcentery, zoom, 1000.0f, converted_mousex, converted_mousey);
 
-					pan_anchorx = mousex_raw;
-					pan_anchory = mousey_raw;
+					centerx = pan_oldcenterx - (converted_mousex - pan_oldmousex);
+					centery = pan_oldcentery - (converted_mousey - pan_oldmousey);
 
 					refresh = true;
 				}
@@ -390,12 +424,14 @@ int main()
 		{
 			refresh = false;
 
-			float matrix[16];
-			win::init_ortho(matrix, centerx - scale, centerx + scale, centery - (scale * 0.5625f), centery + (scale * 0.5625f));
+			glm::mat4 view = glm::translate(glm::scale(glm::identity<glm::mat4>(), glm::vec3(zoom, zoom, zoom)), glm::vec3(-centerx, -centery, 0.0));
+
 			glUseProgram(renderstate.atlasitems.program);
-			glUniformMatrix4fv(renderstate.atlasitems.uniform_projection, 1, false, matrix);
+			glUniformMatrix4fv(renderstate.atlasitems.uniform_view, 1, false, glm::value_ptr(view));
+
 			glUseProgram(renderstate.guides.program);
-			glUniformMatrix4fv(renderstate.guides.uniform_projection, 1, false, matrix);
+			glUniformMatrix4fv(renderstate.guides.uniform_view, 1, false, glm::value_ptr(view));
+
 			const std::vector verts = regenverts(items);
 			glBindBuffer(GL_ARRAY_BUFFER, renderstate.atlasitems.vbo);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verts.size(), verts.data(), GL_STATIC_DRAW);

@@ -43,6 +43,7 @@ if(WIN32)
 		include/ogg
 		include/vorbis
 		include/zlib
+		glm
 		)
 
 	target_link_libraries(win
@@ -75,6 +76,7 @@ else()
 		include
 		PRIVATE
 		${FREETYPE_INCLUDE_DIRS}
+		glm
 		)
 
 	target_link_libraries(win
