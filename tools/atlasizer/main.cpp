@@ -263,8 +263,8 @@ int main()
 	{
 		switch (c)
 		{
-		case 'o':
-		case 'O':
+		case 'a':
+		case 'A':
 			try
 			{
 				Targa img = add_item();
