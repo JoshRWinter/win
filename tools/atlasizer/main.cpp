@@ -343,7 +343,7 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, renderstate.guides.vbo);
 
 	const float guide_width = 5.0f;
-	const float guide_length = 200.0f;
+	const float guide_length = 400.0f;
 	const float guide_start = 0.0f;
 	float guide_verts[] =
 	{
