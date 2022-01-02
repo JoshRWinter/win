@@ -453,9 +453,11 @@ int main()
 			++index;
 		}
 
+#ifndef NDEBUG
 		unsigned error;
 		if ((error = glGetError()) != 0)
 			win::bug(std::to_string(error));
+#endif
 
 		display.swap();
 	}
