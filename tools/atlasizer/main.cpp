@@ -24,9 +24,14 @@ static const char *vertexshader_atlasitem =
 	"#version 330 core\n"
 	"out vec4 color;\n"
 	"in vec2 ftexcoord;\n"
+	"in vec4 gl_FragCoord;\n"
+	"uniform int red_highlight;\n"
 	"uniform sampler2D tex;\n"
 	"void main(){\n"
-	"color = /*vec4(1.0, 1.0, 0.0, 1.0);//*/texture(tex, ftexcoord);\n"
+	"color = texture(tex, ftexcoord);\n"
+	"color.r += red_highlight * int(int(gl_FragCoord.x) % 3 == 0);\n"
+	"color.g -= red_highlight;\n"
+	"color.b -= red_highlight;\n"
 	"}";
 
 static const char *vertexshader_guides =
@@ -67,6 +72,71 @@ struct AtlasItem
 	~AtlasItem()
 	{
 		glDeleteTextures(1, &texture);
+	}
+
+	bool colliding(const std::list<AtlasItem> &items, int padding) const
+	{
+		if (x - padding < 0)
+			return true;
+		if (y - padding < 0)
+			return true;
+
+		for (const AtlasItem &item : items)
+		{
+			if (&item == this)
+				continue;
+
+			if (colliding(item, padding))
+				return true;
+		}
+
+		return false;
+	}
+
+	bool colliding(const AtlasItem &rhs, int padding) const
+	{
+		return x + width + padding > rhs.x && x < rhs.x + rhs.width + padding && y + height + padding > rhs.y && y < rhs.y + rhs.height + padding;
+	}
+
+	void correct(const std::list<AtlasItem> &items, int padding)
+	{
+		if (x < padding)
+			x = padding;
+		if (y < padding)
+			y = padding;
+
+		for (const AtlasItem &item : items)
+		{
+			if (&item == this)
+				continue;
+
+			correct(item, padding);
+		}
+	}
+
+	void correct(const AtlasItem &item, int padding)
+	{
+		if (!colliding(item, padding))
+			return;
+
+		const int ldiff = std::abs(x - (item.x + item.width + padding));
+		const int rdiff = std::abs((x + width) - (item.x + padding));
+		const int tdiff = std::abs((y + height) - (item.y + padding));
+		const int bdiff = std::abs(y - (item.y + item.height + padding));
+
+		int smallest = ldiff;
+		if (rdiff < smallest) smallest = rdiff;
+		if (tdiff < smallest) smallest = tdiff;
+		if (bdiff < smallest) smallest = bdiff;
+
+		if (smallest == ldiff)
+			x = item.x + item.width + padding;
+		else if (smallest == rdiff)
+			x = item.x - width - padding;
+		else if (smallest == tdiff)
+			y = item.y - height - padding;
+		else if (smallest == bdiff)
+			y = item.y + item.height + padding;
 	}
 
 	int x;
@@ -212,7 +282,9 @@ int main()
 	bool left_clicking = false;
 	bool grabbing = false;
 	bool panning = false;
+	bool snapmode = false;
 	bool refresh = true; // recalculate vertices for atlas items (for rendering on screen)
+	int padding = 0; // padding pixels
 	float zoom = 1.0; // zoom level
 	const float	zoom_inc = 0.1f;
 	float centerx = 400, centery = 200; // center of screen, in world coordinates
@@ -248,18 +320,22 @@ int main()
 		case win::Button::NUM_MINUS:
 			if (press)
 			{
-				if (zoom >= 0.6f)
+				if (zoom >= 0.1f)
 				{
 					zoom -= zoom_inc;
 					refresh = true;
 				}
 			}
 			break;
+		case win::Button::LCTRL:
+		case win::Button::RCTRL:
+			snapmode = press;
+			break;
 		default: break;
 		}
 	});
 
-	display.register_character_handler([&items, &refresh](int c)
+	display.register_character_handler([&items, &refresh, &padding](int c)
 	{
 		switch (c)
 		{
@@ -276,8 +352,14 @@ int main()
 			{
 				fprintf(stderr, "%s\n", e.what());
 			}
-		default: break;
+		default:
+			if (c >= '0' && c <= '9')
+			{
+				padding = c - '0';
+			}
+			break;
 		}
+
 	});
 
 	// opengl nonsense
@@ -290,6 +372,7 @@ int main()
 			unsigned vbo, vao;
 			int uniform_projection;
 			int uniform_view;
+			int uniform_red_highlight;
 		} atlasitems;
 
 		struct // opengl state for drawing the guide lines
@@ -308,10 +391,13 @@ int main()
 	glUseProgram(renderstate.atlasitems.program);
 	renderstate.atlasitems.uniform_projection = glGetUniformLocation(renderstate.atlasitems.program, "projection");
 	renderstate.atlasitems.uniform_view = glGetUniformLocation(renderstate.atlasitems.program, "view");
+	renderstate.atlasitems.uniform_red_highlight = glGetUniformLocation(renderstate.atlasitems.program, "red_highlight");
 	if (renderstate.atlasitems.uniform_projection == -1)
 		win::bug("no uniform projection");
 	if (renderstate.atlasitems.uniform_view == -1)
 		win::bug("no uniform view");
+	if (renderstate.atlasitems.uniform_red_highlight == -1)
+		win::bug("no uniform red_highlight");
 
 	glUniformMatrix4fv(renderstate.atlasitems.uniform_projection, 1, false, glm::value_ptr(projection));
 
@@ -414,8 +500,13 @@ int main()
 		{
 			AtlasItem *item	= get_item(items, selected_index);
 			if (item == NULL) win::bug("null item");
+
 			item->x = mousex - selected_xoff;
 			item->y = mousey - selected_yoff;
+
+			if (snapmode)
+				item->correct(items, padding);
+
 			refresh = true;
 		}
 
@@ -448,6 +539,7 @@ int main()
 		int index = 0;
 		for (const AtlasItem &item : items)
 		{
+			glUniform1i(renderstate.atlasitems.uniform_red_highlight, item.colliding(items, padding) ? 1 : 0);
 			glBindTexture(GL_TEXTURE_2D, item.texture);
 			glDrawArrays(GL_TRIANGLES, index * 6, 6);
 			++index;
@@ -464,7 +556,7 @@ int main()
 
 	glDeleteVertexArrays(1, &renderstate.atlasitems.vao);
 	glDeleteBuffers(1, &renderstate.atlasitems.vbo);
-	glDeleteShader(renderstate.atlasitems.program);
+	glDeleteShader(renderstate.atlasitems.program);;
 
 	glDeleteShader(renderstate.guides.program);
 	glDeleteVertexArrays(1, &renderstate.guides.vao);
