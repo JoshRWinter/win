@@ -8,7 +8,7 @@ add_executable(roll roll/roll.cpp)
 
 add_executable(atlas atlas/main.cpp atlas/Targa.cpp atlas/Atlas.cpp)
 
-add_executable(atlasizer atlasizer/main.cpp atlasizer/targa.cpp atlasizer/targa.hpp)
+add_executable(atlasizer atlasizer/atlasizer.hpp atlasizer/main.cpp atlasizer/gui.cpp atlasizer/targa.cpp atlasizer/targa.hpp)
 target_link_libraries(atlasizer win)
 
 if(WIN32)

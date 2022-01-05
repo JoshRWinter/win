@@ -7,7 +7,7 @@
 
 static void corrupt()
 {
-	throw new std::runtime_error("Targa appears to be corrupt");
+	throw std::runtime_error("Targa appears to be corrupt");
 }
 
 static unsigned long long filesize(const std::string &fname)
@@ -20,7 +20,7 @@ Targa::Targa(const std::string &filename)
 {
 	std::ifstream file(filename);
 	if (!file)
-		throw std::runtime_error(std::string(filename) + "doesn't exist");
+		throw std::runtime_error(std::string(filename) + " doesn't exist");
 	load_image_bytes(file);
 }
 
@@ -44,9 +44,9 @@ const unsigned char *Targa::data() const
 	return bytes.get();
 }
 
-unsigned char *Targa::release()
+void Targa::release()
 {
-	return bytes.release();
+	bytes.reset();
 }
 
 void Targa::load_image_bytes(std::ifstream &stream)
@@ -87,15 +87,19 @@ void Targa::load_image_bytes(std::ifstream &stream)
 
 	const bool bottom_origin = !((imdesc >> 5) & 1);
 
-	if(filesize(filename) - 18 < w * h * 4)
-		corrupt();//("Corrupt targa: tried to read " + std::to_string(w * h * 4) + " bytes from " + std::to_string(raw.size() - 18) + " bytes");
+	const int bytes_per_pixel = bits / 8;
+	if(filesize(filename) - 18 < w * h * bytes_per_pixel)
+		corrupt();
 
 	stream.seekg(18);
-	bytes.reset(new unsigned char[w * h * 4]);
-	stream.read((char*)bytes.get(), w * h * 4);
+	bytes.reset(new unsigned char[w * h * bytes_per_pixel]);
+	stream.read((char*)bytes.get(), w * h * bytes_per_pixel);
+	if (stream.gcount() != w * h * bytes_per_pixel)
+		corrupt();
 
 	if(bits == 24)
 	{
+		bits = 32;
 		auto newbytes = std::make_unique<unsigned char[]>(w * h * 4);
 
 		int sourceindex = 0;
@@ -112,17 +116,17 @@ void Targa::load_image_bytes(std::ifstream &stream)
 		bytes = std::move(newbytes);
 	}
 	else if (bits != 32)
-		win::bug("TARGAs must be 24 or 32 bits");
+		throw std::runtime_error("TARGAs must be 24 or 32 bits per pixel");
 
 	if (!bottom_origin)
 	{
-		auto newbytes = std::make_unique<unsigned char[]>(w * h * 4);
+		auto newbytes = std::make_unique<unsigned char[]>(w * h * bytes_per_pixel);
 
-		int sourceindex = (w * h * 4) - (w * 4);
-		for (int i = 0; i < w * h * 4; i += w * 4)
+		int sourceindex = (w * h * bytes_per_pixel) - (w * bytes_per_pixel);
+		for (int i = 0; i < w * h * bytes_per_pixel; i += w * bytes_per_pixel)
 		{
-			memcpy(newbytes.get() + i, bytes.get() + sourceindex, w * 4);
-			sourceindex -= w * 4;
+			memcpy(newbytes.get() + i, bytes.get() + sourceindex, w * bytes_per_pixel);
+			sourceindex -= w * bytes_per_pixel;
 		}
 
 		bytes = std::move(newbytes);

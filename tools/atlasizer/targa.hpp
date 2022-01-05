@@ -18,7 +18,7 @@ public:
 	int height() const;
 	int bpp() const;
 	const unsigned char *data() const;
-	unsigned char *release();
+	void release();
 
 private:
 	void load_image_bytes(std::ifstream&);
