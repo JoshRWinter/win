@@ -50,13 +50,26 @@ static const char *vertexshader_atlasitem =
 	"out vec4 color;\n"
 	"in vec2 ftexcoord;\n"
 	"in vec4 gl_FragCoord;\n"
-	"uniform int red_highlight;\n"
+	"uniform int highlight_mode;\n"
+	"uniform int color_mode;\n"
 	"uniform sampler2D tex;\n"
 	"void main(){\n"
-	"color = texture(tex, ftexcoord);\n"
-	"color.r += red_highlight * int(int(gl_FragCoord.x) % 3 == 0);\n"
-	"color.g -= red_highlight;\n"
-	"color.b -= red_highlight;\n"
+	"if(color_mode == 0)\n"
+		"color = texture(tex, ftexcoord);\n"
+	"else if (color_mode == 1)\n"
+		"color = vec4(1.0, 0.0, 0.0, 1.0)\n;"
+	"else\n"
+		"color=vec4(0.8, 0.1, 0.1, 1.0);\n"
+	"if(highlight_mode == 1){\n"
+	"	color.r += float(int(gl_FragCoord.x) % 3 == 0);\n"
+	"	color.g -= 1.0;\n"
+	"	color.b -= 1.0;\n"
+	"}\n"
+	"else if(highlight_mode == 2){\n"
+	"	color.r += float(int(gl_FragCoord.x) % 3 == 0) / 3.0;\n"
+	"	color.g -= 0.5;\n"
+	"	color.b -= 0.5;\n"
+	"}\n"
 	"}";
 
 static const char *vertexshader_guides =
@@ -201,12 +214,12 @@ void gui()
 	bool grabbing = false;
 	bool panning = false;
 	bool snapmode = false;
+	bool solidmode = false;
 	bool refresh = true; // recalculate vertices for atlas items (for rendering on screen)
 	int padding = 0; // padding pixels
 	float zoom = 1.0; // zoom level
 	const float	zoom_inc = 0.1f;
 	float centerx = 400, centery = 200; // center of screen, in world coordinates
-	//float centerx = 0, centery = 0; // center of screen, in world coordinates
 
 	display.register_mouse_handler([&mousex_raw, &mousey_raw](int x, int y)
 	{
@@ -248,6 +261,10 @@ void gui()
 		case win::Button::LCTRL:
 		case win::Button::RCTRL:
 			snapmode = press;
+			break;
+		case win::Button::RSHIFT:
+		case win::Button::LSHIFT:
+			solidmode = press;
 			break;
 		default: break;
 		}
@@ -293,7 +310,8 @@ void gui()
 			unsigned vbo, vao;
 			int uniform_projection;
 			int uniform_view;
-			int uniform_red_highlight;
+			int uniform_highlight_mode;
+			int uniform_color_mode;
 		} atlasitems;
 
 		struct // opengl state for drawing the guide lines
@@ -312,13 +330,16 @@ void gui()
 	glUseProgram(renderstate.atlasitems.program);
 	renderstate.atlasitems.uniform_projection = glGetUniformLocation(renderstate.atlasitems.program, "projection");
 	renderstate.atlasitems.uniform_view = glGetUniformLocation(renderstate.atlasitems.program, "view");
-	renderstate.atlasitems.uniform_red_highlight = glGetUniformLocation(renderstate.atlasitems.program, "red_highlight");
+	renderstate.atlasitems.uniform_highlight_mode = glGetUniformLocation(renderstate.atlasitems.program, "highlight_mode");
+	renderstate.atlasitems.uniform_color_mode = glGetUniformLocation(renderstate.atlasitems.program, "color_mode");
 	if (renderstate.atlasitems.uniform_projection == -1)
 		win::bug("no uniform projection");
 	if (renderstate.atlasitems.uniform_view == -1)
 		win::bug("no uniform view");
-	if (renderstate.atlasitems.uniform_red_highlight == -1)
-		win::bug("no uniform red_highlight");
+	if (renderstate.atlasitems.uniform_highlight_mode == -1)
+		win::bug("no uniform uniform_highlight_mode");
+	if (renderstate.atlasitems.uniform_color_mode == -1)
+		win::bug("no uniform uniform_solid");
 
 	glUniformMatrix4fv(renderstate.atlasitems.uniform_projection, 1, false, glm::value_ptr(projection));
 
@@ -465,17 +486,31 @@ void gui()
 		int index = 0;
 		for (const auto &item : items)
 		{
-			bool highlight = item.oob(padding);
+			bool oob = item.oob(padding);
+			bool colliding = false;
 			for (const AtlasItem &test : items)
 			{
 				if (&item != &test && item.colliding(test, padding))
 				{
-					highlight = true;
+					colliding = true;
 					break;
 				}
 			}
 
-			glUniform1i(renderstate.atlasitems.uniform_red_highlight, highlight ? 1 : 0);
+			int highlight_mode = 0;
+			if (selected_index == index && (colliding || oob))
+				highlight_mode = 1;
+			else if (colliding || oob)
+				highlight_mode = 2;
+
+			int color_mode = 0;
+			if (solidmode && selected_index == index)
+				color_mode = 1;
+			else if (solidmode)
+				color_mode = 2;
+
+			glUniform1i(renderstate.atlasitems.uniform_highlight_mode, highlight_mode);
+			glUniform1i(renderstate.atlasitems.uniform_color_mode, color_mode);
 			glBindTexture(GL_TEXTURE_2D, item.texture);
 			glDrawArrays(GL_TRIANGLES, index * 6, 6);
 			++index;
