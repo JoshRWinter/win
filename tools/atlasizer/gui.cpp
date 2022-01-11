@@ -6,10 +6,10 @@
 
 #include "atlasizer.hpp"
 
-class OpenGLAtlasItem : public AtlasItem
+class GUIAtlasItem : public AtlasItem
 {
 public:
-	OpenGLAtlasItem(const std::string &filename, int x, int y)
+	GUIAtlasItem(const std::string &filename, int x, int y)
 		: AtlasItem(filename, x, y)
 	{
 		glGenTextures(1, &texture);
@@ -21,15 +21,83 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 
-	~OpenGLAtlasItem()
+	~GUIAtlasItem()
 	{
 		glDeleteTextures(1, &texture);
 	}
 
-	OpenGLAtlasItem(const OpenGLAtlasItem&) = delete;
-	OpenGLAtlasItem(OpenGLAtlasItem&&) = delete;
-	void operator=(const OpenGLAtlasItem&) = delete;
-	void operator=(OpenGLAtlasItem&&) = delete;
+	GUIAtlasItem(const GUIAtlasItem&) = delete;
+	GUIAtlasItem(GUIAtlasItem&&) = delete;
+	void operator=(const GUIAtlasItem&) = delete;
+	void operator=(GUIAtlasItem&&) = delete;
+
+	bool oob(int padding) const
+	{
+		return x < padding || y < padding;
+	}
+
+	bool colliding(const std::list<GUIAtlasItem> &items, int padding) const
+	{
+		for (const GUIAtlasItem &item : items)
+		{
+			if (this == &item)
+				continue;
+
+			if (colliding(item, padding))
+				return true;
+		}
+
+		return false;
+	}
+
+	bool colliding(const AtlasItem &item, int padding) const
+	{
+		return x + width + padding > item.x && x < item.x + item.width + padding && y + height + padding > item.y && y < item.y + item.height + padding;
+	}
+
+	void correct_bounds(int padding)
+	{
+		if (x < padding)
+			x = padding;
+		if (y < padding)
+			y = padding;
+	}
+
+	void correct(const std::list<GUIAtlasItem> &items, int padding)
+	{
+		for (const GUIAtlasItem &item : items)
+		{
+			if (this == &item)
+				continue;
+
+			correct(item, padding);
+		}
+	}
+
+	void correct(const AtlasItem &item, int padding)
+	{
+		if (!colliding(item, padding))
+			return;
+
+		const int ldiff = std::abs(x - (item.x + item.width + padding));
+		const int rdiff = std::abs((x + width) - (item.x + padding));
+		const int tdiff = std::abs((y + height) - (item.y + padding));
+		const int bdiff = std::abs(y - (item.y + item.height + padding));
+
+		int smallest = ldiff;
+		if (rdiff < smallest) smallest = rdiff;
+		if (tdiff < smallest) smallest = tdiff;
+		if (bdiff < smallest) smallest = bdiff;
+
+		if (smallest == ldiff)
+			x = item.x + item.width + padding;
+		else if (smallest == rdiff)
+			x = item.x - width - padding;
+		else if (smallest == tdiff)
+			y = item.y - height - padding;
+		else if (smallest == bdiff)
+			y = item.y + item.height + padding;
+	}
 
 	unsigned texture;
 };
@@ -108,7 +176,7 @@ void error_box(const std::string &msg)
 	fprintf(stderr, "%s\n", msg.c_str());
 }
 
-static std::vector<float> regenverts(const std::list<OpenGLAtlasItem> &items)
+static std::vector<float> regenverts(const std::list<GUIAtlasItem> &items)
 {
 	std::vector<float> verts;
 
@@ -126,7 +194,7 @@ static std::vector<float> regenverts(const std::list<OpenGLAtlasItem> &items)
 	return verts;
 }
 
-static int get_index(const std::list<OpenGLAtlasItem> &items, const OpenGLAtlasItem &i)
+static int get_index(const std::list<GUIAtlasItem> &items, const GUIAtlasItem &i)
 {
 	int index = 0;
 	for (const AtlasItem &item : items)
@@ -140,10 +208,10 @@ static int get_index(const std::list<OpenGLAtlasItem> &items, const OpenGLAtlasI
 	return -1;
 }
 
-static AtlasItem *get_item(std::list<OpenGLAtlasItem> &items, int index)
+static GUIAtlasItem *get_item(std::list<GUIAtlasItem> &items, int index)
 {
 	int i = 0;
-	for (AtlasItem &item : items)
+	for (GUIAtlasItem &item : items)
 	{
 		if (i == index)
 			return &item;
@@ -154,7 +222,7 @@ static AtlasItem *get_item(std::list<OpenGLAtlasItem> &items, int index)
 	return NULL;
 }
 
-static int select_item(std::list<OpenGLAtlasItem> &items, int x, int y, int &xoff, int &yoff)
+static int select_item(std::list<GUIAtlasItem> &items, int x, int y, int &xoff, int &yoff)
 {
 	const AtlasItem *selected = NULL;
 	for (auto it = items.rbegin(); it != items.rend(); ++it)
@@ -172,7 +240,7 @@ static int select_item(std::list<OpenGLAtlasItem> &items, int x, int y, int &xof
 	if (selected == NULL)
 		return -1;
 
-	items.sort([selected, &items](const OpenGLAtlasItem &a, const OpenGLAtlasItem &b)
+	items.sort([selected, &items](const GUIAtlasItem &a, const GUIAtlasItem &b)
 	{
 		const int a_index = get_index(items, a);
 		const int b_index = get_index(items, b);
@@ -202,7 +270,7 @@ void gui()
 {
 	win::Display display("Atlasizer", 1600, 900);
 
-	std::list<OpenGLAtlasItem> items;
+	std::list<GUIAtlasItem> items;
 	int selected_index = -1; // which of the items is selected (clicked)
 	int selected_xoff = 0, selected_yoff = 0; // help maintain grab point when dragging
 	float pan_oldmousex = 0.0f, pan_oldmousey = 0.0f; // help maintain grab point when panning
@@ -440,7 +508,7 @@ void gui()
 
 		if (grabbing)
 		{
-			AtlasItem *item	= get_item(items, selected_index);
+			GUIAtlasItem *item	= get_item(items, selected_index);
 			if (item == NULL) win::bug("null item");
 
 			item->x = mousex - selected_xoff;
@@ -448,9 +516,7 @@ void gui()
 
 			if (snapmode)
 			{
-				for (const AtlasItem &test : items)
-					if (item != &test)
-						item->correct(test, padding);
+				item->correct(items, padding);
 				item->correct_bounds(padding);
 			}
 
@@ -486,16 +552,8 @@ void gui()
 		int index = 0;
 		for (const auto &item : items)
 		{
-			bool oob = item.oob(padding);
-			bool colliding = false;
-			for (const AtlasItem &test : items)
-			{
-				if (&item != &test && item.colliding(test, padding))
-				{
-					colliding = true;
-					break;
-				}
-			}
+			const bool oob = item.oob(padding);
+			const bool colliding = item.colliding(items, padding);
 
 			int highlight_mode = 0;
 			if (selected_index == index && (colliding || oob))
