@@ -9,6 +9,8 @@
 class GUIAtlasItem : public AtlasItem
 {
 public:
+	enum class Side { NONE, LEFT, RIGHT, BOTTOM, TOP };
+
 	GUIAtlasItem(const std::string &filename, int x, int y)
 		: AtlasItem(filename, x, y)
 	{
@@ -63,21 +65,27 @@ public:
 			y = padding;
 	}
 
-	void correct(const std::list<GUIAtlasItem> &items, int padding)
+	Side correct(const std::list<GUIAtlasItem> &items, int padding)
 	{
 		for (const GUIAtlasItem &item : items)
 		{
 			if (this == &item)
 				continue;
 
-			correct(item, padding);
+			Side side;
+			side = correct(item, padding);
+
+			if (side != Side::NONE)
+				return side;
 		}
+
+		return Side::NONE;
 	}
 
-	void correct(const AtlasItem &item, int padding)
+	Side correct(const AtlasItem &item, int padding)
 	{
 		if (!colliding(item, padding))
-			return;
+			return Side::NONE;
 
 		const int ldiff = std::abs(x - (item.x + item.width + padding));
 		const int rdiff = std::abs((x + width) - (item.x + padding));
@@ -90,16 +98,35 @@ public:
 		if (bdiff < smallest) smallest = bdiff;
 
 		if (smallest == ldiff)
+		{
 			x = item.x + item.width + padding;
+			return Side::LEFT;
+		}
 		else if (smallest == rdiff)
+		{
 			x = item.x - width - padding;
+			return Side::RIGHT;
+		}
 		else if (smallest == tdiff)
+		{
 			y = item.y - height - padding;
-		else if (smallest == bdiff)
+			return Side::TOP;
+		}
+		else
+		{
 			y = item.y + item.height + padding;
+			return Side::BOTTOM;
+		}
 	}
 
 	unsigned texture;
+};
+
+struct DragBarrier
+{
+	DragBarrier() : active(false), location(0) {}
+	bool active;
+	int location;
 };
 
 static const char *vertexshader_atlasitem =
@@ -277,6 +304,7 @@ void gui()
 	float pan_oldcenterx = 0.0f, pan_oldcentery = 0.0f; // help maintain grab point when panning
 	float mousex = 0, mousey = 0; // mouse position, in world coordinates
 	int mousex_raw = 0, mousey_raw = 0; // mouse position, in screen coordinates
+	DragBarrier left_barrier, right_barrier, down_barrier, up_barrier; // help implement snap mode
 	bool right_clicking = false;
 	bool left_clicking = false;
 	bool grabbing = false;
@@ -506,6 +534,7 @@ void gui()
 		else
 			panning = false;
 
+		bool reset_barriers = false; // snapmode bs
 		if (grabbing)
 		{
 			GUIAtlasItem *item	= get_item(items, selected_index);
@@ -514,13 +543,75 @@ void gui()
 			item->x = mousex - selected_xoff;
 			item->y = mousey - selected_yoff;
 
-			if (snapmode)
+			// this snap mode crap is terrible lmao
+			if (left_barrier.active)
 			{
-				item->correct(items, padding);
+				if (item->x < left_barrier.location)
+					item->x = left_barrier.location;
+				else if (item->x > left_barrier.location)
+					left_barrier.active = false;
+			}
+			if (right_barrier.active)
+			{
+				if (item->x + item->width > right_barrier.location)
+					item->x = right_barrier.location - item->width;
+				else if (item->x + item->width < right_barrier.location)
+					right_barrier.active = false;
+			}
+			if (down_barrier.active)
+			{
+				if (item->y < down_barrier.location)
+					item->y = down_barrier.location;
+				else if (item->y > down_barrier.location)
+					down_barrier.active = false;
+			}
+			if (up_barrier.active)
+			{
+				if (item->y + item->height > up_barrier.location)
+					item->y = up_barrier.location - item->height;
+				else if (item->y + item->height < up_barrier.location)
+					up_barrier.active = false;
+			}
+
+			if (!snapmode)
+				reset_barriers = true;
+			else
+			{
 				item->correct_bounds(padding);
+				const GUIAtlasItem::Side side = item->correct(items, padding);
+				if (side == GUIAtlasItem::Side::LEFT)
+				{
+					left_barrier.active = true;
+					left_barrier.location = item->x;
+				}
+				else if (side == GUIAtlasItem::Side::RIGHT)
+				{
+					right_barrier.active = true;
+					right_barrier.location = item->x + item->width;
+				}
+				else if (side == GUIAtlasItem::Side::TOP)
+				{
+					up_barrier.active = true;
+					up_barrier.location = item->y + item->height;
+				}
+				else if (side == GUIAtlasItem::Side::BOTTOM)
+				{
+					down_barrier.active = true;
+					down_barrier.location = item->y;
+				}
 			}
 
 			refresh = true;
+		}
+		else
+			reset_barriers = true;
+
+		if (reset_barriers)
+		{
+			left_barrier.active = false;
+			right_barrier.active = false;
+			down_barrier.active = false;
+			up_barrier.active = false;
 		}
 
 		// rendering
