@@ -1,3 +1,5 @@
+// most of this code dirty nasty
+
 #include <win.h>
 
 #include <glm/glm.hpp>
@@ -156,16 +158,21 @@ static const char *vertexshader_atlasitem =
 		"color = vec4(1.0, 0.0, 0.0, 1.0)\n;"
 	"else\n"
 		"color=vec4(0.8, 0.1, 0.1, 1.0);\n"
-	"if(highlight_mode == 1){\n"
+	"if(highlight_mode == 1){\n" // colliding
 	"	color.r += float(int(gl_FragCoord.x) % 3 == 0);\n"
 	"	color.g -= 1.0;\n"
 	"	color.b -= 1.0;\n"
 	"}\n"
-	"else if(highlight_mode == 2){\n"
+	"else if(highlight_mode == 2){\n" // colliding, but unfocused
 	"	color.r += float(int(gl_FragCoord.x) % 3 == 0) / 3.0;\n"
 	"	color.g -= 0.5;\n"
 	"	color.b -= 0.5;\n"
 	"}\n"
+	"else if (highlight_mode == 3){\n" // selected, not colliding
+	"	color.r += 0.5;\n"
+	"	color.g += 0.5;\n"
+	"	color.b += 0.5;\n"
+	"}"
 	"}";
 
 static const char *vertexshader_guides =
@@ -315,7 +322,6 @@ void gui()
 	bool panning = false;
 	bool snapmode = false;
 	bool solidmode = false;
-	bool refresh = true; // recalculate vertices for atlas items (for rendering on screen)
 	int padding = 0; // padding pixels
 	float zoom = 1.0; // zoom level
 	const float	zoom_inc = 0.1f;
@@ -338,24 +344,37 @@ void gui()
 		case win::Button::MOUSE_RIGHT:
 			right_clicking = press;
 			break;
+		case win::Button::DELETE:
+			if (selected_index >= 0)
+			{
+				int index = 0;
+				for (auto it = items.begin(); it != items.end();)
+				{
+					if (index == selected_index)
+					{
+						it = items.erase(it);
+						continue;
+					}
+
+					++index;
+					++it;
+				}
+
+				selected_index = -1;
+			}
+			break;
 		case win::Button::ESC:
-			quit = true;
+			selected_index = -1;
 			break;
 		case win::Button::NUM_PLUS:
 			if (press)
-			{
 				zoom += zoom_inc;
-				refresh = true;
-			}
 			break;
 		case win::Button::NUM_MINUS:
 			if (press)
 			{
 				if (zoom >= 0.1f)
-				{
 					zoom -= zoom_inc;
-					refresh = true;
-				}
 			}
 			break;
 		case win::Button::LCTRL:
@@ -374,6 +393,10 @@ void gui()
 	{
 		switch (c)
 		{
+		case 'Q':
+		case 'q':
+			quit = true;
+			break;
 		case 'a':
 		case 'A':
 			try
@@ -382,7 +405,6 @@ void gui()
 				if (file.length() > 0)
 				{
 					items.emplace_back(pick_file(), padding, padding);
-					refresh = true;
 					dirty = true;
 				}
 				break;
@@ -424,7 +446,6 @@ void gui()
 			try
 			{
 				items.clear();
-				refresh = true;
 				int pad = 0;
 				for (const AtlasItemDescriptor &item : LayoutExporter::import("/home/josh/atlaslayout.txt", padding))
 					items.emplace_back(item.filename, item.x, item.y);
@@ -580,8 +601,6 @@ void gui()
 
 					centerx = pan_oldcenterx - (converted_mousex - pan_oldmousex);
 					centery = pan_oldcentery - (converted_mousey - pan_oldmousey);
-
-					refresh = true;
 				}
 			}
 		}
@@ -655,8 +674,6 @@ void gui()
 					down_barrier.location = item->y;
 				}
 			}
-
-			refresh = true;
 		}
 		else
 			reset_barriers = true;
@@ -670,29 +687,26 @@ void gui()
 		}
 
 		// rendering
-		if (refresh)
-		{
-			refresh = false;
-
-			glm::mat4 view = glm::translate(glm::scale(glm::identity<glm::mat4>(), glm::vec3(zoom, zoom, zoom)), glm::vec3(-centerx, -centery, 0.0));
-
-			glUseProgram(renderstate.atlasitems.program);
-			glUniformMatrix4fv(renderstate.atlasitems.uniform_view, 1, false, glm::value_ptr(view));
-
-			glUseProgram(renderstate.guides.program);
-			glUniformMatrix4fv(renderstate.guides.uniform_view, 1, false, glm::value_ptr(view));
-
-			const std::vector verts = regenverts(items);
-			glBindBuffer(GL_ARRAY_BUFFER, renderstate.atlasitems.vbo);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verts.size(), verts.data(), GL_STATIC_DRAW);
-		}
-
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		// guides
 		glUseProgram(renderstate.guides.program);
 		glUniform1i(renderstate.guides.uniform_dirty, dirty ? 1 : 0);
 		glBindVertexArray(renderstate.guides.vao);
 		glDrawArrays(GL_TRIANGLES, 0, 12);
+
+		// atlas items
+		glm::mat4 view = glm::translate(glm::scale(glm::identity<glm::mat4>(), glm::vec3(zoom, zoom, zoom)), glm::vec3(-centerx, -centery, 0.0));
+
+		glUseProgram(renderstate.atlasitems.program);
+		glUniformMatrix4fv(renderstate.atlasitems.uniform_view, 1, false, glm::value_ptr(view));
+
+		glUseProgram(renderstate.guides.program);
+		glUniformMatrix4fv(renderstate.guides.uniform_view, 1, false, glm::value_ptr(view));
+
+		const std::vector verts = regenverts(items);
+		glBindBuffer(GL_ARRAY_BUFFER, renderstate.atlasitems.vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verts.size(), verts.data(), GL_STATIC_DRAW);
 
 		glUseProgram(renderstate.atlasitems.program);
 		glBindVertexArray(renderstate.atlasitems.vao);
@@ -701,9 +715,12 @@ void gui()
 		{
 			const bool oob = item.oob(padding);
 			const bool colliding = item.colliding(items, padding);
+			const bool selected = selected_index == index;
 
 			int highlight_mode = 0;
-			if (selected_index == index && (colliding || oob))
+			if (selected)
+				highlight_mode = 3;
+			if (selected && (colliding || oob))
 				highlight_mode = 1;
 			else if (colliding || oob)
 				highlight_mode = 2;
