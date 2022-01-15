@@ -178,9 +178,10 @@ static const char *vertexshader_guides =
 	"}",
 	*fragmentshader_guides =
 	"#version 330 core\n"
+	"uniform bool dirty;\n"
 	"out vec4 color;\n"
 	"void main(){\n"
-	"color = vec4(1.0, 0.5, 0.65, 1.0);\n"
+	"color = dirty ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);\n"
 	"}";
 
 static std::string pick_file()
@@ -299,7 +300,8 @@ void gui()
 	win::Display display("Atlasizer", 1600, 900);
 
 	std::list<GUIAtlasItem> items;
-	std::string current_file; // for save (without save as)
+	bool dirty = true; // workspace is modified
+	std::string current_save_file; // for save (without save as)
 	int selected_index = -1; // which of the items is selected (clicked)
 	int selected_xoff = 0, selected_yoff = 0; // help maintain grab point when dragging
 	float pan_oldmousex = 0.0f, pan_oldmousey = 0.0f; // help maintain grab point when panning
@@ -368,7 +370,7 @@ void gui()
 		}
 	});
 
-	display.register_character_handler([&items, &refresh, &padding, &current_file](int c)
+	display.register_character_handler([&](int c)
 	{
 		switch (c)
 		{
@@ -381,6 +383,7 @@ void gui()
 				{
 					items.emplace_back(pick_file(), padding, padding);
 					refresh = true;
+					dirty = true;
 				}
 				break;
 			}
@@ -389,9 +392,9 @@ void gui()
 				error_box(e.what());
 			}
 		case 'e':
-		    current_file = "/home/josh/atlaslayout.txt";
+		    current_save_file = "/home/josh/atlaslayout.txt";
 		case 's':
-			if (current_file.length() < 1)
+			if (current_save_file.length() < 1)
 				break;
 			try
 			{
@@ -409,6 +412,7 @@ void gui()
 				}
 
 				exporter.save();
+				dirty = false;
 			}
 			catch (std::exception &e)
 			{
@@ -424,6 +428,7 @@ void gui()
 				int pad = 0;
 				for (const AtlasItemDescriptor &item : LayoutExporter::import("/home/josh/atlaslayout.txt", padding))
 					items.emplace_back(item.filename, item.x, item.y);
+				dirty = false;
 			}
 			catch (const std::exception &e)
 			{
@@ -461,6 +466,7 @@ void gui()
 			unsigned vbo, vao;
 			int uniform_projection;
 			int uniform_view;
+			int uniform_dirty;
 		} guides;
 	} renderstate;
 
@@ -499,10 +505,13 @@ void gui()
 	glUseProgram(renderstate.guides.program);
 	renderstate.guides.uniform_projection = glGetUniformLocation(renderstate.guides.program, "projection");
 	renderstate.guides.uniform_view = glGetUniformLocation(renderstate.guides.program, "view");
+	renderstate.guides.uniform_dirty = glGetUniformLocation(renderstate.guides.program, "dirty");
 	if (renderstate.guides.uniform_projection == -1)
 		win::bug("no uniform projection");
 	if (renderstate.guides.uniform_view == -1)
 		win::bug("no uniform view");
+	if (renderstate.guides.uniform_dirty == -1)
+		win::bug("no uniform dirty");
 
 	glUniformMatrix4fv(renderstate.guides.uniform_projection, 1, false, glm::value_ptr(projection));
 
@@ -582,6 +591,7 @@ void gui()
 		bool reset_barriers = false; // snapmode bs
 		if (grabbing)
 		{
+			dirty = true;
 			GUIAtlasItem *item	= get_item(items, selected_index);
 			if (item == NULL) win::bug("null item");
 
@@ -680,6 +690,7 @@ void gui()
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glUseProgram(renderstate.guides.program);
+		glUniform1i(renderstate.guides.uniform_dirty, dirty ? 1 : 0);
 		glBindVertexArray(renderstate.guides.vao);
 		glDrawArrays(GL_TRIANGLES, 0, 12);
 
