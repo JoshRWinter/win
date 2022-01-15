@@ -309,7 +309,7 @@ void gui()
 	win::Display display("Atlasizer", 1600, 900);
 
 	std::list<GUIAtlasItem> items;
-	bool dirty = true; // workspace is modified
+	bool dirty = false; // workspace is modified
 	std::string current_save_file; // for save (without save as)
 	int selected_index = -1; // which of the items is selected (clicked)
 	int selected_xoff = 0, selected_yoff = 0; // help maintain grab point when dragging
