@@ -419,7 +419,10 @@ void gui()
 		    current_save_file = "/home/josh/atlaslayout.txt";
 		case 's':
 			if (current_save_file.length() < 1)
+			{
+				error_box("No current save file");
 				break;
+			}
 			try
 			{
 				// sort by original index right before save
@@ -451,14 +454,17 @@ void gui()
 		case 'I':
 			try
 			{
+				std::string importfile = "/home/josh/atlaslayout.txt";
 				items.clear();
 				int pad = 0;
-				for (const AtlasItemDescriptor &item : LayoutExporter::import("/home/josh/atlaslayout.txt", padding))
+				for (const AtlasItemDescriptor &item : LayoutExporter::import(importfile, padding))
 					items.emplace_back(items.size(), item.filename, item.x, item.y);
 				dirty = false;
+				current_save_file = importfile;
 			}
 			catch (const std::exception &e)
 			{
+				current_save_file = "";
 				items.clear();
 				error_box(e.what());
 			}
