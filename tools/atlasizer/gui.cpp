@@ -14,8 +14,9 @@ class GUIAtlasItem : public AtlasItem
 public:
 	enum class Side { NONE, LEFT, RIGHT, BOTTOM, TOP };
 
-	GUIAtlasItem(const std::string &filename, int x, int y)
+	GUIAtlasItem(int original_index, const std::string &filename, int x, int y)
 		: AtlasItem(filename, x, y)
+		, original_index(original_index)
 	{
 		glGenTextures(1, &texture);
 		glBindTexture(GL_TEXTURE_2D, texture);
@@ -122,6 +123,7 @@ public:
 		}
 	}
 
+	int original_index;
 	unsigned texture;
 };
 
@@ -404,7 +406,7 @@ void gui()
 				const std::string file = pick_file();
 				if (file.length() > 0)
 				{
-					items.emplace_back(pick_file(), padding, padding);
+					items.emplace_back(items.size(), pick_file(), padding, padding);
 					dirty = true;
 				}
 				break;
@@ -420,6 +422,9 @@ void gui()
 				break;
 			try
 			{
+				// sort by original index right before save
+				items.sort([](const GUIAtlasItem &a, const GUIAtlasItem &b) { return a.original_index < b.original_index; });
+
 				LayoutExporter exporter("/home/josh/atlaslayout.txt", padding);
 				for (const GUIAtlasItem &item : items)
 				{
@@ -434,6 +439,7 @@ void gui()
 				}
 
 				exporter.save();
+				selected_index = -1;
 				dirty = false;
 			}
 			catch (std::exception &e)
@@ -448,7 +454,7 @@ void gui()
 				items.clear();
 				int pad = 0;
 				for (const AtlasItemDescriptor &item : LayoutExporter::import("/home/josh/atlaslayout.txt", padding))
-					items.emplace_back(item.filename, item.x, item.y);
+					items.emplace_back(items.size(), item.filename, item.x, item.y);
 				dirty = false;
 			}
 			catch (const std::exception &e)
