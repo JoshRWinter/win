@@ -10,6 +10,15 @@
 
 #include "targa.hpp"
 
+struct AtlasItemDescriptor
+{
+	std::string filename;
+	int x;
+	int y;
+	int width;
+	int height;
+};
+
 class AtlasItem
 {
 public:

@@ -5,6 +5,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "atlasizer.hpp"
+#include "layoutexporter.hpp"
 
 class GUIAtlasItem : public AtlasItem
 {
@@ -298,6 +299,7 @@ void gui()
 	win::Display display("Atlasizer", 1600, 900);
 
 	std::list<GUIAtlasItem> items;
+	std::string current_file; // for save (without save as)
 	int selected_index = -1; // which of the items is selected (clicked)
 	int selected_xoff = 0, selected_yoff = 0; // help maintain grab point when dragging
 	float pan_oldmousex = 0.0f, pan_oldmousey = 0.0f; // help maintain grab point when panning
@@ -366,7 +368,7 @@ void gui()
 		}
 	});
 
-	display.register_character_handler([&items, &refresh, &padding](int c)
+	display.register_character_handler([&items, &refresh, &padding, &current_file](int c)
 	{
 		switch (c)
 		{
@@ -386,6 +388,49 @@ void gui()
 			{
 				error_box(e.what());
 			}
+		case 'e':
+		    current_file = "/home/josh/atlaslayout.txt";
+		case 's':
+			if (current_file.length() < 1)
+				break;
+			try
+			{
+				LayoutExporter exporter("/home/josh/atlaslayout.txt", padding);
+				for (const GUIAtlasItem &item : items)
+				{
+					AtlasItemDescriptor aid;
+					aid.filename = item.filename;
+					aid.x = item.x;
+					aid.y = item.y;
+					aid.width = item.width;
+					aid.height = item.height;
+
+					exporter.add(aid);
+				}
+
+				exporter.save();
+			}
+			catch (std::exception &e)
+			{
+				error_box(e.what());
+			}
+			break;
+		case 'i':
+		case 'I':
+			try
+			{
+				items.clear();
+				refresh = true;
+				int pad = 0;
+				for (const AtlasItemDescriptor &item : LayoutExporter::import("/home/josh/atlaslayout.txt", padding))
+					items.emplace_back(item.filename, item.x, item.y);
+			}
+			catch (const std::exception &e)
+			{
+				items.clear();
+				error_box(e.what());
+			}
+			break;
 		default:
 			if (c >= '0' && c <= '9')
 			{
