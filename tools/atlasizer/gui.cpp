@@ -416,7 +416,7 @@ void gui()
 				error_box(e.what());
 			}
 		case 'e':
-		    current_save_file = "/home/josh/atlaslayout.txt";
+			current_save_file = "/home/josh/atlaslayout.txt";
 		case 's':
 			if (current_save_file.length() < 1)
 			{
@@ -472,6 +472,9 @@ void gui()
 		default:
 			if (c >= '0' && c <= '9')
 			{
+				if (padding != c - '0')
+					dirty = true;
+
 				padding = c - '0';
 			}
 			break;
