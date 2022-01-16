@@ -42,5 +42,6 @@ public:
 };
 
 void gui();
+void compileatlas(const std::string&, const std::string&);
 
 #endif
