@@ -356,6 +356,23 @@ static void screen_to_view(const float x, const float y, const int display_width
 	out_y = mousepos.y;
 }
 
+static void get_atlas_dims(const std::list<GUIAtlasItem> &items, int padding, int &width, int &height)
+{
+	width = 0;
+	height = 0;
+
+	for (const GUIAtlasItem &item : items)
+	{
+		if (item.x + item.width > width)
+			width = item.x + item.width;
+		if (item.y + item.height > height)
+			height = item.y + item.height;
+	}
+
+	width += padding;
+	height += padding;
+}
+
 void gui()
 {
 	win::Display display("Atlasizer", 1600, 900);
@@ -442,6 +459,18 @@ void gui()
 		case win::Button::RSHIFT:
 		case win::Button::LSHIFT:
 			solidmode = press;
+			break;
+		case win::Button::SPACE:
+			if (press)
+			{
+				int height, width;
+				get_atlas_dims(items, padding, width, height);
+				int bytes = width * height * 4;
+				double mbytes = bytes / 1024.0 / 1024.0;
+				char str[50];
+				snprintf(str, sizeof(str), "%.2f", mbytes);
+				msg_box(std::to_string(items.size()) + " items.\n" + std::to_string(width) + "x" + std::to_string(height) + "\n" + str + " MBs", false);
+			}
 			break;
 		default: break;
 		}
