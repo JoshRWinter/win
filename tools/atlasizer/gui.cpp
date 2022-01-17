@@ -515,7 +515,7 @@ void gui()
 				// sort by original index right before save
 				items.sort([](const GUIAtlasItem &a, const GUIAtlasItem &b) { return a.original_index < b.original_index; });
 
-				LayoutExporter exporter("/home/josh/atlaslayout.txt", padding);
+				LayoutExporter exporter(current_save_file, padding);
 				for (const GUIAtlasItem &item : items)
 				{
 					AtlasItemDescriptor aid;
