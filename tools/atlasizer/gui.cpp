@@ -223,7 +223,7 @@ static std::string pick_file(bool open, std::string option)
 	if (open)
 		cmd = "zenity --title=\"Open TGA\" --file-selection --file-filter=\"" + option + "\"";
 	else
-		cmd = "zenity --title=\"Save atlas layout\" --file-selection --save --filename=\"" + (option.length() == 0 ? "atlas.atlas" : option) + "\"";
+		cmd = "zenity --title=\"Save atlas layout\" --file-selection --save --confirm-overwrite --filename=\"" + (option.length() == 0 ? "atlas.atlas" : option) + "\"";
 
 	if ((zenity = popen(cmd.c_str(), "r")) == NULL)
 	{
