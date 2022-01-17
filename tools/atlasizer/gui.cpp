@@ -134,6 +134,9 @@ struct DragBarrier
 	int location;
 };
 
+static const char *helptext =
+	"atlasizer: Create a texture atlas. Drag items around, right-click and drag to pan.\n\nI: Import layout\nA: Add item\nS: Save\nE: Export\nDELETE: Delete item\nCTRL (hold): Snap Mode\nSHIFT (hold): Color Mode\n+: Zoom in\n-: Zoom out";
+
 static const char *vertexshader_atlasitem =
 	"#version 330 core\n"
 	"uniform mat4 projection;\n"
@@ -249,9 +252,9 @@ void msg_box(const std::string &msg, bool error)
 
 	std::string cmd;
 	if (error)
-		cmd = "zenity --error --text=\"" + msg + "\"";
+		cmd = "zenity --no-wrap --error --text=\"" + msg + "\"";
 	else
-		cmd = "zenity --text=\"" + msg + "\"";
+		cmd = "zenity --info --no-wrap --text=\"" + msg + "\"";
 
 	if ((zenity = popen(cmd.c_str(), "r")) == NULL)
 	{
@@ -389,6 +392,10 @@ void gui()
 	{
 		switch (button)
 		{
+		case win::Button::F1:
+			if (press)
+				msg_box(helptext, false);
+			break;
 		case win::Button::MOUSE_LEFT:
 			left_clicking = press;
 			break;
