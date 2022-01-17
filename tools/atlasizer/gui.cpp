@@ -542,12 +542,15 @@ void gui()
 			try
 			{
 				const std::string importfile = pick_file(true, "*.txt");
-				items.clear();
-				int pad = 0;
-				for (const AtlasItemDescriptor &item : LayoutExporter::import(importfile, padding))
-					items.emplace_back(items.size(), item.filename, item.x, item.y);
-				dirty = false;
-				current_save_file = importfile;
+				if (importfile.size() > 0)
+				{
+					items.clear();
+					int pad = 0;
+					for (const AtlasItemDescriptor &item : LayoutExporter::import(importfile, padding))
+						items.emplace_back(items.size(), item.filename, item.x, item.y);
+					dirty = false;
+					current_save_file = importfile;
+				}
 			}
 			catch (const std::exception &e)
 			{
