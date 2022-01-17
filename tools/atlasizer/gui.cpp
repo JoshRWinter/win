@@ -193,8 +193,9 @@ static const char *vertexshader_guides =
 	"color = dirty ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);\n"
 	"}";
 
-static std::string pick_file()
+static std::string pick_file(bool open, std::string option)
 {
+	/*
 	static std::vector<std::string> files =
 	{
 		"/home/josh/programming/fishtank/assets_local/mine.tga",
@@ -207,11 +208,59 @@ static std::string pick_file()
 	static int index = 0;
 
 	return files.at((index++) % files.size());
+	*/
+
+#if defined WINPLAT_WINDOWS
+	return "";
+#elif defined WINPLAT_LINUX
+	std::string filename;
+	FILE *zenity;
+
+	std::string cmd;
+	if (open)
+		cmd = "zenity --title=\"Open TGA\" --file-selection --file-filter=\"" + option + "\"";
+	else
+		cmd = "zenity --title=\"Save atlas layout\" --file-selection --save --filename=\"" + (option.length() == 0 ? "atlas.atlas" : option) + "\"";
+
+	if ((zenity = popen(cmd.c_str(), "r")) == NULL)
+	{
+		std::cerr << "zenity is required for dialogs" << std::endl;
+		return "";
+	}
+
+	char file[512];
+	fgets(file, 512, zenity);
+	if (pclose(zenity) == 0)
+		filename = file;
+	else
+		filename = ""; // this means no file was chosen
+
+	if (filename.length() > 0 && filename.at(filename.size() - 1) == '\n')
+		filename = filename.substr(0, filename.size() - 1);
+	return filename;
+#endif
 }
 
-void error_box(const std::string &msg)
+void msg_box(const std::string &msg, bool error)
 {
-	fprintf(stderr, "%s\n", msg.c_str());
+#if defined WINPLAT_WINDOWS
+#elif defined WINPLAT_LINUX
+	FILE *zenity;
+
+	std::string cmd;
+	if (error)
+		cmd = "zenity --error --text=\"" + msg + "\"";
+	else
+		cmd = "zenity --text=\"" + msg + "\"";
+
+	if ((zenity = popen(cmd.c_str(), "r")) == NULL)
+	{
+		std::cerr << "zenity is required for dialogs" << std::endl;
+		return;
+	}
+
+	pclose(zenity);
+#endif
 }
 
 static std::vector<float> regenverts(const std::list<GUIAtlasItem> &items)
@@ -403,24 +452,26 @@ void gui()
 		case 'A':
 			try
 			{
-				const std::string file = pick_file();
+				const std::string file = pick_file(true, "*.tga");
 				if (file.length() > 0)
 				{
-					items.emplace_back(items.size(), pick_file(), padding, padding);
+					items.emplace_back(items.size(), file, padding, padding);
 					dirty = true;
 				}
-				break;
 			}
 			catch (const std::exception &e)
 			{
-				error_box(e.what());
+				msg_box(e.what(), true);
 			}
+			break;
 		case 'e':
-			current_save_file = "/home/josh/atlaslayout.txt";
+			current_save_file = pick_file(false, current_save_file);
+			if (current_save_file.length() == 0)
+				break;
 		case 's':
 			if (current_save_file.length() < 1)
 			{
-				error_box("No current save file");
+				msg_box("No current save file", true);
 				break;
 			}
 			try
@@ -447,14 +498,14 @@ void gui()
 			}
 			catch (std::exception &e)
 			{
-				error_box(e.what());
+				msg_box(e.what(), true);
 			}
 			break;
 		case 'i':
 		case 'I':
 			try
 			{
-				std::string importfile = "/home/josh/atlaslayout.txt";
+				const std::string importfile = pick_file(true, "*.txt");
 				items.clear();
 				int pad = 0;
 				for (const AtlasItemDescriptor &item : LayoutExporter::import(importfile, padding))
@@ -466,7 +517,7 @@ void gui()
 			{
 				current_save_file = "";
 				items.clear();
-				error_box(e.what());
+				msg_box(e.what(), true);
 			}
 			break;
 		default:
