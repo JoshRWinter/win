@@ -274,9 +274,9 @@ static std::string pick_file(bool open, std::string default_file_name, std::stri
 
 	std::string cmd;
 	if (open)
-		cmd = "zenity --title=\"Open TGA\" --file-selection --file-filter=\"" + option + "\"";
+		cmd = "zenity --title=\"Open TGA\" --file-selection --file-filter=\"*." + ext_filter + "\"";
 	else
-		cmd = "zenity --title=\"Save atlas layout\" --file-selection --save --confirm-overwrite --filename=\"" + (option.length() == 0 ? "atlas.atlas" : option) + "\"";
+		cmd = "zenity --title=\"Save atlas layout\" --file-selection --save --confirm-overwrite --filename=\"" + (default_file_name.length() == 0 ? "atlas.txt" : default_file_name) + "\"";
 
 	if ((zenity = popen(cmd.c_str(), "r")) == NULL)
 	{
