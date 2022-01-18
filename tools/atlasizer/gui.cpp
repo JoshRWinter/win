@@ -510,8 +510,7 @@ void gui()
 		case win::Button::RCTRL:
 			snapmode = press;
 			break;
-		case win::Button::RSHIFT:
-		case win::Button::LSHIFT:
+		case win::Button::TAB:
 			solidmode = press;
 			break;
 		case win::Button::SPACE:
