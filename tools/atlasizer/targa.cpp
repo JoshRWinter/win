@@ -18,7 +18,7 @@ static unsigned long long filesize(const std::string &fname)
 Targa::Targa(const std::string &filename)
 	: filename(filename)
 {
-	std::ifstream file(filename);
+	std::ifstream file(filename, std::ifstream::binary);
 	if (!file)
 		throw std::runtime_error(std::string(filename) + " doesn't exist");
 	load_image_bytes(file);
