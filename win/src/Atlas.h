@@ -6,9 +6,12 @@
 namespace win
 {
 
-struct AtlasTexture
+struct AtlasItem
 {
-	unsigned short coords[4];
+	float x1;
+	float y1;
+	float x2;
+	float y2;
 };
 
 class Atlas
@@ -25,13 +28,13 @@ public:
 	Atlas &operator=(Atlas&&) = delete;
 
 	unsigned texture() const;
-	const unsigned short *coords(int) const;
+	const AtlasItem item(int) const;
 
 	static void corrupt();
 
 private:
-	std::uint16_t count;
-	std::unique_ptr<AtlasTexture[]> textures;
+	int count;
+	std::unique_ptr<AtlasItem[]> textures;
 	unsigned object;
 };
 
