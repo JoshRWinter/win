@@ -649,6 +649,8 @@ void gui()
 		} guides;
 	} renderstate;
 
+	glClearColor(0.05f, 0.05f, 0.05f, 1.0);
+
 	const float aspect_ratio = (float)display.height() / display.width();
 	const glm::mat4 projection = glm::ortho(-500.0f, 500.0f, -500.0f * aspect_ratio, 500.0f * aspect_ratio, -1.0f, 1.0f);
 
