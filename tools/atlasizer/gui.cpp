@@ -196,7 +196,7 @@ static const char *vertexshader_guides =
 	"color = dirty ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);\n"
 	"}";
 
-static std::string pick_file(bool open, std::string option)
+static std::string pick_file(bool open, std::string default_file_name, std::string ext_filter)
 {
 	/*
 	static std::vector<std::string> files =
@@ -214,7 +214,60 @@ static std::string pick_file(bool open, std::string option)
 	*/
 
 #if defined WINPLAT_WINDOWS
-	return "";
+	std::string filter_description;
+	if (ext_filter == "tga")
+		filter_description = std::string("TARGA images") + (char)0 + "*.tga" + (char)0 + (char)0;
+	else if (ext_filter == "txt")
+		filter_description = std::string("Text files") + (char)0 + "*.txt" + (char)0 + (char)0;
+
+	char filebuf[1024] = "";
+	if (!open)
+		strncpy(filebuf, default_file_name.c_str(), sizeof(filebuf));
+	filebuf[sizeof(filebuf) - 1] = 0;
+
+	OPENFILENAMEA ofn;
+	memset(&ofn, 0, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = NULL;
+	ofn.hInstance = NULL;
+	ofn.lpstrFilter = filter_description.length() > 0 ? (filter_description).c_str() : NULL;
+	ofn.lpstrCustomFilter = NULL;
+	ofn.nMaxCustFilter = 0;
+	ofn.nFilterIndex = 0;
+	ofn.lpstrFile = filebuf;
+	ofn.nMaxFile = sizeof(filebuf);
+	ofn.lpstrFileTitle = NULL;
+	ofn.nMaxFileTitle = 0;
+	ofn.lpstrInitialDir = NULL;
+	ofn.lpstrInitialDir = NULL;
+	ofn.lpstrTitle = open ? "Open file" : "Save file";
+	ofn.Flags = OFN_DONTADDTORECENT | OFN_ENABLESIZING | OFN_EXPLORER;
+	ofn.nFileOffset = 0;
+	ofn.nFileExtension = 0;
+	ofn.lpstrDefExt = !open ? ext_filter.c_str() : NULL;
+	ofn.lCustData = NULL;
+	ofn.lpfnHook = NULL;
+	ofn.lpTemplateName = NULL;
+
+	if (open)
+		ofn.Flags |= OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+	else
+		ofn.Flags |= OFN_OVERWRITEPROMPT;
+
+	if (open)
+	{
+		if (!GetOpenFileNameA(&ofn))
+			return "";
+	}
+	else
+	{
+		if (!GetSaveFileNameA(&ofn))
+			return "";
+	}
+
+	filebuf[sizeof(filebuf) - 1] = 0;
+
+	return filebuf;
 #elif defined WINPLAT_LINUX
 	std::string filename;
 	FILE *zenity;
@@ -247,6 +300,7 @@ static std::string pick_file(bool open, std::string option)
 void msg_box(const std::string &msg, bool error)
 {
 #if defined WINPLAT_WINDOWS
+	MessageBox(NULL, msg.c_str(), error ? "Error" : "Info", error ? MB_ICONERROR : 0);
 #elif defined WINPLAT_LINUX
 	FILE *zenity;
 
@@ -488,7 +542,7 @@ void gui()
 		case 'A':
 			try
 			{
-				const std::string file = pick_file(true, "*.tga");
+				const std::string file = pick_file(true, "", "tga");
 				if (file.length() > 0)
 				{
 					items.emplace_back(items.size(), file, padding, padding);
@@ -501,7 +555,7 @@ void gui()
 			}
 			break;
 		case 'e':
-			current_save_file = pick_file(false, current_save_file);
+			current_save_file = pick_file(false, current_save_file, "txt");
 			if (current_save_file.length() == 0)
 				break;
 		case 's':
@@ -541,7 +595,7 @@ void gui()
 		case 'I':
 			try
 			{
-				const std::string importfile = pick_file(true, "*.txt");
+				const std::string importfile = pick_file(true, "", "txt");
 				if (importfile.size() > 0)
 				{
 					items.clear();
