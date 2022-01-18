@@ -809,7 +809,7 @@ void gui()
 		glUseProgram(renderstate.guides.program);
 		glUniformMatrix4fv(renderstate.guides.uniform_view, 1, false, glm::value_ptr(view));
 
-		const std::vector verts = regenverts(items);
+		const std::vector<float> verts = regenverts(items);
 		glBindBuffer(GL_ARRAY_BUFFER, renderstate.atlasitems.vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verts.size(), verts.data(), GL_STATIC_DRAW);
 

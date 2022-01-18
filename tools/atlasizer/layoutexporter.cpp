@@ -57,7 +57,7 @@ std::vector<AtlasItemDescriptor> LayoutExporter::import(const std::string &file,
 			continue;
 
 		AtlasItemDescriptor aid = deserialize_item(line);
-		aid.filename = std::filesystem::relative(std::filesystem::path(file).parent_path() / std::filesystem::path(aid.filename));
+		aid.filename = std::filesystem::relative(std::filesystem::path(file).parent_path() / std::filesystem::path(aid.filename)).string();
 		items.push_back(aid);
 	}
 

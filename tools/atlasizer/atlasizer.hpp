@@ -6,8 +6,6 @@
 #include <cmath>
 #include <string>
 
-#include <GL/gl.h>
-
 #include "targa.hpp"
 
 struct AtlasItemDescriptor
