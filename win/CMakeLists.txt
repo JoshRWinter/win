@@ -13,7 +13,7 @@ add_library(win STATIC
 	src/AssetRoll.cpp
 	src/AssetRollStreamRaw.cpp
 	src/AssetRollStreamCompressed.cpp
-	src/Texture.cpp
+	src/Targa.cpp
 	src/Utility.cpp
 
 	src/Sound.h
@@ -23,7 +23,7 @@ add_library(win STATIC
 	src/Display.h
 	src/Font.h
 	src/AssetRoll.h
-	src/Texture.h
+	src/Targa.h
 	src/Utility.h
 	src/event.h
 	src/objectpool.hpp

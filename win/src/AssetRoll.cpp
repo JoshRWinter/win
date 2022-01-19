@@ -18,8 +18,9 @@ namespace win
 {
 
 AssetRoll::AssetRoll(const char *file)
-	: asset_roll_name(file)
 {
+	std::lock_guard lock(guard);
+	asset_roll_name = file;
 	stream.open(file, std::ifstream::binary);
 	if(!stream)
 		win::bug("Could not read asset roll file \""s + file + "\"");
@@ -76,6 +77,7 @@ AssetRoll::AssetRoll(const char *file)
 
 AssetRollStream AssetRoll::operator[](const char *resourcename)
 {
+	std::lock_guard lock(guard);
 	// make sure the file exists
 	int index = -1;
 	for(int i = 0; i < (int)resources.size(); ++i)
@@ -112,8 +114,9 @@ AssetRollStream AssetRoll::operator[](const char *resourcename)
 	}
 }
 
-bool AssetRoll::exists(const char *resourcename) const
+bool AssetRoll::exists(const char *resourcename)
 {
+	std::lock_guard lock(guard);
 	for(const AssetRollResource &rh : resources)
 		if(rh.name == resourcename)
 			return true;

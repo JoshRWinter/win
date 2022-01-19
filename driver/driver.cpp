@@ -14,9 +14,8 @@ extern const char *vertexshader,*fragmentshader;
 struct Block
 {
 	static constexpr float SIZE = 1.0f;
-	Block() : x(0.0f), y(0.0f), xv(0.06f), yv(0.0f), use_atlas(true) {}
+	Block() : x(0.0f), y(0.0f), xv(0.06f), yv(0.0f) {}
 	float x, y, xv, yv;
-	bool use_atlas;
 };
 
 /*
@@ -46,10 +45,6 @@ int main()
 #elif defined WINPLAT_WINDOWS
 	win::AssetRoll roll("c:\\users\\josh\\desktop\\win\\driver\\assets.roll");
 #endif
-
-	win::Texture texture;
-	win::Texture texture2 = (roll["../../fishtank/assets_local/beacon_1.tga"], win::TextureMode::linear);
-	texture = std::move(texture2);
 
 	win::Atlas atlas(roll["main.atlas"]);
 
@@ -199,10 +194,7 @@ int main()
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_position), block_position, GL_DYNAMIC_DRAW);
 			glBindBuffer(GL_ARRAY_BUFFER, vbo_color.get());
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_color), block_color, GL_DYNAMIC_DRAW);
-			if(block.use_atlas)
-				glBindTexture(GL_TEXTURE_2D, atlas.texture());
-			else
-				glBindTexture(GL_TEXTURE_2D, texture.get());
+			glBindTexture(GL_TEXTURE_2D, atlas.texture());
 
 			glClear(GL_COLOR_BUFFER_BIT);
 			glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL, 1);
@@ -214,7 +206,7 @@ int main()
 		if(0 == strftime(formatted, sizeof(formatted), "Today is %A, %B %d\n%I:%M:%S %p", tm))
 			strcpy(formatted, "null");
 
-		font_renderer.draw(font1, formatted, mousex, mousey - 0.5f, win::Color(1.0f, 1.0f, 0.0f), true);
+		font_renderer.draw(font1, formatted, mousex, mousey, win::Color(1.0f, 1.0f, 0.0f), true);
 		glBindVertexArray(vao.get());
 		glUseProgram(program.get());
 

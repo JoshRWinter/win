@@ -158,6 +158,7 @@ void load_extensions()
 	glXSwapIntervalEXT = (decltype(glXSwapIntervalEXT))getproc("glXSwapIntervalEXT");
 #elif defined WINPLAT_WINDOWS
 	wglSwapIntervalEXT = (decltype(wglSwapIntervalEXT))getproc("wglSwapIntervalEXT");
+	glTexImage3D = (decltype(glTexImage3D))getproc("glTexImage3D");
 #endif
 }
 

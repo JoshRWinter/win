@@ -23,6 +23,7 @@ public:
 	Font(const FontRenderer &parent, AssetRollStream, float);
 	Font(const Font&) = delete;
 	Font(Font&&) = delete;
+	~Font();
 
 	void operator=(Font&) = delete;
 	Font &operator=(Font&&) = delete;
@@ -30,7 +31,7 @@ public:
 	float size() const;
 
 private:
-	Texture atlas;
+	unsigned atlas;
 	std::array<metric, 95> metrics;
 	float box_width; // width of each tile in the atlas
 	float box_height; // height of each tile in the atlas

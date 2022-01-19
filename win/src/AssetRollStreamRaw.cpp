@@ -4,7 +4,7 @@ namespace win
 {
 
 AssetRollStreamRaw::AssetRollStreamRaw(const std::string &name, unsigned long long begin, unsigned long long length)
-	: stream(std::move(std::ifstream(name)))
+	: stream(std::move(std::ifstream(name, std::ifstream::binary)))
 	, begin(begin)
 	, length(length)
 {

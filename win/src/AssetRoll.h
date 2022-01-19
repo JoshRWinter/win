@@ -6,6 +6,7 @@
 #include <string>
 #include <initializer_list>
 #include <memory>
+#include <mutex>
 
 namespace win
 {
@@ -31,9 +32,10 @@ public:
 	AssetRoll &operator=(AssetRoll&&) = delete;
 
 	AssetRollStream operator[](const char*);
-	bool exists(const char*) const;
+	bool exists(const char*);
 
 private:
+	std::mutex guard;
 	std::string asset_roll_name;
 	std::vector<AssetRollResource> resources;
 	std::ifstream stream;
@@ -96,6 +98,7 @@ public:
 	void seek(unsigned long long);
 	unsigned long long tell();
 
+private:
 	std::ifstream stream;
 	unsigned long long begin;
 	unsigned long long length;
@@ -118,6 +121,7 @@ public:
 	void seek(unsigned long long);
 	unsigned long long tell();
 
+private:
 	std::unique_ptr<unsigned char[]> buffer;
 	unsigned long long length;
 	unsigned long long position;

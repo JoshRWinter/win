@@ -36,7 +36,7 @@ typedef Window window_handle;
 #include "../src/event.h"
 #include "../src/AssetRoll.h"
 #include "../src/Utility.h"
-#include "../src/Texture.h"
+#include "../src/Targa.h"
 #include "../src/Font.h"
 #include "../src/Atlas.h"
 #include "../src/Sound.h"

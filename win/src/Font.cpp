@@ -120,9 +120,8 @@ Font::Font(const FontRenderer &parent, AssetRollStream file, float size)
 		}
 	}
 
-	GLuint tex;
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
+	glGenTextures(1, &atlas);
+	glBindTexture(GL_TEXTURE_2D, atlas);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
@@ -131,8 +130,11 @@ Font::Font(const FontRenderer &parent, AssetRollStream file, float size)
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
+}
 
-	atlas = Texture(tex);
+Font::~Font()
+{
+	glDeleteTextures(1, &atlas);
 }
 
 float Font::size() const
@@ -255,7 +257,7 @@ void FontRenderer::draw(const Font &fnt, const char *text, float xpos, float ypo
 
 		if(text[i] == '\n')
 		{
-			yoffset += fnt.vertical;
+			yoffset -= fnt.vertical;
 			if(centered)
 				xoffset = xpos - (line_length(fnt, text, i + 1) / 2.0f);
 			else
@@ -300,7 +302,7 @@ void FontRenderer::draw(const Font &fnt, const char *text, float xpos, float ypo
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord.get());
 	glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned short) * 2 * charcount, texcoord_buffer.data(), GL_DYNAMIC_DRAW);
 
-	glBindTexture(GL_TEXTURE_2D, fnt.atlas.get());
+	glBindTexture(GL_TEXTURE_2D, fnt.atlas);
 
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, charcount);
 }
