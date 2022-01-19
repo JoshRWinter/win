@@ -141,18 +141,22 @@ int main()
 		mousey = -(((y / 600.0f) * 6.0f) - 3.0f);
 	});
 
+	display.register_window_handler([&quit](win::WindowEvent event)
+	{
+		if (event == win::WindowEvent::CLOSE)
+			quit = true;
+	});
+
 	// display.register_character_handle([](int key)
 	// {
 	// 	std::cerr << (char)key;
 	// });
 
 	const int block_sid = audio_engine.play(music, block.x, block.y, true);
-	for(;;)
+	while(!quit)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
-
-		if(!display.process() || quit)
-			break;
+		display.process();
 
 		audio_engine.process();
 

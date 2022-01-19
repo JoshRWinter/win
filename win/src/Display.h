@@ -11,6 +11,7 @@ class Display
 {
 	friend class SoundEngine;
 
+	typedef std::function<void(WindowEvent)> WindowHandler;
 	typedef std::function<void(Button, bool)> ButtonHandler;
 	typedef std::function<void(int)> CharacterHandler;
 	typedef std::function<void(int x, int y)> MouseHandler;
@@ -24,13 +25,14 @@ public:
 	Display &operator=(Display&&) = delete;
 	Display &operator=(Display&) = delete;
 
-	bool process();
+	void process();
 	void swap();
 	int width();
 	int height();
 	void cursor(bool);
 	void vsync(bool);
 
+	void register_window_handler(WindowHandler);
 	void register_button_handler(ButtonHandler);
 	void register_character_handler(CharacterHandler);
 	void register_mouse_handler(MouseHandler);
@@ -39,6 +41,7 @@ public:
 	static int screen_height();
 
 private:
+	WindowHandler window_handler;
 	ButtonHandler button_handler;
 	CharacterHandler character_handler;
 	MouseHandler mouse_handler;

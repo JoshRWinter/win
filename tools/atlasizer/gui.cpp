@@ -625,6 +625,12 @@ void gui()
 
 	});
 
+	display.register_window_handler([&quit](win::WindowEvent event)
+	{
+		if (event == win::WindowEvent::CLOSE)
+			quit = true;
+	});
+
 	// opengl nonsense
 
 	struct
@@ -725,8 +731,10 @@ void gui()
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, NULL);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(guide_verts), guide_verts, GL_STATIC_DRAW);
 
-	while (display.process() && !quit)
+	while (!quit)
 	{
+		display.process();
+
 		// processing
 		screen_to_view(mousex_raw, mousey_raw, display.width(), display.height(), centerx, centery, zoom, 1000.0, mousex, mousey);
 

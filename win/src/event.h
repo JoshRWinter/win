@@ -57,6 +57,12 @@ enum class Button
 	NUM6, NUM7, NUM8, NUM9,
 };
 
+enum class WindowEvent
+{
+	CLOSE,
+	RESIZE
+};
+
 }
 
 #endif

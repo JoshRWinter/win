@@ -8,6 +8,7 @@
 #endif
 
 // default event handlers
+static void default_window_handler(win::WindowEvent) {}
 static void default_button_handler(win::Button, bool) {}
 static void default_character_handler(int) {}
 static void default_mouse_handler(int, int) {}
@@ -232,6 +233,7 @@ static Button keystring_to_button(const char *const keystring)
 
 Display::Display(const char *caption, int width, int height, bool fullscreen, window_handle parent)
 {
+	window_handler = default_window_handler;
 	button_handler = default_button_handler;
 	character_handler = default_character_handler;
 	mouse_handler = default_mouse_handler;
@@ -310,20 +312,18 @@ Display::~Display()
 }
 
 // return false if application is to exit
-bool Display::process()
+void Display::process()
 {
 	while(XPending(xdisplay))
 	{
 		XEvent xevent;
-		XPeekEvent(xdisplay, &xevent);
-		if(xevent.xany.window != window)
-			return true;
 		XNextEvent(xdisplay, &xevent);
 
 		switch(xevent.type)
 		{
-		case ClientMessage: return false;
-
+		case ClientMessage:
+			window_handler(win::WindowEvent::CLOSE);
+			break;
 		case KeyPress:
 		{
 			button_handler(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), true);
@@ -365,8 +365,6 @@ bool Display::process()
 			break;
 		}
 	}
-
-	return true;
 }
 
 void Display::swap()
@@ -428,6 +426,11 @@ void Display::cursor(bool show)
 void Display::vsync(bool on)
 {
 	glXSwapIntervalEXT(xdisplay, window, on);
+}
+
+void Display::register_window_handler(WindowHandler f)
+{
+	window_handler = std::move(f);
 }
 
 void Display::register_button_handler(ButtonHandler f)
