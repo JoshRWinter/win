@@ -6,9 +6,11 @@ set(CMAKE_CXX_STANDARD 17)
 add_library(win STATIC
 	src/sound.cpp
 	src/atlas.cpp
-	src/soundengine.cpp
+	src/soundengine_linux.cpp
+	src/soundengine_windows.cpp
 	src/soundbank.cpp
-	src/display.cpp
+	src/display_linux.cpp
+	src/display_windows.cpp
 	src/font.cpp
 	src/assetroll.cpp
 	src/assetrollstreamraw.cpp

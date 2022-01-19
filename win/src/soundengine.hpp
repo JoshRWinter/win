@@ -55,6 +55,67 @@ class SoundEngine
 	typedef void (*SoundConfigFn)(float, float, float, float, float*, float*);
 	static constexpr int MAX_SOUNDS = 32;
 
+    static void channel_dupe(std::int16_t *const dest, const std::int16_t *const source, const size_t source_len)
+    {
+	    for(size_t i = 0; i < source_len * 2; i += 2)
+	    {
+		    dest[i] = source[i / 2];
+		    dest[i + 1] = source[i / 2];
+	    }
+    }
+
+    static void default_sound_config_fn(float, float, float, float, float *volume, float *balance)
+    {
+	    *volume = 1.0f;
+	    *balance = 0.0f;
+    }
+
+    static float clamp_volume(float v)
+    {
+	    if(v > 1.0f)
+		    return 1.0f;
+	    else if(v < 0.0f)
+		    return 0.0f;
+
+	    return v;
+    }
+
+    static float clamp_balance(float bal)
+    {
+	    if(bal > 1.0f)
+		    return 1.0f;
+	    else if(bal < -1.0f)
+		    return -1.0f;
+
+	    return bal;
+    }
+
+    void get_config(float listenerx, float listenery, float sourcex, float sourcey, float *volume_l, float *volume_r)
+    {
+	    float volume = 0.0f, balance = 0.0f;
+
+	    config_fn(listenerx, listenery, sourcex, sourcey, &volume, &balance);
+
+	    // clamp [0.0, 1.0f]
+	    volume = clamp_volume(volume);
+
+	    // clamp [-1.0f, 1.0f]
+	    balance = clamp_balance(balance);
+
+	    // convert to volumes
+	    *volume_l = volume;
+	    *volume_r = volume;
+
+	    if(balance > 0.0f)
+		    *volume_l -= balance;
+	    else if(balance < 0.0f)
+		    *volume_r += balance;
+
+	    // reclamp
+	    *volume_l = clamp_volume(*volume_l);
+	    *volume_r = clamp_volume(*volume_r);
+    }
+
 #ifdef WINPLAT_WINDOWS
 	static constexpr unsigned long long SOUND_BUFFER_BYTES = 1 * 44100 * 2 * sizeof(std::int16_t); // seconds * sample rate * channels * sample size
 	static constexpr unsigned long long SOUND_BUFFER_SAMPLES = SOUND_BUFFER_BYTES / sizeof(std::int16_t); // seconds * sample rate * sample size
@@ -103,7 +164,6 @@ private:
 	pa_context *context;
 	pa_threaded_mainloop *loop;
 #endif
-	void get_config(float, float, float, float, float*, float*);
 
 	int next_id;
 	float listener_x;

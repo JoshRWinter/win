@@ -11,6 +11,11 @@ class Display
 {
 	friend class SoundEngine;
 
+	static void default_window_handler(WindowEvent) {}
+	static void default_button_handler(Button, bool) {}
+	static void default_character_handler(int) {}
+	static void default_mouse_handler(int, int) {}
+
 	typedef std::function<void(WindowEvent)> WindowHandler;
 	typedef std::function<void(Button, bool)> ButtonHandler;
 	typedef std::function<void(int)> CharacterHandler;
@@ -53,7 +58,6 @@ private:
 	HWND window;
 	HDC hdc;
 	HGLRC context;
-	bool winquit;
 
 	static LRESULT CALLBACK wndproc(HWND, UINT, WPARAM, LPARAM);
 	static void win_init_gl(Display&, HWND);
