@@ -1,5 +1,5 @@
-#ifndef WIN_TEXTURE_H
-#define WIN_TEXTURE_H
+#ifndef WIN_TEXTURE_HPP
+#define WIN_TEXTURE_HPP
 
 namespace win
 {

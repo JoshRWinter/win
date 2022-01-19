@@ -33,17 +33,17 @@ typedef Window window_handle;
 #endif
 }
 
-#include "../src/event.h"
-#include "../src/AssetRoll.h"
-#include "../src/Utility.h"
-#include "../src/Targa.h"
-#include "../src/Font.h"
-#include "../src/Atlas.h"
-#include "../src/Sound.h"
+#include "../src/event.hpp"
+#include "../src/assetroll.hpp"
+#include "../src/utility.hpp"
+#include "../src/targa.hpp"
+#include "../src/font.hpp"
+#include "../src/atlas.hpp"
+#include "../src/sound.hpp"
 #include "../src/objectpool.hpp"
-#include "../src/SoundBank.h"
-#include "../src/SoundEngine.h"
-#include "../src/Display.h"
+#include "../src/soundbank.hpp"
+#include "../src/soundengine.hpp"
+#include "../src/display.hpp"
 
 namespace win
 {

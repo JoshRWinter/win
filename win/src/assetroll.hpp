@@ -1,5 +1,5 @@
-#ifndef WIN_ROLL_H
-#define WIN_ROLL_H
+#ifndef WIN_ROLL_HPP
+#define WIN_ROLL_HPP
 
 #include <vector>
 #include <fstream>

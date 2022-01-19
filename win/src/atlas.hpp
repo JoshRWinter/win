@@ -1,5 +1,5 @@
-#ifndef WIN_ATLAS_H
-#define WIN_ATLAS_H
+#ifndef WIN_ATLAS_HPP
+#define WIN_ATLAS_HPP
 
 #include <memory>
 

@@ -1,5 +1,5 @@
-#ifndef WIN_DISPLAY_H
-#define WIN_DISPLAY_H
+#ifndef WIN_DISPLAY_HPP
+#define WIN_DISPLAY_HPP
 
 #include <functional>
 #include <memory>

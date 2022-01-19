@@ -1,5 +1,5 @@
-#ifndef WIN_FONT_H
-#define WIN_FONT_H
+#ifndef WIN_FONT_HPP
+#define WIN_FONT_HPP
 
 #include <array>
 #include <memory>

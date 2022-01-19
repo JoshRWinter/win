@@ -1,5 +1,5 @@
-#ifndef WIN_EVENT_H
-#define WIN_EVENT_H
+#ifndef WIN_EVENT_HPP
+#define WIN_EVENT_HPP
 
 #include <string.h>
 

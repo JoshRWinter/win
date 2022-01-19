@@ -1,5 +1,5 @@
-#ifndef WIN_AUDIO_ENGINE_H
-#define WIN_AUDIO_ENGINE_H
+#ifndef WIN_AUDIO_ENGINE_HPP
+#define WIN_AUDIO_ENGINE_HPP
 
 #include <list>
 #include <chrono>

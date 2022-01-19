@@ -1,5 +1,5 @@
-#ifndef WIN_SOUND_BANK_H
-#define WIN_SOUND_BANK_H
+#ifndef WIN_SOUND_BANK_HPP
+#define WIN_SOUND_BANK_HPP
 
 namespace win
 {

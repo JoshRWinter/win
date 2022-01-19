@@ -1,5 +1,5 @@
-#ifndef WIN_UTILITY_H
-#define WIN_UTILITY_H
+#ifndef WIN_UTILITY_HPP
+#define WIN_UTILITY_HPP
 
 #include <vector>
 #include <string>

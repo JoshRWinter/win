@@ -1,5 +1,5 @@
-#ifndef WIN_APACK_H
-#define WIN_APACK_H
+#ifndef WIN_APACK_HPP
+#define WIN_APACK_HPP
 
 #include <thread>
 #include <memory>
