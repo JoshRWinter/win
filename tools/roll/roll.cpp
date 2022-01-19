@@ -30,9 +30,28 @@ static constexpr const char *const helptext =
 "lines, and end-of-line #Comments are supported here."
 ;
 
+static std::vector<const char*> compressible_file_exts =
+{
+	"frag",
+	"vert",
+	"glsl",
+	"tga",
+	"txt",
+	"atlas"
+};
+
 static const std::string magic = "ASSETROLL";
 
-struct header
+struct InputFile
+{
+	InputFile(const std::string &file, bool compress)
+		: file(file), compress(compress) {}
+
+	std::string file;
+    bool compress;
+};
+
+struct Header
 {
 	std::uint8_t compressed;
 	std::uint64_t uncompressed_size;
@@ -44,15 +63,15 @@ struct header
 	std::uint64_t length() const { return sizeof(compressed) + sizeof(uncompressed_size) + sizeof(begin) + sizeof(size) + sizeof(filename_length) + filename_length; }
 };
 
-static std::string strip_options(const std::string&);
+static bool compress_file_ext(const std::string&);
+static std::string file_ext(const std::string&);
 static std::string forward_slash(const std::string&);
 static std::string trim(const std::string&);
-static bool request_compression(const std::string&);
 static bool is_asset_roll(const std::string&);
 static long long filesize(const std::string&);
 static bool exists(const std::string&);
 static std::string format(size_t);
-static void create(const std::string&, const std::vector<std::string>&);
+static void create(const std::string&, const std::vector<InputFile>&);
 static void inspect(const std::string&);
 static int go(int argc, char **argv);
 
@@ -78,7 +97,7 @@ int go(int argc, char **argv)
 	}
 
 	// collect the arguments
-	std::vector<std::string> infiles;
+	std::vector<InputFile> infiles;
 
 	// examine an existing rollfile
 	if(argc == 3 && !strcmp(argv[1], "--inspect"))
@@ -98,6 +117,7 @@ int go(int argc, char **argv)
 		{
 			std::string line;
 			std::getline(rollfile, line);
+			bool compress = false;
 
 			line = forward_slash(trim(line));
 
@@ -110,18 +130,30 @@ int go(int argc, char **argv)
 				continue;
 
 			// cut the comment end off a line (e.g. "filepath.txt #comment")
-			const auto position = line.find("#");
-			if(position != std::string::npos)
-				line = line.substr(0, position);
+			const auto hash_position = line.find("#");
+			if(hash_position != std::string::npos)
+				line = line.substr(0, hash_position);
 
-			infiles.push_back(line);
+			// find and cut off the compression flag
+			const auto flag_position = line.rfind(":z");
+			if(flag_position != std::string::npos)
+			{
+				line = line.substr(0, flag_position);
+				compress = true;
+			}
+
+			infiles.emplace_back(trim(line), compress);
 		}
 	}
 	// create a roll file from cmd args
 	else
 	{
 		for(int i = 2; i < argc; ++i)
-			infiles.push_back(trim(forward_slash(argv[i])));
+		{
+			std::string file = trim(forward_slash(argv[i]));
+			bool compress = compress_file_ext(file_ext(file));
+			infiles.emplace_back(file, compress);
+		}
 	}
 
 	create(argv[1], infiles);
@@ -130,7 +162,7 @@ int go(int argc, char **argv)
 }
 
 // do the work
-void create(const std::string &out_file, const std::vector<std::string> &in_files)
+void create(const std::string &out_file, const std::vector<InputFile> &in_files)
 {
 	// number of input files
 	const int file_count = in_files.size();
@@ -140,25 +172,25 @@ void create(const std::string &out_file, const std::vector<std::string> &in_file
 		throw std::runtime_error("Not willing to overwrite file \""s + out_file + "\"");
 
 	// make sure all the input files exist
-	for(const std::string &file : in_files)
+	for(const InputFile &in : in_files)
 	{
-		if(!exists(strip_options(file)))
-			throw std::runtime_error("File \"" + strip_options(file) + "\" does not exist");
+		if(!exists(in.file))
+			throw std::runtime_error("File \"" + in.file + "\" does not exist");
 	}
 
 	// construct the headers
 
-	std::vector<header> headers;
+	std::vector<Header> headers;
 	for(int i = 0; i < file_count; ++i)
 	{
-		header h;
+		Header h;
 
 		// mostly placeholder data
 		h.compressed = 0;
 		h.uncompressed_size = 0;
 		h.begin = 0;
 		h.size = 0;
-		h.filename = strip_options(in_files[i]);
+		h.filename = in_files[i].file;
 		h.filename_length = h.filename.length();
 
 		headers.push_back(h);
@@ -176,7 +208,7 @@ void create(const std::string &out_file, const std::vector<std::string> &in_file
 
 	// write the headers
 	std::uint64_t offset = magic.length() + sizeof(std::uint16_t); // magic length plus filecount length
-	for(const header &h : headers)
+	for(const Header &h : headers)
 	{
 		out.write((const char*)&h.compressed, sizeof(h.compressed));
 		out.write((const char*)&h.uncompressed_size, sizeof(h.uncompressed_size));
@@ -194,7 +226,7 @@ void create(const std::string &out_file, const std::vector<std::string> &in_file
 		const long long fsize = filesize(headers[i].filename);
 
 		// fill in some missing header details
-		headers[i].compressed = request_compression(in_files[i]);
+		headers[i].compressed = in_files[i].compress;
 		headers[i].uncompressed_size = fsize;
 		headers[i].begin = offset;
 		if(!headers[i].compressed)
@@ -250,7 +282,7 @@ void create(const std::string &out_file, const std::vector<std::string> &in_file
 
 	// rewrite all the headers with proper info
 	out.seekp(magic.length() + sizeof(std::uint16_t));
-	for(const header &h : headers)
+	for(const Header &h : headers)
 	{
 		out.write((const char*)&h.compressed, sizeof(h.compressed));
 		out.write((const char*)&h.uncompressed_size, sizeof(h.uncompressed_size));
@@ -288,7 +320,7 @@ void inspect(const std::string &roll)
 
 	for(int i = 0; i < file_count; ++i)
 	{
-		header rh;
+		Header rh;
 
 		in.read((char*)&rh.compressed, sizeof(rh.compressed));
 		if(in.gcount() != sizeof(rh.compressed))
@@ -330,16 +362,6 @@ std::string format(size_t size)
 		snprintf(convert, sizeof(convert), "%.2fMB", (double)size / 1000 / 1000);
 
 	return convert;
-}
-
-// strip the suffix options on filename (e.g. "image1.png:z" -> "image1.png")
-std::string strip_options(const std::string &filename)
-{
-	const std::string::size_type position = filename.rfind(":z");
-	if(position == std::string::npos)
-		return filename;
-	else
-		return filename.substr(0, filename.length() - 2);
 }
 
 // replace backslashes with forward slashes
@@ -388,11 +410,6 @@ std::string trim(const std::string &s)
 	return str;
 }
 
-bool request_compression(const std::string &filename)
-{
-	return filename.rfind(":z") != std::string::npos;
-}
-
 // is the file an asset roll file?
 bool is_asset_roll(const std::string &filename)
 {
@@ -432,6 +449,26 @@ bool exists(const std::string &filename)
 	}
 	else
 		return true;
+}
+
+std::string file_ext(const std::string &file)
+{
+	const auto pos = file.rfind(".");
+	if (pos == std::string::npos)
+		return "";
+	else if (pos == file.size() - 1)
+		return "";
+	else
+		return file.substr(pos + 1);
+}
+
+bool compress_file_ext(const std::string &ext)
+{
+	for (const char *const e : compressible_file_exts)
+		if (ext == e)
+			return true;
+
+	return false;
 }
 
 #elif defined _WIN32
