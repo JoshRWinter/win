@@ -422,6 +422,26 @@ bool is_asset_roll(const std::string &filename)
 	return !strcmp(magic, "ASSETROLL");
 }
 
+std::string file_ext(const std::string &file)
+{
+	const auto pos = file.rfind(".");
+	if (pos == std::string::npos)
+		return "";
+	else if (pos == file.size() - 1)
+		return "";
+	else
+		return file.substr(pos + 1);
+}
+
+bool compress_file_ext(const std::string &ext)
+{
+	for (const char *const e : compressible_file_exts)
+		if (ext == e)
+			return true;
+
+	return false;
+}
+
 #if defined __linux__
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -449,26 +469,6 @@ bool exists(const std::string &filename)
 	}
 	else
 		return true;
-}
-
-std::string file_ext(const std::string &file)
-{
-	const auto pos = file.rfind(".");
-	if (pos == std::string::npos)
-		return "";
-	else if (pos == file.size() - 1)
-		return "";
-	else
-		return file.substr(pos + 1);
-}
-
-bool compress_file_ext(const std::string &ext)
-{
-	for (const char *const e : compressible_file_exts)
-		if (ext == e)
-			return true;
-
-	return false;
 }
 
 #elif defined _WIN32
