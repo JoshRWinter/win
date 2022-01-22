@@ -4,7 +4,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../win ${CMAKE_CURRENT_BINARY_DIR}/
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(roll roll/roll.cpp)
+add_executable(roll roll/roll.cpp roll/roll.hpp roll/rollfile/rollfileparser.cpp roll/rollfile/rollfileparser.hpp roll/rollfile/rollfilesectionprocessor.cpp roll/rollfile/rollfilesectionprocessor.hpp roll/rollfile/rollfile.cpp roll/rollfile/rollfile.hpp roll/rollfile/atlassectionprocessor.cpp roll/rollfile/atlassectionprocessor.hpp roll/rollfile/svgtotgasectionprocessor.cpp roll/rollfile/svgtotgasectionprocessor.hpp )
 
 add_executable(atlas atlas/main.cpp atlas/Targa.cpp atlas/Atlas.cpp)
 

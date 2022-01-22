@@ -1,17 +1,15 @@
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
-#include <string>
-#include <cstdint>
 #include <vector>
 #include <memory>
-#include <cctype>
+#include <filesystem>
 
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include <zlib.h>
+
+#include "roll.hpp"
+#include "rollfile/rollfile.hpp"
 
 using namespace std::string_literals;
 
@@ -42,27 +40,6 @@ static std::vector<const char*> compressible_file_exts =
 
 static const std::string magic = "ASSETROLL";
 
-struct InputFile
-{
-	InputFile(const std::string &file, bool compress)
-		: file(file), compress(compress) {}
-
-	std::string file;
-    bool compress;
-};
-
-struct Header
-{
-	std::uint8_t compressed;
-	std::uint64_t uncompressed_size;
-	std::uint64_t begin;
-	std::uint64_t size;
-	std::uint16_t filename_length;
-	std::string filename;
-
-	std::uint64_t length() const { return sizeof(compressed) + sizeof(uncompressed_size) + sizeof(begin) + sizeof(size) + sizeof(filename_length) + filename_length; }
-};
-
 static bool compress_file_ext(const std::string&);
 static std::string file_ext(const std::string&);
 static std::string forward_slash(const std::string&);
@@ -71,7 +48,7 @@ static bool is_asset_roll(const std::string&);
 static long long filesize(const std::string&);
 static bool exists(const std::string&);
 static std::string format(size_t);
-static void create(const std::string&, const std::vector<InputFile>&);
+static void create(const std::string&, const std::vector<RollItem>&, const std::string&);
 static void inspect(const std::string&);
 static int go(int argc, char **argv);
 
@@ -97,7 +74,8 @@ int go(int argc, char **argv)
 	}
 
 	// collect the arguments
-	std::vector<InputFile> infiles;
+	std::vector<RollItem> infiles;
+	std::string path_relative_to;
 
 	// examine an existing rollfile
 	if(argc == 3 && !strcmp(argv[1], "--inspect"))
@@ -109,45 +87,34 @@ int go(int argc, char **argv)
 	// use rollfile
 	else if(argc == 2)
 	{
+		path_relative_to = ".";
+
 		std::ifstream rollfile("rollfile");
-		if(!rollfile)
-			throw std::runtime_error("No rollfile could be found in the current directory");
+		if (!rollfile)
+			throw std::runtime_error("Couldn't open \"rollfile\" for reading");
 
-		while(rollfile.good())
+		try
 		{
-			std::string line;
-			std::getline(rollfile, line);
-			bool compress = false;
-
-			line = forward_slash(trim(line));
-
-			// ignore blanks
-			if(line.length() == 0)
-				continue;
-
-			// ignore lines starting with #
-			if(line[0] == '#')
-				continue;
-
-			// cut the comment end off a line (e.g. "filepath.txt #comment")
-			const auto hash_position = line.find("#");
-			if(hash_position != std::string::npos)
-				line = line.substr(0, hash_position);
-
-			// find and cut off the compression flag
-			const auto flag_position = line.rfind(":z");
-			if(flag_position != std::string::npos)
-			{
-				line = line.substr(0, flag_position);
-				compress = true;
-			}
-
-			infiles.emplace_back(trim(line), compress);
+	    	Rollfile rollfile("rollfile", false);
+	    	infiles = rollfile.get_items();
+		}
+		catch (const std::exception &e)
+		{
+			throw std::runtime_error(std::string("rollfile: ") + e.what());
 		}
 	}
 	// create a roll file from cmd args
 	else
 	{
+		try
+	    {
+		    path_relative_to = std::filesystem::path(argv[1]).parent_path().string();
+	    }
+	    catch(const std::exception &e)
+	    {
+			throw std::runtime_error(std::string("Bad path \"") + argv[1] + "\"");
+	    }
+
 		for(int i = 2; i < argc; ++i)
 		{
 			std::string file = trim(forward_slash(argv[i]));
@@ -156,13 +123,13 @@ int go(int argc, char **argv)
 		}
 	}
 
-	create(argv[1], infiles);
+	create(argv[1], infiles, path_relative_to);
 
 	return 0;
 }
 
 // do the work
-void create(const std::string &out_file, const std::vector<InputFile> &in_files)
+void create(const std::string &out_file, const std::vector<RollItem> &in_files, const std::string &path_relative_to)
 {
 	// number of input files
 	const int file_count = in_files.size();
@@ -172,7 +139,7 @@ void create(const std::string &out_file, const std::vector<InputFile> &in_files)
 		throw std::runtime_error("Not willing to overwrite file \""s + out_file + "\"");
 
 	// make sure all the input files exist
-	for(const InputFile &in : in_files)
+	for(const RollItem &in : in_files)
 	{
 		if(!exists(in.file))
 			throw std::runtime_error("File \"" + in.file + "\" does not exist");
@@ -190,7 +157,7 @@ void create(const std::string &out_file, const std::vector<InputFile> &in_files)
 		h.uncompressed_size = 0;
 		h.begin = 0;
 		h.size = 0;
-		h.filename = in_files[i].file;
+		h.filename = std::filesystem::relative(in_files[i].file, path_relative_to);
 		h.filename_length = h.filename.length();
 
 		headers.push_back(h);
