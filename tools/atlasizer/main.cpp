@@ -1,4 +1,6 @@
 #include <iostream>
+#include <string.h>
+#include "layoutexporter.hpp"
 
 #include "atlasizer.hpp"
 
@@ -20,6 +22,16 @@ int main(int argc, char **argv)
 
 	try
 	{
+		if (!strcmp(argv[1], "--list"))
+		{
+			int padding;
+			const auto descriptors = LayoutExporter::import(argv[2], padding, false);
+			for (const auto &descriptor : descriptors)
+				std::cout << descriptor.filename << std::endl;
+
+			return 0;
+		}
+
 		compileatlas(argv[1], argv[2]);
 	}
 	catch (const std::exception &e)

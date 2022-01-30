@@ -13,7 +13,7 @@ public:
 
 	void add(const AtlasItemDescriptor&);
 	void save();
-	static std::vector<AtlasItemDescriptor> import(const std::string&, int&);
+	static std::vector<AtlasItemDescriptor> import(const std::string&, int&, bool = true);
 
 private:
 	std::string serialize_item(const AtlasItemDescriptor&);

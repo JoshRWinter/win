@@ -28,7 +28,7 @@ void LayoutExporter::save()
 	}
 }
 
-std::vector<AtlasItemDescriptor> LayoutExporter::import(const std::string &file, int &padding)
+std::vector<AtlasItemDescriptor> LayoutExporter::import(const std::string &file, int &padding, bool translate_filenames)
 {
 	std::vector<AtlasItemDescriptor> items;
 
@@ -57,7 +57,10 @@ std::vector<AtlasItemDescriptor> LayoutExporter::import(const std::string &file,
 			continue;
 
 		AtlasItemDescriptor aid = deserialize_item(line);
-		aid.filename = std::filesystem::relative(std::filesystem::path(file).parent_path() / std::filesystem::path(aid.filename)).string();
+
+		if (translate_filenames)
+			aid.filename = std::filesystem::relative(std::filesystem::canonical(file).parent_path() / aid.filename);
+
 		items.push_back(aid);
 	}
 
@@ -66,7 +69,7 @@ std::vector<AtlasItemDescriptor> LayoutExporter::import(const std::string &file,
 
 std::string LayoutExporter::serialize_item(const AtlasItemDescriptor &item)
 {
-	std::filesystem::path path = std::filesystem::path(exportfile).parent_path();
+	std::filesystem::path path = std::filesystem::canonical(exportfile).parent_path();
 	std::filesystem::path newname = std::filesystem::relative(item.filename, path);
 
 	return newname.string() + ":" + std::to_string(item.x) + ":" + std::to_string(item.y) + ":" + std::to_string(item.width) + ":" + std::to_string(item.height);
@@ -77,7 +80,7 @@ AtlasItemDescriptor LayoutExporter::deserialize_item(const std::string &line)
 	std::vector<std::string> fields = get_fields(line);
 
 	if (fields.size() != 5)
-	    throw std::runtime_error("Couldn't parse atlas line");
+		throw std::runtime_error("Couldn't parse atlas line");
 
 	int x, y, w, h;
 
@@ -102,7 +105,7 @@ AtlasItemDescriptor LayoutExporter::deserialize_item(const std::string &line)
 
 void LayoutExporter::get_fields(const std::string &line, std::vector<std::string> &fields)
 {
-    const auto pos = line.find(":");
+	const auto pos = line.find(":");
 	if (pos == std::string::npos)
 	{
 		if (line.length() > 0)
