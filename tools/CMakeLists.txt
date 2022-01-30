@@ -4,7 +4,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../win ${CMAKE_CURRENT_BINARY_DIR}/
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(roll roll/roll.cpp)
+add_executable(roll roll/roll.cpp roll/roll.hpp roll/recipe/recipe.cpp roll/recipe/recipe.hpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
+add_executable(roll-recipe-tests roll/recipe/tests/test.hpp roll/recipe/tests/parsertests.cpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
 
 add_executable(atlas atlas/main.cpp atlas/Targa.cpp atlas/Atlas.cpp)
 

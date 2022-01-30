@@ -1,314 +1,86 @@
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
-#include <string>
-#include <cstdint>
 #include <vector>
 #include <memory>
-#include <cctype>
+#include <filesystem>
 
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include <zlib.h>
+
+#include "roll.hpp"
+#include "recipe/recipe.hpp"
 
 using namespace std::string_literals;
 
 static constexpr const char *const helptext =
 "Asset Roll\n"
-"Usage: roll output-file.roll inputfile[:z] [ ... ]\n"
-"       roll output-file.roll\n"
+"Usage: roll output-file.roll inputfile [...]\n"
+"       roll output-file.roll --recipe recipe-file\n"
 "       roll --inspect input.roll\n"
 "       roll --help\n"
-"\n"
-"If the second 1-arg form is used, a 'rollfile' is\n"
-"expected to be found in the current direcory.\n"
-"\n"
-"The rollfile should have one file (with optional\n"
-"[:z] compression flag) per line. #Comments, blank\n"
-"lines, and end-of-line #Comments are supported here."
 ;
 
-static std::vector<const char*> compressible_file_exts =
+std::vector<const char*> compressible_file_exts =
 {
-	"frag",
-	"vert",
-	"glsl",
-	"tga",
-	"txt",
-	"atlas"
+	".frag",
+	".vert",
+	".glsl",
+	".tga",
+	".txt",
+	".atlas"
 };
 
-static const std::string magic = "ASSETROLL";
+const char *magic = "ASSETROLL";
 
-struct InputFile
+static bool compress_file_ext(const std::string &ext)
 {
-	InputFile(const std::string &file, bool compress)
-		: file(file), compress(compress) {}
+	for (const char *const e : compressible_file_exts)
+		if (ext == e)
+			return true;
 
-	std::string file;
-    bool compress;
-};
-
-struct Header
-{
-	std::uint8_t compressed;
-	std::uint64_t uncompressed_size;
-	std::uint64_t begin;
-	std::uint64_t size;
-	std::uint16_t filename_length;
-	std::string filename;
-
-	std::uint64_t length() const { return sizeof(compressed) + sizeof(uncompressed_size) + sizeof(begin) + sizeof(size) + sizeof(filename_length) + filename_length; }
-};
-
-static bool compress_file_ext(const std::string&);
-static std::string file_ext(const std::string&);
-static std::string forward_slash(const std::string&);
-static std::string trim(const std::string&);
-static bool is_asset_roll(const std::string&);
-static long long filesize(const std::string&);
-static bool exists(const std::string&);
-static std::string format(size_t);
-static void create(const std::string&, const std::vector<InputFile>&);
-static void inspect(const std::string&);
-static int go(int argc, char **argv);
-
-int main(int argc, char **argv)
-{
-	try
-	{
-		return go(argc, argv);
-	}
-	catch(const std::exception &e)
-	{
-		std::cout << "Fatal: " << e.what() << std::endl;
-		return 1;
-	}
+	return false;
 }
 
-int go(int argc, char **argv)
+static std::string format(size_t size)
 {
-	if(argc < 2 || (argc == 2 && (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-h"))))
-	{
-		std::cout << helptext << std::endl;
-		return 0;
-	}
-
-	// collect the arguments
-	std::vector<InputFile> infiles;
-
-	// examine an existing rollfile
-	if(argc == 3 && !strcmp(argv[1], "--inspect"))
-	{
-		inspect(argv[2]);
-
-		return 0;
-	}
-	// use rollfile
-	else if(argc == 2)
-	{
-		std::ifstream rollfile("rollfile");
-		if(!rollfile)
-			throw std::runtime_error("No rollfile could be found in the current directory");
-
-		while(rollfile.good())
-		{
-			std::string line;
-			std::getline(rollfile, line);
-			bool compress = false;
-
-			line = forward_slash(trim(line));
-
-			// ignore blanks
-			if(line.length() == 0)
-				continue;
-
-			// ignore lines starting with #
-			if(line[0] == '#')
-				continue;
-
-			// cut the comment end off a line (e.g. "filepath.txt #comment")
-			const auto hash_position = line.find("#");
-			if(hash_position != std::string::npos)
-				line = line.substr(0, hash_position);
-
-			// find and cut off the compression flag
-			const auto flag_position = line.rfind(":z");
-			if(flag_position != std::string::npos)
-			{
-				line = line.substr(0, flag_position);
-				compress = true;
-			}
-
-			infiles.emplace_back(trim(line), compress);
-		}
-	}
-	// create a roll file from cmd args
+	char convert[26];
+	if(size < 1000)
+		snprintf(convert, sizeof(convert), "%dB", (int)size);
+	else if(size < 1000 * 1000)
+		snprintf(convert, sizeof(convert), "%.2fKB", (double)size / 1000);
 	else
-	{
-		for(int i = 2; i < argc; ++i)
-		{
-			std::string file = trim(forward_slash(argv[i]));
-			bool compress = compress_file_ext(file_ext(file));
-			infiles.emplace_back(file, compress);
-		}
-	}
+		snprintf(convert, sizeof(convert), "%.2fMB", (double)size / 1000 / 1000);
 
-	create(argv[1], infiles);
-
-	return 0;
+	return convert;
 }
 
-// do the work
-void create(const std::string &out_file, const std::vector<InputFile> &in_files)
+static bool is_asset_roll(const std::string &filename)
 {
-	// number of input files
-	const int file_count = in_files.size();
+	std::ifstream in(filename, std::ifstream::binary);
 
-	// make sure the output file doesn't exist, or is already an asset roll
-	if(exists(out_file) && !is_asset_roll(out_file))
-		throw std::runtime_error("Not willing to overwrite file \""s + out_file + "\"");
+	char test[50];
+	in.read(test, strlen(magic));
+	if(in.gcount() != strlen(magic))
+		return false;
+	test[strlen(magic)] = 0;
 
-	// make sure all the input files exist
-	for(const InputFile &in : in_files)
-	{
-		if(!exists(in.file))
-			throw std::runtime_error("File \"" + in.file + "\" does not exist");
-	}
-
-	// construct the headers
-
-	std::vector<Header> headers;
-	for(int i = 0; i < file_count; ++i)
-	{
-		Header h;
-
-		// mostly placeholder data
-		h.compressed = 0;
-		h.uncompressed_size = 0;
-		h.begin = 0;
-		h.size = 0;
-		h.filename = in_files[i].file;
-		h.filename_length = h.filename.length();
-
-		headers.push_back(h);
-	}
-
-	// prepare output file
-	std::ofstream out(out_file, std::ofstream::binary);
-
-	// write magic
-	out.write(magic.c_str(), magic.length());
-
-	// embedded file count
-	const std::uint16_t file_count_short = file_count;
-	out.write((char*)&file_count_short, sizeof(file_count_short));
-
-	// write the headers
-	std::uint64_t offset = magic.length() + sizeof(std::uint16_t); // magic length plus filecount length
-	for(const Header &h : headers)
-	{
-		out.write((const char*)&h.compressed, sizeof(h.compressed));
-		out.write((const char*)&h.uncompressed_size, sizeof(h.uncompressed_size));
-		out.write((const char*)&h.begin, sizeof(h.begin));
-		out.write((const char*)&h.size, sizeof(h.size));
-		out.write((const char*)&h.filename_length, sizeof(h.filename_length));
-		out.write((const char*)h.filename.c_str(), h.filename.length());
-
-		offset += h.length();
-	}
-
-	// write the files
-	for(int i = 0; i < file_count; ++i)
-	{
-		const long long fsize = filesize(headers[i].filename);
-
-		// fill in some missing header details
-		headers[i].compressed = in_files[i].compress;
-		headers[i].uncompressed_size = fsize;
-		headers[i].begin = offset;
-		if(!headers[i].compressed)
-			headers[i].size = fsize;
-
-		std::ifstream in(headers[i].filename, std::ifstream::binary);
-		if(!in)
-			throw std::runtime_error("Could not open file \"" + headers[i].filename + "\" for reading");
-
-		// write the file contents
-		if(headers[i].compressed)
-		{
-			// compress with zlib; load the entire file into memory
-			std::vector<unsigned char> contents(fsize);
-			in.read((char*)contents.data(), fsize);
-			if(in.gcount() != fsize)
-				throw std::runtime_error("Could not read the contents of file \"" + headers[i].filename + "\"");
-
-			// go go gadget zlib
-			uLongf compressed_size = (fsize * 1.1) + 12;
-			unsigned char *const compressed_data = (unsigned char*)malloc(compressed_size);
-			if(compress(compressed_data, &compressed_size, contents.data(), fsize) != Z_OK)
-			{
-				free(compressed_data);
-				throw std::runtime_error("Zlib error: Could not compress the data");
-			}
-
-			// more missing header info
-			headers[i].size = compressed_size;
-
-			// write
-			out.write((const char*)compressed_data, compressed_size);
-			free(compressed_data);
-
-			offset += compressed_size;
-		}
-		else
-		{
-			// write the file normally
-			unsigned char buffer[4096];
-			long long written = 0;
-			while(written != fsize)
-			{
-				in.read((char*)buffer, sizeof(buffer));
-				const int got = in.gcount();
-				out.write((const char*)buffer, got);
-				written += got;
-			}
-
-			offset += fsize;
-		}
-	}
-
-	// rewrite all the headers with proper info
-	out.seekp(magic.length() + sizeof(std::uint16_t));
-	for(const Header &h : headers)
-	{
-		out.write((const char*)&h.compressed, sizeof(h.compressed));
-		out.write((const char*)&h.uncompressed_size, sizeof(h.uncompressed_size));
-		out.write((const char*)&h.begin, sizeof(h.begin));
-		out.write((const char*)&h.size, sizeof(h.size));
-
-		out.seekp(sizeof(h.filename_length) + h.filename_length, std::ofstream::cur);
-	}
-
-	out.close();
-
-	std::cout << file_count << " files written to \"" << out_file << "\" (" << format(filesize(out_file)) << ")" << std::endl;
+	return std::string(test) == std::string(magic);
 }
 
-void inspect(const std::string &roll)
+static void inspect(const std::string &roll)
 {
-	if(!exists(roll))
+	if(!std::filesystem::exists(roll))
 		throw std::runtime_error("File \"" + roll + "\" does not exist");
-	else if(!is_asset_roll(roll))
+
+	if(!is_asset_roll(roll))
 		throw std::runtime_error("File \"" + roll + "\" does not appear to be an asset roll");
 
 	std::ifstream in(roll, std::ifstream::binary);
 	if(!in)
 		throw std::runtime_error("Could not open file \"" + roll + "\" in read mode");
 
-	in.seekg(magic.size());
+	in.seekg(strlen(magic));
 
 	// read number of files
 	std::uint16_t file_count = 0;
@@ -351,21 +123,8 @@ void inspect(const std::string &roll)
 	}
 }
 
-std::string format(size_t size)
-{
-	char convert[26];
-	if(size < 1000)
-		snprintf(convert, sizeof(convert), "%dB", (int)size);
-	else if(size < 1000 * 1000)
-		snprintf(convert, sizeof(convert), "%.2fKB", (double)size / 1000);
-	else
-		snprintf(convert, sizeof(convert), "%.2fMB", (double)size / 1000 / 1000);
-
-	return convert;
-}
-
 // replace backslashes with forward slashes
-std::string forward_slash(const std::string &name)
+static std::string forward_slash(const std::string &name)
 {
 	if(name.find('\\') == std::string::npos)
 		return name;
@@ -378,119 +137,215 @@ std::string forward_slash(const std::string &name)
 	return newname;
 }
 
-// remove whitespace on both sides
-std::string trim(const std::string &s)
+// do the work
+static void create(const std::string &out_file, const std::vector<RollItem> &in_files)
 {
-	std::string str = s;
+	// number of input files
+	const int file_count = in_files.size();
 
-	// trim beginning
-	for(int i = 0; i < str.size(); ++i)
+	// make sure the output file doesn't exist, or is already an asset roll
+	if(std::filesystem::exists(out_file) && !is_asset_roll(out_file))
+		throw std::runtime_error("Not willing to overwrite file \""s + out_file + "\"");
+
+	// make sure all the input files exist
+	for(const RollItem &in : in_files)
 	{
-		if(isspace(str[i]))
+		if(!std::filesystem::exists(in.real_file))
+			throw std::runtime_error("File \"" + in.real_file + "\" does not exist");
+	}
+
+	// construct the headers
+
+	std::vector<Header> headers;
+	for(int i = 0; i < file_count; ++i)
+	{
+		Header h;
+
+		// mostly placeholder data
+		h.compressed = 0;
+		h.uncompressed_size = 0;
+		h.begin = 0;
+		h.size = 0;
+		h.filename = forward_slash(in_files[i].recorded_file);
+		h.filename_length = h.filename.length();
+
+		headers.push_back(h);
+	}
+
+	// prepare output file
+	std::ofstream out(out_file, std::ofstream::binary);
+
+	// write magic
+	out.write(magic, strlen(magic));
+
+	// embedded file count
+	const std::uint16_t file_count_short = file_count;
+	out.write((char*)&file_count_short, sizeof(file_count_short));
+
+	// write the headers
+	std::uint64_t offset = strlen(magic) + sizeof(std::uint16_t); // magic length plus filecount length
+	for(const Header &h : headers)
+	{
+		out.write((const char*)&h.compressed, sizeof(h.compressed));
+		out.write((const char*)&h.uncompressed_size, sizeof(h.uncompressed_size));
+		out.write((const char*)&h.begin, sizeof(h.begin));
+		out.write((const char*)&h.size, sizeof(h.size));
+		out.write((const char*)&h.filename_length, sizeof(h.filename_length));
+		out.write((const char*)h.filename.c_str(), h.filename.length());
+
+		offset += h.length();
+	}
+
+	// write the files
+	for(int i = 0; i < file_count; ++i)
+	{
+		const long long fsize = std::filesystem::file_size(in_files.at(i).real_file);
+
+		// fill in some missing header details
+		headers[i].compressed = in_files[i].compress;
+		headers[i].uncompressed_size = fsize;
+		headers[i].begin = offset;
+		if(!headers[i].compressed)
+			headers[i].size = fsize;
+
+		std::ifstream in(in_files.at(i).real_file, std::ifstream::binary);
+		if(!in)
+			throw std::runtime_error("Could not open file \"" + in_files.at(i).real_file + "\" for reading");
+
+		// write the file contents
+		if(headers[i].compressed)
 		{
-			str.erase(str.begin() + i);
-			--i;
+			// compress with zlib; load the entire file into memory
+			std::vector<unsigned char> contents(fsize);
+			in.read((char*)contents.data(), fsize);
+			if(in.gcount() != fsize)
+				throw std::runtime_error("Could not read the contents of file \"" + in_files.at(i).real_file + "\"");
+
+			// go go gadget zlib
+			uLongf compressed_size = (fsize * 1.1) + 12;
+			unsigned char *const compressed_data = (unsigned char*)malloc(compressed_size);
+			if(compress(compressed_data, &compressed_size, contents.data(), fsize) != Z_OK)
+			{
+				free(compressed_data);
+				throw std::runtime_error("Zlib error: Could not compress the data");
+			}
+
+			// more missing header info
+			headers[i].size = compressed_size;
+
+			// write
+			out.write((const char*)compressed_data, compressed_size);
+			free(compressed_data);
+
+			offset += compressed_size;
 		}
 		else
-			break;
-	}
-
-	// trim end
-	for(int i = str.size() - 1; i >= 0; --i)
-	{
-		if(isspace(str[i]))
 		{
-			str.erase(str.begin() + i);
-			++i;
+			// write the file normally
+			unsigned char buffer[4096];
+			long long written = 0;
+			while(written != fsize)
+			{
+				in.read((char*)buffer, sizeof(buffer));
+				const int got = in.gcount();
+				out.write((const char*)buffer, got);
+				written += got;
+			}
+
+			offset += fsize;
 		}
-		else
-			break;
 	}
 
-	return str;
-}
-
-// is the file an asset roll file?
-bool is_asset_roll(const std::string &filename)
-{
-	std::ifstream in(filename, std::ifstream::binary);
-	char magic[10];
-	in.read(magic, sizeof(magic) - 1);
-	if(in.gcount() != sizeof(magic) - 1)
-		return false;
-	magic[9] = 0;
-	return !strcmp(magic, "ASSETROLL");
-}
-
-std::string file_ext(const std::string &file)
-{
-	const auto pos = file.rfind(".");
-	if (pos == std::string::npos)
-		return "";
-	else if (pos == file.size() - 1)
-		return "";
-	else
-		return file.substr(pos + 1);
-}
-
-bool compress_file_ext(const std::string &ext)
-{
-	for (const char *const e : compressible_file_exts)
-		if (ext == e)
-			return true;
-
-	return false;
-}
-
-#if defined __linux__
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <errno.h>
-
-long long filesize(const std::string &filename)
-{
-	struct stat s;
-	if(stat(filename.c_str(), &s))
-		throw std::runtime_error("stat() failed (\"" + filename + "\"): " + strerror(errno));
-
-	return s.st_size;
-}
-
-bool exists(const std::string &filename)
-{
-	struct stat s;
-	if(stat(filename.c_str(), &s))
+	// rewrite all the headers with proper info
+	out.seekp(strlen(magic) + sizeof(std::uint16_t));
+	for(const Header &h : headers)
 	{
-		if(errno == ENOENT)
-			return false;
-		else
-			throw std::runtime_error("stat() failed (\"" + filename + "\"): " + strerror(errno));
+		out.write((const char*)&h.compressed, sizeof(h.compressed));
+		out.write((const char*)&h.uncompressed_size, sizeof(h.uncompressed_size));
+		out.write((const char*)&h.begin, sizeof(h.begin));
+		out.write((const char*)&h.size, sizeof(h.size));
+
+		out.seekp(sizeof(h.filename_length) + h.filename_length, std::ofstream::cur);
 	}
+
+	out.close();
+
+	std::cout << file_count << " files written to \"" << out_file << "\" (" << format(std::filesystem::file_size(out_file)) << ")" << std::endl;
+}
+
+static int go(int argc, char **argv)
+{
+	std::vector<std::string> args;
+	for (int i = 0; i < argc; ++i)
+		args.emplace_back(argv[i]);
+
+	if(args.size() < 2 || (args.size() == 2 && (args.at(1) == "--help" || args.at(1) == "-h")))
+	{
+		std::cout << helptext << std::endl;
+		return 0;
+	}
+
+	// collect the arguments
+	std::vector<RollItem> infiles;
+
+	// examine an existing rollfile
+	if(args.size() == 3 && args.at(1) == "--inspect")
+	{
+		inspect(args.at(2));
+
+		return 0;
+	}
+	// use rollfile
+	else if(args.size() == 4 && args.at(2) == "--recipe")
+	{
+		const std::string out_file = args.at(1);
+		const std::string recipe_file = args.at(3);
+
+		try
+		{
+			Recipe recipe(recipe_file, out_file);
+			bool update = true;
+
+			infiles = recipe.get_items(update);
+			if (!update)
+			{
+				std::cout << recipe_file << " is up-to-date" << std::endl;
+				return 0;
+			}
+		}
+		catch (const std::exception &e)
+		{
+			throw std::runtime_error(std::string("recipe: ") + e.what());
+		}
+	}
+	// create a roll file from cmd args
 	else
-		return true;
+	{
+		const std::string out_file = args.at(1);
+
+		for(int i = 2; i < args.size(); ++i)
+		{
+			const std::string real_file = std::filesystem::path(out_file).parent_path() / args.at(i);
+			const bool compress = compress_file_ext(std::filesystem::path(real_file).extension());
+
+			infiles.emplace_back(real_file, args.at(i), compress);
+		}
+	}
+
+	create(args.at(1), infiles);
+
+	return 0;
 }
 
-#elif defined _WIN32
-#include <windows.h>
-
-long long filesize(const std::string &filename)
+int main(int argc, char **argv)
 {
-	HANDLE file = CreateFile(filename.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if(file == INVALID_HANDLE_VALUE)
-		throw std::runtime_error("CreateFile() failed (\"" + filename + "\")");
-
-	LARGE_INTEGER li;
-	if(!GetFileSizeEx(file, &li))
-		throw std::runtime_error("GetFileSizeEx() failed (\"" + filename + "\")");
-
-	CloseHandle(file);
-	return li.QuadPart;
+	try
+	{
+		return go(argc, argv);
+	}
+	catch(const std::exception &e)
+	{
+		std::cout << "Fatal: " << e.what() << std::endl;
+		return 1;
+	}
 }
-
-bool exists(const std::string &filename)
-{
-	return GetFileAttributes(filename.c_str()) != INVALID_FILE_ATTRIBUTES;
-}
-
-#endif
