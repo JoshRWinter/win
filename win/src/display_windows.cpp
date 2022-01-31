@@ -154,7 +154,7 @@ void Display::win_init_gl(Display &display, HWND hwnd)
 
 	const int attribs[] =
 	{
-		WGL_CONTEXT_MAJOR_VERSION_ARB, 3, WGL_CONTEXT_MINOR_VERSION_ARB, 3, 0
+		WGL_CONTEXT_MAJOR_VERSION_ARB, display.gl_major, WGL_CONTEXT_MINOR_VERSION_ARB, display.gl_minor, 0
 	};
 
 	SetPixelFormat(display.hdc, ChoosePixelFormat(display.hdc, &pfd), &pfd);
@@ -167,7 +167,7 @@ void Display::win_init_gl(Display &display, HWND hwnd)
 	if(display.context == NULL)
 	{
 		ReleaseDC(hwnd, display.hdc);
-		MessageBox(NULL, "This software requires support for at least Opengl 3.3", "Fatal Error", MB_ICONEXCLAMATION);
+		MessageBox(NULL, ("This software requires support for at least Opengl " + std::to_string(display.gl_major) + "." + std::to_string(display.gl_minor)).c_str(), "Fatal Error", MB_ICONEXCLAMATION);
 		std::abort();
 	}
 	load_extensions();
@@ -269,9 +269,12 @@ LRESULT CALLBACK Display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 	win::bug("late return from wndproc");
 }
 
-Display::Display(const char *caption, int w, int h, bool fullscreen, window_handle)
+Display::Display(const DisplayOptions &options)
 {
 	const char *const window_class = "win_window_class";
+
+	gl_major = options.gl_major;
+	gl_minor = options.gl_minor;
 
 	window_handler = default_window_handler;
 	button_handler = default_button_handler;
@@ -295,25 +298,25 @@ Display::Display(const char *caption, int w, int h, bool fullscreen, window_hand
 	if(!RegisterClassEx(&wc))
 		win::bug("Could not register window class");
 
-	if(fullscreen)
+	if(options.fullscreen)
 		window = CreateWindowEx(0, window_class, "", WS_POPUP, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CXSCREEN), NULL, NULL, GetModuleHandle(NULL), this);
 	else
-		window = CreateWindowEx(0, window_class, caption, WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, w, h, NULL, NULL, GetModuleHandle(NULL), this);
+		window = CreateWindowEx(0, window_class, options.caption.c_str(), WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, options.width, options.height, NULL, NULL, GetModuleHandle(NULL), this);
 	if(window == NULL)
 		win::bug("Could not create window");
 
-	SetWindowText(window, caption);
+	SetWindowText(window, options.caption.c_str());
 
 	ShowWindow(window, SW_SHOWDEFAULT);
 
-	if(!fullscreen)
+	if(!options.fullscreen)
 	{
 		RECT rect;
 		GetClientRect(window, &rect);
-		SetWindowPos(window, NULL, 0, 0, w + (w - rect.right), h + (h - rect.bottom), SWP_SHOWWINDOW);
+		SetWindowPos(window, NULL, 0, 0, options.width + (options.width - rect.right), options.height + (options.height - rect.bottom), SWP_SHOWWINDOW);
 	}
 
-	glViewport(0, 0, w, h);
+	glViewport(0, 0, options.width, options.height);
 
 	UpdateWindow(window);
 }

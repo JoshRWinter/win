@@ -37,7 +37,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 int main()
 #endif
 {
-	win::Display display("window caption", 800, 600);
+	win::DisplayOptions display_options;
+	display_options.caption = "window caption";
+	display_options.width = 800;
+	display_options.height = 600;
+	display_options.gl_major = 3;
+	display_options.gl_minor = 3;
+
+	win::Display display(display_options);
 	display.cursor(true);
 
 #if defined WINPLAT_LINUX

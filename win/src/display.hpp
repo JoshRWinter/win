@@ -3,9 +3,36 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 
 namespace win
 {
+
+struct DisplayOptions
+{
+	DisplayOptions()
+		: fullscreen(false)
+		, width(800)
+		, height(600)
+		, gl_major(0)
+		, gl_minor(0)
+
+#ifdef WINPLAT_WINDOWS
+		, parent(NULL)
+#endif
+	{}
+
+    std::string caption;
+	bool fullscreen;
+	int width;
+	int height;
+	int gl_major;
+	int gl_minor;
+
+#ifdef WINPLAT_WINDOWS
+	HWND parent;
+#endif
+};
 
 class Display
 {
@@ -22,7 +49,7 @@ class Display
 	typedef std::function<void(int x, int y)> MouseHandler;
 
 public:
-	Display(const char*, int, int, bool = false, window_handle = 0);
+	Display(const DisplayOptions&);
 	Display(const Display&) = delete;
 	Display(Display&&) = delete;
 	~Display();
@@ -58,6 +85,8 @@ private:
 	HWND window;
 	HDC hdc;
 	HGLRC context;
+	int gl_major;
+	int gl_minor;
 
 	static LRESULT CALLBACK wndproc(HWND, UINT, WPARAM, LPARAM);
 	static void win_init_gl(Display&, HWND);

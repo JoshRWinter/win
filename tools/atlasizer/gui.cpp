@@ -429,7 +429,14 @@ static void get_atlas_dims(const std::list<GUIAtlasItem> &items, int padding, in
 
 void gui()
 {
-	win::Display display("Atlasizer", 1600, 900);
+	win::DisplayOptions dp;
+	dp.caption = "Atlasizer";
+	dp.gl_major = 3;
+	dp.gl_minor = 3;
+	dp.width = 1600;
+	dp.height = 900;
+
+	win::Display display(dp);
 
 	std::list<GUIAtlasItem> items;
 	bool dirty = false; // workspace is modified

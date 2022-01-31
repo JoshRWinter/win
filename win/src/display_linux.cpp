@@ -214,8 +214,13 @@ static win::Button keystring_to_button(const char *const keystring)
 namespace win
 {
 
-Display::Display(const char *caption, int width, int height, bool fullscreen, window_handle parent)
+Display::Display(const DisplayOptions &options)
 {
+	if (options.width < 1 || options.height < 1)
+		win::bug("Invalid window dimensions");
+	if (options.gl_major == 0)
+		win::bug("Unsupported GL version");
+
 	window_handler = default_window_handler;
 	button_handler = default_button_handler;
 	character_handler = default_character_handler;
@@ -252,12 +257,12 @@ Display::Display(const char *caption, int width, int height, bool fullscreen, wi
 	xswa.event_mask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
 
 	// create da window
-	window = XCreateWindow(xdisplay, RootWindow(xdisplay, xvi->screen), 0, 0, width, height, 0, xvi->depth, InputOutput, xvi->visual, CWColormap | CWEventMask, &xswa);
+	window = XCreateWindow(xdisplay, RootWindow(xdisplay, xvi->screen), 0, 0, options.width, options.height, 0, xvi->depth, InputOutput, xvi->visual, CWColormap | CWEventMask, &xswa);
 	XMapWindow(xdisplay, window);
-	XStoreName(xdisplay, window, caption);
+	XStoreName(xdisplay, window, options.caption.c_str());
 
 	// fullscreen
-	if(fullscreen)
+	if(options.fullscreen)
 		XChangeProperty(xdisplay, window, XInternAtom(xdisplay, "_NET_WM_STATE", False), XA_ATOM, 32, PropModeReplace, (const unsigned char*)&atom_fullscreen, 1);
 
 	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)glXGetProcAddress((unsigned char*)"glXCreateContextAttribsARB");
@@ -266,8 +271,8 @@ Display::Display(const char *caption, int width, int height, bool fullscreen, wi
 
 	const int context_attributes[] =
 	{
-		GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-		GLX_CONTEXT_MINOR_VERSION_ARB, 3,
+		GLX_CONTEXT_MAJOR_VERSION_ARB, options.gl_major,
+		GLX_CONTEXT_MINOR_VERSION_ARB, options.gl_minor,
 		None
 	};
 
