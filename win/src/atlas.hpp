@@ -19,7 +19,7 @@ class Atlas
 public:
 	enum class Mode {LINEAR, NEAREST};
 
-	Atlas(AssetRollStream, Mode = Mode::LINEAR);
+	Atlas(Stream, Mode = Mode::LINEAR);
 	Atlas(const Atlas&) = delete;
 	Atlas(Atlas&&) = delete;
 	~Atlas();

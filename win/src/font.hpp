@@ -20,7 +20,7 @@ class Font
 {
 	friend class FontRenderer;
 public:
-	Font(const FontRenderer &parent, AssetRollStream, float);
+	Font(const FontRenderer &parent, Stream, float);
 	Font(const Font&) = delete;
 	Font(Font&&) = delete;
 	~Font();

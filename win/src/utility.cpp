@@ -208,7 +208,7 @@ unsigned load_shaders(const char *vertex, const char *fragment)
 	return load_shaders(vertex, strlen(vertex), fragment, strlen(fragment));
 }
 
-unsigned load_shaders(AssetRollStream vertex, AssetRollStream fragment)
+unsigned load_shaders(Stream vertex, Stream fragment)
 {
 	return load_shaders((char*)vertex.read_all().get(), vertex.size(), (char*)fragment.read_all().get(), fragment.size());
 }

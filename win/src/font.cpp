@@ -15,7 +15,7 @@ static constexpr int rows = 6;
 namespace win
 {
 
-Font::Font(const FontRenderer &parent, AssetRollStream file, float size)
+Font::Font(const FontRenderer &parent, Stream file, float size)
 {
 	fontsize = size;
 

@@ -35,7 +35,7 @@ SoundPage::SoundPage(std::int16_t *cached_samples, unsigned long long cached_sam
 	samples = cached_samples;
 }
 
-Sound::Sound(AssetRollStream &&sourcefile, const std::string &soundname, SoundBank *parent)
+Sound::Sound(Stream &&sourcefile, const std::string &soundname, SoundBank *parent)
 	: parent(parent)
 {
 	name = soundname;
@@ -50,7 +50,7 @@ Sound::Sound(AssetRollStream &&sourcefile, const std::string &soundname, SoundBa
 	decoder_worker = std::thread(decodeogg, std::move(sourcefile), this, &decoder_worker_cancel);
 }
 
-Sound::Sound(const std::string &name, AssetRollStream *sourcefile, int channels, std::int16_t *samples, unsigned long long samples_count)
+Sound::Sound(const std::string &name, Stream *sourcefile, int channels, std::int16_t *samples, unsigned long long samples_count)
 	: parent(NULL)
 {
 	const bool need_to_start_decoder = sourcefile != NULL;
@@ -218,7 +218,7 @@ bool Sound::is_stream_completed()
 }
 
 // this is copied from a vorbis decoder sample, god have mercy on ye
-void decodeogg(win::AssetRollStream source, win::Sound *sound_p, std::atomic<bool> *cancel_p)
+void decodeogg(win::Stream source, win::Sound *sound_p, std::atomic<bool> *cancel_p)
 {
 	std::atomic<bool> &cancel = *cancel_p;
 	win::Sound &sound = *sound_p;

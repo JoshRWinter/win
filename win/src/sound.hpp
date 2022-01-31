@@ -20,7 +20,7 @@ namespace win
 class Sound;
 }
 
-void decodeogg(win::AssetRollStream source, win::Sound *sound, std::atomic<bool> *cancel);
+void decodeogg(win::Stream source, win::Sound *sound, std::atomic<bool> *cancel);
 
 namespace win
 {
@@ -51,12 +51,12 @@ class SoundEngine;
 class Sound
 {
 	friend class SoundEngine;
-	friend void ::decodeogg(win::AssetRollStream, win::Sound*, std::atomic<bool>*);
+	friend void ::decodeogg(win::Stream, win::Sound*, std::atomic<bool>*);
 public:
 	static constexpr int MAX_PAGES = 3;
 
-	Sound(AssetRollStream&&, const std::string&, SoundBank*);
-	Sound(const std::string &name, AssetRollStream*, int, std::int16_t*, unsigned long long);
+	Sound(Stream&&, const std::string&, SoundBank*);
+	Sound(const std::string &name, Stream*, int, std::int16_t*, unsigned long long);
 	Sound(Sound&) = delete;
 	Sound(Sound&&) = delete;
 	~Sound();

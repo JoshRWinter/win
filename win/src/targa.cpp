@@ -3,7 +3,7 @@
 namespace win
 {
 
-Targa::Targa(AssetRollStream raw)
+Targa::Targa(Stream raw)
 {
 	load_image_bytes(raw);
 }
@@ -28,7 +28,7 @@ const unsigned char *Targa::data() const
 	return bytes.get();
 }
 
-void Targa::load_image_bytes(AssetRollStream &raw)
+void Targa::load_image_bytes(Stream &raw)
 {
 	// compressed?
 	unsigned char image_type;

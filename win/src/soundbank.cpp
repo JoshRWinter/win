@@ -31,13 +31,13 @@ Sound &SoundBank::load(const char *name)
 		const bool need_to_decode = cached_sound->samples_count >= SoundPage::PAGE_SAMPLE_COUNT; // good enough heuristic
 		if(need_to_decode)
 		{
-			AssetRollStream stream = roll[name];
+			Stream stream = roll[name];
 			auto &sound = sounds.emplace_back(cached_sound->name, &stream, cached_sound->channels, cached_sound->samples.get(), cached_sound->samples_count);
 			return sound;
 		}
 		else
 		{
-			auto &sound = sounds.emplace_back(cached_sound->name, (AssetRollStream*)NULL, cached_sound->channels, cached_sound->samples.get(), cached_sound->samples_count);
+			auto &sound = sounds.emplace_back(cached_sound->name, (Stream*)NULL, cached_sound->channels, cached_sound->samples.get(), cached_sound->samples_count);
 			return sound;
 		}
 	}

@@ -75,7 +75,7 @@ AssetRoll::AssetRoll(const char *file)
 	}
 }
 
-AssetRollStream AssetRoll::operator[](const char *resourcename)
+Stream AssetRoll::operator[](const char *resourcename)
 {
 	std::lock_guard lock(guard);
 	// make sure the file exists
@@ -106,11 +106,11 @@ AssetRollStream AssetRoll::operator[](const char *resourcename)
 		if(uncompress(data, &uncompressed_size, compressed_data.get(), resource.size) != Z_OK)
 			win::bug("Could not inflate " + resource.name + " (" + resourcename + ")");
 
-		return AssetRollStream(new AssetRollStreamCompressed(data, resource.uncompressed_size));
+		return Stream(new AssetRollStreamCompressed(data, resource.uncompressed_size));
 	}
 	else
 	{
-		return AssetRollStream(new AssetRollStreamRaw(asset_roll_name, resource.begin, resource.size));
+		return Stream(new AssetRollStreamRaw(asset_roll_name, resource.begin, resource.size));
 	}
 }
 
@@ -124,36 +124,36 @@ bool AssetRoll::exists(const char *resourcename)
 	return false;
 }
 
-AssetRollStream::AssetRollStream(AssetRollStreamProvider *provider)
+Stream::Stream(StreamImpl *provider)
 	: inner(provider)
 {
 }
 
-unsigned long long AssetRollStream::size() const
+unsigned long long Stream::size() const
 {
 	return inner->size();
 }
 
-void AssetRollStream::read(void *buf, unsigned long long len)
+void Stream::read(void *buf, unsigned long long len)
 {
 	inner->read(buf, len);
 }
 
-std::unique_ptr<unsigned char[]> AssetRollStream::read_all()
+std::unique_ptr<unsigned char[]> Stream::read_all()
 {
 	return inner->read_all();
 }
 
-void AssetRollStream::seek(unsigned long long pos)
+void Stream::seek(unsigned long long pos)
 {
 	inner->seek(pos);
 }
 
-unsigned long long AssetRollStream::tell()
+unsigned long long Stream::tell()
 {
 	return inner->tell();
 }
 
-AssetRollStreamProvider::~AssetRollStreamProvider() {}
+StreamImpl::~StreamImpl() {}
 
 }

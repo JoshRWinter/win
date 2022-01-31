@@ -139,7 +139,7 @@ struct Vbo
 void load_extensions();
 unsigned load_shaders(const char*, int, const char*, int);
 unsigned load_shaders(const char*, const char*);
-unsigned load_shaders(AssetRollStream, AssetRollStream);
+unsigned load_shaders(Stream, Stream);
 void init_ortho(float *matrix, float, float, float, float);
 const char *key_name(Button);
 

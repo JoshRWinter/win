@@ -6,7 +6,7 @@
 namespace win
 {
 
-Atlas::Atlas(AssetRollStream raw, Mode fm)
+Atlas::Atlas(Stream raw, Mode fm)
 {
 	// check magic
 	char magic[6];

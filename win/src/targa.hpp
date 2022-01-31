@@ -8,7 +8,7 @@ class Targa
 {
 public:
 	Targa();
-	Targa(AssetRollStream);
+	Targa(Stream);
 	Targa(const Targa&) = delete;
 	Targa(Targa&&) = default;
 
@@ -21,7 +21,7 @@ public:
 	const unsigned char *data() const;;
 
 private:
-	void load_image_bytes(AssetRollStream&);
+	void load_image_bytes(Stream&);
 
 	unsigned short w, h;
 	unsigned char bits;

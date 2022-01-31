@@ -20,7 +20,7 @@ struct AssetRollResource
 	std::string name;
 };
 
-class AssetRollStream;
+class Stream;
 class AssetRoll
 {
 public:
@@ -31,7 +31,7 @@ public:
 	void operator=(const AssetRoll&) = delete;
 	AssetRoll &operator=(AssetRoll&&) = delete;
 
-	AssetRollStream operator[](const char*);
+	Stream operator[](const char*);
 	bool exists(const char*);
 
 private:
@@ -41,16 +41,16 @@ private:
 	std::ifstream stream;
 };
 
-class AssetRollStreamProvider;
-class AssetRollStream
+class StreamImpl;
+class Stream
 {
 	friend class AssetRoll;
 public:
-	AssetRollStream(AssetRollStreamProvider*);
-	AssetRollStream(const AssetRollStream&) = delete;
-	AssetRollStream(AssetRollStream&&) = default;
+	Stream(StreamImpl*);
+	Stream(const Stream&) = delete;
+	Stream(Stream&&) = default;
 
-	AssetRollStream &operator=(const AssetRollStream&) = delete;
+	Stream &operator=(const Stream&) = delete;
 
 	unsigned long long size() const;
 	void read(void*, unsigned long long len);
@@ -60,19 +60,19 @@ public:
 	unsigned long long tell();
 
 private:
-	std::unique_ptr<AssetRollStreamProvider> inner;
+	std::unique_ptr<StreamImpl> inner;
 };
 
-class AssetRollStreamProvider
+class StreamImpl
 {
 public:
-	AssetRollStreamProvider() = default;
-	AssetRollStreamProvider(const AssetRollStreamProvider&) = delete;
-	AssetRollStreamProvider(AssetRollStreamProvider&&) = delete;
-	virtual ~AssetRollStreamProvider() = 0;
+	StreamImpl() = default;
+	StreamImpl(const StreamImpl&) = delete;
+	StreamImpl(StreamImpl&&) = delete;
+	virtual ~StreamImpl() = 0;
 
-	void operator=(const AssetRollStreamProvider&) = delete;
-	void operator=(AssetRollStreamProvider&&) = delete;
+	void operator=(const StreamImpl&) = delete;
+	void operator=(StreamImpl&&) = delete;
 
 	virtual unsigned long long size() const = 0;
 	virtual void read(void*, unsigned long long) = 0;
@@ -81,7 +81,7 @@ public:
 	virtual unsigned long long tell() = 0;
 };
 
-class AssetRollStreamRaw : public AssetRollStreamProvider
+class AssetRollStreamRaw : public StreamImpl
 {
 public:
 	AssetRollStreamRaw(const std::string&, unsigned long long, unsigned long long);
@@ -104,7 +104,7 @@ private:
 	unsigned long long length;
 };
 
-class AssetRollStreamCompressed : public AssetRollStreamProvider
+class AssetRollStreamCompressed : public StreamImpl
 {
 public:
 	AssetRollStreamCompressed(unsigned char*, unsigned long long);
