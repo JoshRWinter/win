@@ -241,7 +241,7 @@ static std::string pick_file(bool open, std::string default_file_name, std::stri
 	ofn.lpstrInitialDir = NULL;
 	ofn.lpstrInitialDir = NULL;
 	ofn.lpstrTitle = open ? "Open file" : "Save file";
-	ofn.Flags = OFN_DONTADDTORECENT | OFN_ENABLESIZING | OFN_EXPLORER;
+	ofn.Flags = OFN_DONTADDTORECENT | OFN_ENABLESIZING | OFN_EXPLORER | OFN_NOCHANGEDIR;
 	ofn.nFileOffset = 0;
 	ofn.nFileExtension = 0;
 	ofn.lpstrDefExt = !open ? ext_filter.c_str() : NULL;
