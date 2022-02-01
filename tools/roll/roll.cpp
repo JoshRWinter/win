@@ -15,7 +15,6 @@ using namespace std::string_literals;
 
 static constexpr const char *const helptext =
 "Asset Roll\n"
-"Usage: roll output-file.roll inputfile [...]\n"
 "       roll output-file.roll --recipe recipe-file\n"
 "       roll --inspect input.roll\n"
 "       roll --help\n"
