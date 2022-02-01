@@ -19,7 +19,7 @@ static std::string write(const std::string &t)
 
 	cmds.push_back(t);
 
-	const std::string tmpfile = std::filesystem::temp_directory_path() / "recipe-parser-tests.txt";
+	const std::string tmpfile = (std::filesystem::temp_directory_path() / "recipe-parser-tests.txt").string();
 	std::ofstream out(tmpfile);
 	if (!out)
 		throw std::runtime_error("couldn't write to tmp directory");

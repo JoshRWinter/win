@@ -279,12 +279,6 @@ static int go(int argc, char **argv)
 	for (int i = 0; i < argc; ++i)
 		args.emplace_back(argv[i]);
 
-	if(args.size() < 2 || (args.size() == 2 && (args.at(1) == "--help" || args.at(1) == "-h")))
-	{
-		std::cout << helptext << std::endl;
-		return 0;
-	}
-
 	// collect the arguments
 	std::vector<RollItem> infiles;
 
@@ -321,15 +315,8 @@ static int go(int argc, char **argv)
 	// create a roll file from cmd args
 	else
 	{
-		const std::string out_file = args.at(1);
-
-		for(int i = 2; i < args.size(); ++i)
-		{
-			const std::string real_file = std::filesystem::path(out_file).parent_path() / args.at(i);
-			const bool compress = compress_file_ext(std::filesystem::path(real_file).extension());
-
-			infiles.emplace_back(real_file, args.at(i), compress);
-		}
+		std::cout << helptext << std::endl;
+		return 0;
 	}
 
 	create(args.at(1), infiles);

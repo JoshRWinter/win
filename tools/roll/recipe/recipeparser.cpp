@@ -1,4 +1,5 @@
 #include <fstream>
+#include <cctype>
 
 #include "recipeparser.hpp"
 

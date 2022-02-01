@@ -70,7 +70,7 @@ void Recipe::process_root_line(const RecipeInputLine &line)
 	if (!std::filesystem::exists(roll_file) || std::filesystem::last_write_time(real_file) > std::filesystem::last_write_time(roll_file))
 		needs_update = true;
 
-	items.emplace_back(real_file, recorded_file, compress);
+	items.emplace_back(real_file.string(), recorded_file.string(), compress);
 }
 
 void Recipe::process_svg2tga_section(const RecipeInputSection &section)
@@ -141,7 +141,7 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 			needs_update = true;
 
 		if (!exclude)
-			items.emplace_back(converted_tga, recorded_converted_tga, true);
+			items.emplace_back(converted_tga.string(), recorded_converted_tga.string(), true);
 	}
 }
 
@@ -198,7 +198,7 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 		if (!std::filesystem::exists(roll_file) || (real_atlas_file_exists && std::filesystem::last_write_time(real_atlas_file) > std::filesystem::last_write_time(roll_file)))
 			needs_update = true;
 
-		items.emplace_back(real_atlas_file, recorded_atlas_file, true);
+		items.emplace_back(real_atlas_file.string(), recorded_atlas_file.string(), true);
 	}
 }
 
@@ -228,6 +228,9 @@ std::vector<std::string> Recipe::run_cmd(const std::string &cmd, bool echo)
 
 #if defined __linux__
 	FILE *file = popen(cmd.c_str(), "r");
+#elif defined _WIN32
+	FILE *file = _popen(cmd.c_str(), "r");
+#endif
 	if (file == NULL)
 		throw std::runtime_error("Couldn't run command");
 	char buf[500];
@@ -244,10 +247,12 @@ std::vector<std::string> Recipe::run_cmd(const std::string &cmd, bool echo)
 	}
 
 	int exit_code;
+#if defined __linux__
 	if ((exit_code = pclose(file)) != 0)
-		throw std::runtime_error("Command failed with exit code " + std::to_string(exit_code));
 #elif defined _WIN32
+	if ((exit_code = _pclose(file)) != 0)
 #endif
+		throw std::runtime_error("Command failed with exit code " + std::to_string(exit_code));
 
 	return output;
 }
