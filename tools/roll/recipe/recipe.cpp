@@ -98,6 +98,9 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		const std::filesystem::path real_file = get_real_file_path(recorded_file);
 		++token_index;
 
+		if (!std::filesystem::is_regular_file(real_file))
+			throw std::runtime_error(std::to_string(line.line_number) + ": \"" + real_file.string() + "\" is not a regular file");
+
 		const std::string width_string = line.tokens.at(token_index);
 		++token_index;
 		const std::string height_string = line.tokens.at(token_index);
@@ -115,7 +118,7 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		if (!real_file.has_extension() || (real_file.extension() != ".svg" && real_file.extension() != ".SVG"))
 			throw std::runtime_error(std::to_string(line.line_number) + ": Expected .svg file \"" + real_file.string() + "\"");
 
-		const std::filesystem::path converted_png = get_temp_file_path(".png");
+		const std::filesystem::path converted_png = (real_file.parent_path() / real_file.stem()).string() + ".png";
 		const std::filesystem::path converted_tga = (real_file.parent_path() / real_file.stem()).string() + ".tga";
 		const std::filesystem::path recorded_converted_tga = (recorded_file.parent_path() / recorded_file.stem()).string() + ".tga";
 		const bool converted_tga_exists = std::filesystem::exists(converted_tga);
@@ -164,6 +167,12 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 		const std::filesystem::path recorded_atlas_file = line.tokens.at(1);
 		const std::filesystem::path real_atlas_file = get_real_file_path(recorded_atlas_file);
 
+		if (!std::filesystem::is_regular_file(real_layout_file))
+			throw std::runtime_error(std::to_string(line.line_number) + ": \"" + real_layout_file.string() + "\" is not a regular file");
+
+		if (!std::filesystem::is_regular_file(real_atlas_file))
+			throw std::runtime_error(std::to_string(line.line_number) + ": \"" + real_atlas_file.string() + "\" is not a regular file");
+
 		const bool real_atlas_file_exists = std::filesystem::exists(real_atlas_file);
 
 		if (!std::filesystem::exists(real_layout_file))
@@ -205,18 +214,6 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 std::filesystem::path Recipe::get_real_file_path(const std::filesystem::path &file)
 {
 	return std::filesystem::relative(std::filesystem::canonical(recipe_file).parent_path() / file);
-}
-
-std::filesystem::path Recipe::get_temp_file_path(const std::string &ext)
-{
-	std::string file;
-	for (int i = 0; i < 10; ++i)
-	{
-		const char c = std::uniform_int_distribution<int>('a', 'z')(generator);
-		file += c;
-	}
-
-	return std::filesystem::temp_directory_path() / (file + ext);
 }
 
 std::vector<std::string> Recipe::run_cmd(const std::string &cmd, bool echo)
