@@ -98,9 +98,6 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		const std::filesystem::path real_file = get_real_file_path(recorded_file);
 		++token_index;
 
-		if (!std::filesystem::is_regular_file(real_file))
-			throw std::runtime_error(std::to_string(line.line_number) + ": \"" + real_file.string() + "\" is not a regular file");
-
 		const std::string width_string = line.tokens.at(token_index);
 		++token_index;
 		const std::string height_string = line.tokens.at(token_index);
@@ -118,8 +115,8 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		if (!real_file.has_extension() || (real_file.extension() != ".svg" && real_file.extension() != ".SVG"))
 			throw std::runtime_error(std::to_string(line.line_number) + ": Expected .svg file \"" + real_file.string() + "\"");
 
-		const std::filesystem::path converted_png = (real_file.parent_path() / real_file.stem()).string() + ".png";
-		const std::filesystem::path converted_tga = (real_file.parent_path() / real_file.stem()).string() + ".tga";
+		const std::filesystem::path converted_png = (real_file.parent_path() / "recipe-generated.").string() + real_file.stem().string() + ".png";
+		const std::filesystem::path converted_tga = (real_file.parent_path() / "recipe-generated.").string() + real_file.stem().string() + ".tga";
 		const std::filesystem::path recorded_converted_tga = (recorded_file.parent_path() / recorded_file.stem()).string() + ".tga";
 		const bool converted_tga_exists = std::filesystem::exists(converted_tga);
 
@@ -136,8 +133,6 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 
 			run_cmd("rsvg-convert --width " + width_string + " --height " + height_string + " " + real_file.string() + " > " + converted_png.string());
 			run_cmd("convert " + converted_png.string() + " " + converted_tga.string());
-			std::cout << std::endl;
-			std::filesystem::remove(converted_png);
 		}
 
 		if (!std::filesystem::exists(roll_file) || (!exclude && std::filesystem::last_write_time(converted_tga) > std::filesystem::last_write_time(roll_file)))
@@ -165,13 +160,8 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 		const std::filesystem::path real_layout_file = get_real_file_path(layout_file);
 
 		const std::filesystem::path recorded_atlas_file = line.tokens.at(1);
-		const std::filesystem::path real_atlas_file = get_real_file_path(recorded_atlas_file);
-
-		if (!std::filesystem::is_regular_file(real_layout_file))
-			throw std::runtime_error(std::to_string(line.line_number) + ": \"" + real_layout_file.string() + "\" is not a regular file");
-
-		if (!std::filesystem::is_regular_file(real_atlas_file))
-			throw std::runtime_error(std::to_string(line.line_number) + ": \"" + real_atlas_file.string() + "\" is not a regular file");
+		const std::filesystem::path original_real_atlas_file = get_real_file_path(recorded_atlas_file);
+		const std::filesystem::path real_atlas_file = (original_real_atlas_file.parent_path() / "recipe-generated.").string() + original_real_atlas_file.filename().string();
 
 		const bool real_atlas_file_exists = std::filesystem::exists(real_atlas_file);
 
@@ -201,7 +191,6 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 		{
 			needs_update = true;
 			run_cmd("atlasizer " + real_layout_file.string() + " " + real_atlas_file.string());
-			std::cout << std::endl;
 		}
 
 		if (!std::filesystem::exists(roll_file) || (real_atlas_file_exists && std::filesystem::last_write_time(real_atlas_file) > std::filesystem::last_write_time(roll_file)))
