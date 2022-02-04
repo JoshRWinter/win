@@ -2,11 +2,18 @@
 #define WIN_GL_HPP
 
 #include <win/win.hpp>
-#include <win/stream.hpp>
 
 #ifdef WIN_USE_OPENGL
 
+#include <win/stream.hpp>
+
+#if defined WINPLAT_LINUX
 #include <GL/glx.h>
+#elif defined WINPLAT_WINDOWS
+#include <GL/GL.h>
+#include <GL/glext.h>
+#include <GL/wglext.h>
+#endif
 
 inline PFNGLCREATESHADERPROC glCreateShader;
 inline PFNGLSHADERSOURCEPROC glShaderSource;

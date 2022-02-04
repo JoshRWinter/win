@@ -1,4 +1,4 @@
-#include <string.h>
+#include <string>
 
 #include <win/win.hpp>
 #include <win/targa.hpp>

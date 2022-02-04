@@ -1,8 +1,8 @@
-#include <string.h>
-
 #include <win/gl.hpp>
 
 #ifdef WIN_USE_OPENGL
+
+#include <string.h>
 
 namespace win
 {
@@ -123,6 +123,7 @@ GLuint load_gl_shaders(const std::string &vertex, const std::string &fragment)
 	return program;
 }
 
+const char *v = "#version 330 core\nvoid main(){}";
 GLuint load_gl_shaders(Stream vertex, Stream fragment)
 {
 	// yeesh
@@ -136,8 +137,8 @@ GLuint load_gl_shaders(Stream vertex, Stream fragment)
     memcpy(vertexbuf_str.get(), vertexbuf.get(), vertex.size());
     memcpy(fragbuf_str.get(), fragbuf.get(), fragment.size());
 
-	vertexbuf[vertex.size()] = 0;
-	fragbuf[fragment.size()] = 0;
+	vertexbuf_str[vertex.size()] = 0;
+	fragbuf_str[fragment.size()] = 0;
 
 	return load_gl_shaders(vertexbuf_str.get(), fragbuf_str.get());
 }

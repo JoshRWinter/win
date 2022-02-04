@@ -9,12 +9,6 @@
 
 #include <win/stream.hpp>
 
-#if defined WINPLAT_LINUX
-#include <pulse/pulseaudio.h>
-#elif defined WINPLAT_WINDOWS
-#include <dsound.h>
-#endif
-
 namespace win
 {
 class Sound;

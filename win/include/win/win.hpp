@@ -5,16 +5,20 @@
 #if defined __linux__
 #define WINPLAT_LINUX
 #define WIN_USE_OPENGL
+#include <iostream>
+
 #elif defined _WIN32
 #define WINPLAT_WINDOWS
 #define WIN_USE_OPENGL
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
+
 #else
 #error "unsupported platform"
 #endif
 
-#include <iostream>
+#include <string>
 
 #define WIN_NO_COPY_MOVE(classname) \
 	classname(const classname&) = delete; \

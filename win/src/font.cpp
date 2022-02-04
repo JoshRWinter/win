@@ -1,9 +1,17 @@
+#include <string>
+#include <iostream>
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
 #include <win/win.hpp>
 #include <win/font.hpp>
 #include <win/fontrenderer.hpp>
+
+#ifdef WIN_USE_OPENGL
+#include <GL/GL.h>
+#include <GL/glext.h>
+#endif
 
 namespace win
 {

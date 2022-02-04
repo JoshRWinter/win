@@ -1,8 +1,9 @@
 #include <win/win.hpp>
-#include <win/soundengine.hpp>
 
 #if defined WINPLAT_LINUX
 #include <unistd.h>
+
+#include <win/soundengine.hpp>
 
 static void callback_connect(pa_context*, void *loop)
 {

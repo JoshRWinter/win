@@ -4,13 +4,17 @@
 #include <list>
 #include <memory>
 
-#include <win/soundbank.hpp>
+#include <win/win.hpp>
 
 #if defined WINPLAT_LINUX
 #include <pulse/pulseaudio.h>
 #elif defined WINPLAT_WINDOWS
+#include <mmsystem.h>
 #include <dsound.h>
 #endif
+
+#include <win/soundbank.hpp>
+
 
 namespace win
 {
@@ -126,12 +130,9 @@ class SoundEngine
 
 public:
 	SoundEngine(Display&, AssetRoll&, SoundConfigFn);
-	SoundEngine(const SoundEngine&) = delete;
-	SoundEngine(SoundEngine&&) = delete;
 	~SoundEngine();
 
-	void operator=(const SoundEngine&) = delete;
-	void operator=(SoundEngine&&) = delete;
+	WIN_NO_COPY_MOVE(SoundEngine);
 
 	void process();
 
