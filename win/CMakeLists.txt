@@ -9,26 +9,32 @@ add_library(win STATIC
 	src/soundengine_linux.cpp
 	src/soundengine_windows.cpp
 	src/soundbank.cpp
+	src/gl.cpp
 	src/display_linux.cpp
 	src/display_windows.cpp
 	src/font.cpp
+	src/fontrenderer.cpp
 	src/assetroll.cpp
 	src/assetrollstreamraw.cpp
 	src/assetrollstreamcompressed.cpp
 	src/targa.cpp
 	src/utility.cpp
 
-	src/sound.hpp
-	src/atlas.hpp
-	src/soundengine.hpp
-	src/soundbank.hpp
-	src/display.hpp
-	src/font.hpp
-	src/assetroll.hpp
-	src/targa.hpp
-	src/utility.hpp
-	src/event.hpp
-	src/objectpool.hpp
+	include/win/win.hpp
+	include/win/sound.hpp
+	include/win/atlas.hpp
+	include/win/soundengine.hpp
+	include/win/soundbank.hpp
+	include/win/gl.hpp
+	include/win/display.hpp
+	include/win/font.hpp
+	include/win/fontrenderer.hpp
+	include/win/stream.hpp
+	include/win/assetroll.hpp
+	include/win/targa.hpp
+	include/win/utility.hpp
+	include/win/event.hpp
+	include/win/objectpool.hpp
 	)
 
 if(WIN32)

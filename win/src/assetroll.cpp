@@ -1,11 +1,11 @@
 #include <fstream>
-#include <memory>
 #include <string>
 
 #include <string.h>
 #include <zlib.h>
 
-#include <win.h>
+#include <win/win.hpp>
+#include <win/assetroll.hpp>
 
 using namespace std::string_literals;
 

@@ -1,4 +1,5 @@
-#include <win.h>
+#include <win/win.hpp>
+#include <win/soundengine.hpp>
 
 #if defined WINPLAT_LINUX
 #include <unistd.h>

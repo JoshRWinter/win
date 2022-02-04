@@ -1,4 +1,7 @@
-#include <win.h>
+#include <string.h>
+
+#include <win/win.hpp>
+#include <win/targa.hpp>
 
 namespace win
 {

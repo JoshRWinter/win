@@ -1,9 +1,10 @@
-#ifndef WIN_AUDIO_ENGINE_HPP
-#define WIN_AUDIO_ENGINE_HPP
+#ifndef WIN_SOUND_ENGINE_HPP
+#define WIN_SOUND_ENGINE_HPP
 
 #include <list>
-#include <chrono>
 #include <memory>
+
+#include <win/soundbank.hpp>
 
 #if defined WINPLAT_LINUX
 #include <pulse/pulseaudio.h>

@@ -1,6 +1,12 @@
 #ifndef WIN_SOUND_BANK_HPP
 #define WIN_SOUND_BANK_HPP
 
+#include <win/win.hpp>
+
+#include <win/sound.hpp>
+#include <win/assetroll.hpp>
+#include <memory>
+
 namespace win
 {
 

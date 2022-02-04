@@ -1,5 +1,5 @@
-#ifndef OBJECT_POOL_HPP
-#define OBJECT_POOL_HPP
+#ifndef WIN_OBJECT_POOL_HPP
+#define WIN_OBJECT_POOL_HPP
 
 #include <vector>
 #include <memory>

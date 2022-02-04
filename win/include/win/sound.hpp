@@ -1,5 +1,5 @@
-#ifndef WIN_APACK_HPP
-#define WIN_APACK_HPP
+#ifndef WIN_SOUND_HPP
+#define WIN_SOUND_HPP
 
 #include <thread>
 #include <memory>
@@ -7,7 +7,7 @@
 #include <mutex>
 #include <list>
 
-#include <win.h>
+#include <win/stream.hpp>
 
 #if defined WINPLAT_LINUX
 #include <pulse/pulseaudio.h>

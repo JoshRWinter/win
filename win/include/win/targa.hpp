@@ -1,5 +1,7 @@
-#ifndef WIN_TEXTURE_HPP
-#define WIN_TEXTURE_HPP
+#ifndef WIN_TARGA_HPP
+#define WIN_TARGA_HPP
+
+#include <win/stream.hpp>
 
 namespace win
 {
