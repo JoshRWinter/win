@@ -1,7 +1,7 @@
-#include <win/win.hpp>
-#include <win/assetroll.hpp>
-
 #include <string.h>
+
+#include <win/win.hpp>
+#include <win/assetrollstreamcompressed.hpp>
 
 namespace win
 {

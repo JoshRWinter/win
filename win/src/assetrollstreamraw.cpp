@@ -1,5 +1,5 @@
 #include <win/win.hpp>
-#include <win/assetroll.hpp>
+#include <win/assetrollstreamraw.hpp>
 
 namespace win
 {
@@ -9,6 +9,9 @@ AssetRollStreamRaw::AssetRollStreamRaw(const std::string &name, unsigned long lo
 	, begin(begin)
 	, length(length)
 {
+	if (!stream)
+		win::bug("Couldn't open \"" + name + "\" for reading");
+
 	stream.seekg(begin);
 }
 

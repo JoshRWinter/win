@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(win STATIC
 	src/sound.cpp
 	src/atlas.cpp
+	src/stream.cpp
 	src/soundengine_linux.cpp
 	src/soundengine_windows.cpp
 	src/soundbank.cpp
@@ -32,6 +33,8 @@ add_library(win STATIC
 	include/win/fontrenderer.hpp
 	include/win/stream.hpp
 	include/win/assetroll.hpp
+	include/win/assetrollstreamraw.hpp
+	include/win/assetrollstreamcompressed.hpp
 	include/win/targa.hpp
 	include/win/utility.hpp
 	include/win/event.hpp
