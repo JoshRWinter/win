@@ -2,6 +2,7 @@
 #define WIN_STREAM_HPP
 
 #include <memory>
+#include <string>
 
 namespace win
 {
@@ -20,6 +21,7 @@ public:
 	virtual unsigned long long size() const = 0;
 	virtual void read(void*, unsigned long long) = 0;
 	virtual std::unique_ptr<unsigned char[]> read_all() = 0;
+	virtual std::string read_all_as_string() = 0;
 	virtual void seek(unsigned long long) = 0;
 	virtual unsigned long long tell() = 0;
 };
@@ -36,8 +38,8 @@ public:
 
 	unsigned long long size() const;
 	void read(void*, unsigned long long len);
-	void read_all(void*);
 	std::unique_ptr<unsigned char[]> read_all();
+	std::string read_all_as_string();
 	void seek(unsigned long long pos);
 	unsigned long long tell();
 

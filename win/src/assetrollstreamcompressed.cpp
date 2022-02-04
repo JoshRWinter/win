@@ -34,6 +34,14 @@ std::unique_ptr<unsigned char[]> AssetRollStreamCompressed::read_all()
 	return buf;
 }
 
+std::string AssetRollStreamCompressed::read_all_as_string()
+{
+	std::unique_ptr<char[]> buf(new char[length + 1]);
+	memcpy(buf.get(), buffer.get(), length);
+	buf[length] = 0;
+	return buf.get();
+}
+
 void AssetRollStreamCompressed::seek(unsigned long long pos)
 {
 	if (pos > length)

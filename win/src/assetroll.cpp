@@ -144,6 +144,11 @@ std::unique_ptr<unsigned char[]> Stream::read_all()
 	return inner->read_all();
 }
 
+std::string Stream::read_all_as_string()
+{
+	return inner->read_all_as_string();
+}
+
 void Stream::seek(unsigned long long pos)
 {
 	inner->seek(pos);

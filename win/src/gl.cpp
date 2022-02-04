@@ -126,21 +126,7 @@ GLuint load_gl_shaders(const std::string &vertex, const std::string &fragment)
 const char *v = "#version 330 core\nvoid main(){}";
 GLuint load_gl_shaders(Stream vertex, Stream fragment)
 {
-	// yeesh
-
-    auto vertexbuf = vertex.read_all();
-    auto fragbuf = fragment.read_all();
-
-	auto vertexbuf_str = std::make_unique<char[]>(vertex.size() + 1);
-	auto fragbuf_str = std::make_unique<char[]>(fragment.size() + 1);
-
-    memcpy(vertexbuf_str.get(), vertexbuf.get(), vertex.size());
-    memcpy(fragbuf_str.get(), fragbuf.get(), fragment.size());
-
-	vertexbuf_str[vertex.size()] = 0;
-	fragbuf_str[fragment.size()] = 0;
-
-	return load_gl_shaders(vertexbuf_str.get(), fragbuf_str.get());
+	return load_gl_shaders(vertex.read_all_as_string(), fragment.read_all_as_string());
 }
 
 }
