@@ -1,8 +1,18 @@
-#include <win.h>
+#include <win/win.hpp>
 
 #ifdef WINPLAT_LINUX
 
+#include <X11/Xlib.h>
+#include <X11/XKBlib.h>
 #include <X11/Xatom.h>
+#include <GL/glx.h>
+
+#include <win/event.hpp>
+#include <win/display.hpp>
+
+#ifdef WIN_USE_OPENGL
+#include <win/gl.hpp>
+#endif
 
 typedef GLXContext (*glXCreateContextAttribsARBProc)(::Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
@@ -88,126 +98,126 @@ static win::Button keystring_to_button(const char *const keystring)
 {
 	switch(keystring_hash(keystring))
 	{
-	case keystring_hash("MS1\0"): return win::Button::MOUSE_LEFT;
-	case keystring_hash("MS2\0"): return win::Button::MOUSE_RIGHT;
-	case keystring_hash("MS3\0"): return win::Button::MOUSE_MIDDLE;
-	case keystring_hash("MS4\0"): return win::Button::MOUSE4;
-	case keystring_hash("MS5\0"): return win::Button::MOUSE5;
-	case keystring_hash("MS6\0"): return win::Button::MOUSE6;
-	case keystring_hash("MS7\0"): return win::Button::MOUSE7;
+	case keystring_hash("MS1\0"): return win::Button::mouse_left;
+	case keystring_hash("MS2\0"): return win::Button::mouse_right;
+	case keystring_hash("MS3\0"): return win::Button::mouse_middle;
+	case keystring_hash("MS4\0"): return win::Button::mouse4;
+	case keystring_hash("MS5\0"): return win::Button::mouse5;
+	case keystring_hash("MS6\0"): return win::Button::mouse6;
+	case keystring_hash("MS7\0"): return win::Button::mouse7;
 
-	case keystring_hash("AC01"): return win::Button::A;
-	case keystring_hash("AB05"): return win::Button::B;
-	case keystring_hash("AB03"): return win::Button::C;
-	case keystring_hash("AC03"): return win::Button::D;
-	case keystring_hash("AD03"): return win::Button::E;
-	case keystring_hash("AC04"): return win::Button::F;
-	case keystring_hash("AC05"): return win::Button::G;
-	case keystring_hash("AC06"): return win::Button::H;
-	case keystring_hash("AD08"): return win::Button::I;
-	case keystring_hash("AC07"): return win::Button::J;
-	case keystring_hash("AC08"): return win::Button::K;
-	case keystring_hash("AC09"): return win::Button::L;
-	case keystring_hash("AB07"): return win::Button::M;
-	case keystring_hash("AB06"): return win::Button::N;
-	case keystring_hash("AD09"): return win::Button::O;
-	case keystring_hash("AD10"): return win::Button::P;
-	case keystring_hash("AD01"): return win::Button::Q;
-	case keystring_hash("AD04"): return win::Button::R;
-	case keystring_hash("AC02"): return win::Button::S;
-	case keystring_hash("AD05"): return win::Button::T;
-	case keystring_hash("AD07"): return win::Button::U;
-	case keystring_hash("AB04"): return win::Button::V;
-	case keystring_hash("AD02"): return win::Button::W;
-	case keystring_hash("AB02"): return win::Button::X;
-	case keystring_hash("AD06"): return win::Button::Y;
-	case keystring_hash("AB01"): return win::Button::Z;
+	case keystring_hash("AC01"): return win::Button::a;
+	case keystring_hash("AB05"): return win::Button::b;
+	case keystring_hash("AB03"): return win::Button::c;
+	case keystring_hash("AC03"): return win::Button::d;
+	case keystring_hash("AD03"): return win::Button::e;
+	case keystring_hash("AC04"): return win::Button::f;
+	case keystring_hash("AC05"): return win::Button::g;
+	case keystring_hash("AC06"): return win::Button::h;
+	case keystring_hash("AD08"): return win::Button::i;
+	case keystring_hash("AC07"): return win::Button::j;
+	case keystring_hash("AC08"): return win::Button::k;
+	case keystring_hash("AC09"): return win::Button::l;
+	case keystring_hash("AB07"): return win::Button::m;
+	case keystring_hash("AB06"): return win::Button::n;
+	case keystring_hash("AD09"): return win::Button::o;
+	case keystring_hash("AD10"): return win::Button::p;
+	case keystring_hash("AD01"): return win::Button::q;
+	case keystring_hash("AD04"): return win::Button::r;
+	case keystring_hash("AC02"): return win::Button::s;
+	case keystring_hash("AD05"): return win::Button::t;
+	case keystring_hash("AD07"): return win::Button::u;
+	case keystring_hash("AB04"): return win::Button::v;
+	case keystring_hash("AD02"): return win::Button::w;
+	case keystring_hash("AB02"): return win::Button::x;
+	case keystring_hash("AD06"): return win::Button::y;
+	case keystring_hash("AB01"): return win::Button::z;
 
-	case keystring_hash("AE10"): return win::Button::D0;
-	case keystring_hash("AE01"): return win::Button::D1;
-	case keystring_hash("AE02"): return win::Button::D2;
-	case keystring_hash("AE03"): return win::Button::D3;
-	case keystring_hash("AE04"): return win::Button::D4;
-	case keystring_hash("AE05"): return win::Button::D5;
-	case keystring_hash("AE06"): return win::Button::D6;
-	case keystring_hash("AE07"): return win::Button::D7;
-	case keystring_hash("AE08"): return win::Button::D8;
-	case keystring_hash("AE09"): return win::Button::D9;
+	case keystring_hash("AE10"): return win::Button::d0;
+	case keystring_hash("AE01"): return win::Button::d1;
+	case keystring_hash("AE02"): return win::Button::d2;
+	case keystring_hash("AE03"): return win::Button::d3;
+	case keystring_hash("AE04"): return win::Button::d4;
+	case keystring_hash("AE05"): return win::Button::d5;
+	case keystring_hash("AE06"): return win::Button::d6;
+	case keystring_hash("AE07"): return win::Button::d7;
+	case keystring_hash("AE08"): return win::Button::d8;
+	case keystring_hash("AE09"): return win::Button::d9;
 
-	case keystring_hash("TLDE"): return win::Button::BACKTICK;
-	case keystring_hash("AE11"): return win::Button::DASH;
-	case keystring_hash("AE12"): return win::Button::EQUALS;
-	case keystring_hash("AD11"): return win::Button::LBRACKET;
-	case keystring_hash("AD12"): return win::Button::RBRACKET;
-	case keystring_hash("AC10"): return win::Button::SEMICOLON;
-	case keystring_hash("AC11"): return win::Button::APOSTROPHE;
-	case keystring_hash("AB08"): return win::Button::COMMA;
-	case keystring_hash("AB09"): return win::Button::PERIOD;
-	case keystring_hash("AB10"): return win::Button::SLASH;
-	case keystring_hash("BKSL"): return win::Button::BACKSLASH;
+	case keystring_hash("TLDE"): return win::Button::backtick;
+	case keystring_hash("AE11"): return win::Button::dash;
+	case keystring_hash("AE12"): return win::Button::equals;
+	case keystring_hash("AD11"): return win::Button::lbracket;
+	case keystring_hash("AD12"): return win::Button::rbracket;
+	case keystring_hash("AC10"): return win::Button::semicolon;
+	case keystring_hash("AC11"): return win::Button::apostrophe;
+	case keystring_hash("AB08"): return win::Button::comma;
+	case keystring_hash("AB09"): return win::Button::period;
+	case keystring_hash("AB10"): return win::Button::slash;
+	case keystring_hash("BKSL"): return win::Button::backslash;
 
-	case keystring_hash("FK01"): return win::Button::F1;
-	case keystring_hash("FK02"): return win::Button::F2;
-	case keystring_hash("FK03"): return win::Button::F3;
-	case keystring_hash("FK04"): return win::Button::F4;
-	case keystring_hash("FK05"): return win::Button::F5;
-	case keystring_hash("FK06"): return win::Button::F6;
-	case keystring_hash("FK07"): return win::Button::F7;
-	case keystring_hash("FK08"): return win::Button::F8;
-	case keystring_hash("FK09"): return win::Button::F9;
-	case keystring_hash("FK10"): return win::Button::F10;
-	case keystring_hash("FK11"): return win::Button::F11;
-	case keystring_hash("FK12"): return win::Button::F12;
+	case keystring_hash("FK01"): return win::Button::f1;
+	case keystring_hash("FK02"): return win::Button::f2;
+	case keystring_hash("FK03"): return win::Button::f3;
+	case keystring_hash("FK04"): return win::Button::f4;
+	case keystring_hash("FK05"): return win::Button::f5;
+	case keystring_hash("FK06"): return win::Button::f6;
+	case keystring_hash("FK07"): return win::Button::f7;
+	case keystring_hash("FK08"): return win::Button::f8;
+	case keystring_hash("FK09"): return win::Button::f9;
+	case keystring_hash("FK10"): return win::Button::f10;
+	case keystring_hash("FK11"): return win::Button::f11;
+	case keystring_hash("FK12"): return win::Button::f12;
 
-	case keystring_hash("ESC\0"): return win::Button::ESC;
-	case keystring_hash("PRSC"): return win::Button::PRINT_SCR;
-	case keystring_hash("PAUS"): return win::Button::PAUSE_BREAK;
-	case keystring_hash("INS\0"): return win::Button::INSERT;
-	case keystring_hash("DELE"): return win::Button::DELETE;
-	case keystring_hash("HOME"): return win::Button::HOME;
-	case keystring_hash("PGUP"): return win::Button::PAGE_UP;
-	case keystring_hash("PGDN"): return win::Button::PAGE_DOWN;
-	case keystring_hash("END\0"): return win::Button::END;
-	case keystring_hash("BKSP"): return win::Button::BACKSPACE;
-	case keystring_hash("RTRN"): return win::Button::RETURN;
-	case keystring_hash("KPEN"): return win::Button::ENTER;
-	case keystring_hash("LFSH"): return win::Button::LSHIFT;
-	case keystring_hash("RTSH"): return win::Button::RSHIFT;
-	case keystring_hash("LCTL"): return win::Button::LCTRL;
-	case keystring_hash("RCTL"): return win::Button::RCTRL;
-	case keystring_hash("LALT"): return win::Button::LALT;
-	case keystring_hash("RALT"): return win::Button::RALT;
-	case keystring_hash("SPCE"): return win::Button::SPACE;
-	case keystring_hash("COMP"): return win::Button::MENU;
-	case keystring_hash("LWIN"): return win::Button::LMETA;
-	case keystring_hash("RWIN"): return win::Button::RMETA;
+	case keystring_hash("ESC\0"): return win::Button::esc;
+	case keystring_hash("PRSC"): return win::Button::print_scr;
+	case keystring_hash("PAUS"): return win::Button::pause_break;
+	case keystring_hash("INS\0"): return win::Button::insert;
+	case keystring_hash("DELE"): return win::Button::del;
+	case keystring_hash("HOME"): return win::Button::home;
+	case keystring_hash("PGUP"): return win::Button::page_up;
+	case keystring_hash("PGDN"): return win::Button::page_down;
+	case keystring_hash("END\0"): return win::Button::end;
+	case keystring_hash("BKSP"): return win::Button::backspace;
+	case keystring_hash("RTRN"): return win::Button::ret;
+	case keystring_hash("KPEN"): return win::Button::enter;
+	case keystring_hash("LFSH"): return win::Button::lshift;
+	case keystring_hash("RTSH"): return win::Button::rshift;
+	case keystring_hash("LCTL"): return win::Button::lctrl;
+	case keystring_hash("RCTL"): return win::Button::rctrl;
+	case keystring_hash("LALT"): return win::Button::lalt;
+	case keystring_hash("RALT"): return win::Button::ralt;
+	case keystring_hash("SPCE"): return win::Button::space;
+	case keystring_hash("COMP"): return win::Button::menu;
+	case keystring_hash("LWIN"): return win::Button::lmeta;
+	case keystring_hash("RWIN"): return win::Button::rmeta;
 
-	case keystring_hash("UP\0\0"): return win::Button::UP;
-	case keystring_hash("LEFT"): return win::Button::LEFT;
-	case keystring_hash("RGHT"): return win::Button::RIGHT;
-	case keystring_hash("DOWN"): return win::Button::DOWN;
+	case keystring_hash("UP\0\0"): return win::Button::up;
+	case keystring_hash("LEFT"): return win::Button::left;
+	case keystring_hash("RGHT"): return win::Button::right;
+	case keystring_hash("DOWN"): return win::Button::down;
 
-	case keystring_hash("CAPS"): return win::Button::CAPSLOCK;
-	case keystring_hash("TAB\0"): return win::Button::TAB;
-	case keystring_hash("NMLK"): return win::Button::NUM_LOCK;
-	case keystring_hash("KPDV"): return win::Button::NUM_SLASH;
-	case keystring_hash("KPMU"): return win::Button::NUM_MULTIPLY;
-	case keystring_hash("KPSU"): return win::Button::NUM_MINUS;
-	case keystring_hash("KPAD"): return win::Button::NUM_PLUS;
-	case keystring_hash("KPDL"): return win::Button::NUM_DEL;
+	case keystring_hash("CAPS"): return win::Button::capslock;
+	case keystring_hash("TAB\0"): return win::Button::tab;
+	case keystring_hash("NMLK"): return win::Button::num_lock;
+	case keystring_hash("KPDV"): return win::Button::num_slash;
+	case keystring_hash("KPMU"): return win::Button::num_multiply;
+	case keystring_hash("KPSU"): return win::Button::num_minus;
+	case keystring_hash("KPAD"): return win::Button::num_plus;
+	case keystring_hash("KPDL"): return win::Button::num_del;
 
-	case keystring_hash("KP0\0"): return win::Button::NUM0;
-	case keystring_hash("KP1\0"): return win::Button::NUM1;
-	case keystring_hash("KP2\0"): return win::Button::NUM2;
-	case keystring_hash("KP3\0"): return win::Button::NUM3;
-	case keystring_hash("KP4\0"): return win::Button::NUM4;
-	case keystring_hash("KP5\0"): return win::Button::NUM5;
-	case keystring_hash("KP6\0"): return win::Button::NUM6;
-	case keystring_hash("KP7\0"): return win::Button::NUM7;
-	case keystring_hash("KP8\0"): return win::Button::NUM8;
-	case keystring_hash("KP9\0"): return win::Button::NUM9;
+	case keystring_hash("KP0\0"): return win::Button::num0;
+	case keystring_hash("KP1\0"): return win::Button::num1;
+	case keystring_hash("KP2\0"): return win::Button::num2;
+	case keystring_hash("KP3\0"): return win::Button::num3;
+	case keystring_hash("KP4\0"): return win::Button::num4;
+	case keystring_hash("KP5\0"): return win::Button::num5;
+	case keystring_hash("KP6\0"): return win::Button::num6;
+	case keystring_hash("KP7\0"): return win::Button::num7;
+	case keystring_hash("KP8\0"): return win::Button::num8;
+	case keystring_hash("KP9\0"): return win::Button::num9;
 
-	default: return win::Button::UNDEFINED;
+	default: return win::Button::undefined;
 	}
 }
 
@@ -225,7 +235,7 @@ Display::Display(const DisplayOptions &options)
 	button_handler = default_button_handler;
 	character_handler = default_character_handler;
 	mouse_handler = default_mouse_handler;
-	load_extensions();
+	load_gl_extensions();
 
 	int visual_attributes[] =
 	{
@@ -309,7 +319,7 @@ void Display::process()
 		switch(xevent.type)
 		{
 		case ClientMessage:
-			window_handler(win::WindowEvent::CLOSE);
+			window_handler(win::WindowEvent::close);
 			break;
 		case KeyPress:
 		{
@@ -340,13 +350,13 @@ void Display::process()
 			switch(xevent.xbutton.button)
 			{
 			case 1:
-				button_handler(Button::MOUSE_LEFT, xevent.type == ButtonPress);
+				button_handler(Button::mouse_left, xevent.type == ButtonPress);
 				break;
 			case 2:
-				button_handler(Button::MOUSE_MIDDLE, xevent.type == ButtonPress);
+				button_handler(Button::mouse_middle, xevent.type == ButtonPress);
 				break;
 			case 3:
-				button_handler(Button::MOUSE_RIGHT, xevent.type == ButtonPress);
+				button_handler(Button::mouse_right, xevent.type == ButtonPress);
 				break;
 			}
 			break;

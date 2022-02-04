@@ -1,7 +1,12 @@
-#include <climits>
 #include <string.h>
 
-#include <win.h>
+#include <win/win.hpp>
+#include <win/atlas.hpp>
+
+#ifdef WIN_USE_OPENGL
+#include <GL/gl.h>
+#include <GL/glext.h>
+#endif
 
 namespace win
 {
@@ -46,6 +51,7 @@ Atlas::Atlas(Stream raw, Mode fm)
 	if(raw.size() - raw.tell() != canvas_width * canvas_height * 4)
 		Atlas::corrupt();
 
+#ifdef WIN_USE_OPENGL
 	glGenTextures(1, &object);
 	glBindTexture(GL_TEXTURE_2D, object);
 
@@ -58,24 +64,26 @@ Atlas::Atlas(Stream raw, Mode fm)
 	raw.read(pixels.get(), canvas_width * canvas_height * 4);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas_width, canvas_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels.get());
+#endif
 }
 
 Atlas::~Atlas()
 {
 	glDeleteTextures(1, &object);
-	object = (unsigned)-1;
 }
 
-unsigned Atlas::texture() const
+#ifdef WIN_USE_OPENGL
+GLuint Atlas::texture() const
 {
 	return object;
 }
+#endif
 
 const AtlasItem Atlas::item(int index) const
 {
 #ifndef NDEBUG
 	if(index >= count || index < 0)
-		bug("Bad coords index");
+		win::bug("Bad coords index");
 #endif
 
 	return textures[index];

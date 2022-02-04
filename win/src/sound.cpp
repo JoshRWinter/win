@@ -1,11 +1,13 @@
 #include <algorithm>
 
 #include <math.h>
+#include <string.h>
 
 #include <ogg/ogg.h>
 #include <vorbis/vorbisfile.h>
 
-#include <win.h>
+#include <win/win.hpp>
+#include <win/soundbank.hpp>
 
 #ifdef WINPLAT_LINUX
 #include <unistd.h>

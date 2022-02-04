@@ -3,6 +3,13 @@
 
 #include <memory>
 
+#include <win/win.hpp>
+#include <win/stream.hpp>
+
+#ifdef WIN_USE_OPENGL
+#include <GL/gl.h>
+#endif
+
 namespace win
 {
 
@@ -35,7 +42,9 @@ public:
 private:
 	int count;
 	std::unique_ptr<AtlasItem[]> textures;
-	unsigned object;
+#ifdef WIN_USE_OPENGL
+	GLuint object;
+#endif
 };
 
 }

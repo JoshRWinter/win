@@ -2,8 +2,15 @@
 #define WIN_DISPLAY_HPP
 
 #include <functional>
-#include <memory>
 #include <string>
+
+#include <win/win.hpp>
+#include <win/event.hpp>
+
+#ifdef WINPLAT_LINUX
+#include <X11/Xlib.h>
+#include <GL/glx.h>
+#endif
 
 namespace win
 {
@@ -50,12 +57,9 @@ class Display
 
 public:
 	Display(const DisplayOptions&);
-	Display(const Display&) = delete;
-	Display(Display&&) = delete;
 	~Display();
 
-	Display &operator=(Display&&) = delete;
-	Display &operator=(Display&) = delete;
+	WIN_NO_COPY_MOVE(Display);
 
 	void process();
 	void swap();

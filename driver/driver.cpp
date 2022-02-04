@@ -1,13 +1,20 @@
-#include <thread>
 #include <chrono>
 #include <iostream>
 #include <sstream>
 #include <cmath>
 #include <string>
 
-using namespace std::string_literals;
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-#include <win.h>
+#include <win/display.hpp>
+#include <win/assetroll.hpp>
+#include <win/atlas.hpp>
+#include <win/soundengine.hpp>
+#include <win/fontrenderer.hpp>
+#include <win/font.hpp>
+#include <win/gl.hpp>
 
 extern const char *vertexshader,*fragmentshader;
 
@@ -60,7 +67,7 @@ int main()
 
 	win::SoundEngine audio_engine(display, roll, sound_config);
 
-	win::FontRenderer font_renderer(display.width(), display.height(), -4.0f, 4.0f, -3.0f, 3.0f);
+	win::FontRenderer font_renderer(win::IDimensions2D(display.width(), display.height()), win::FScreenArea(-4.0f, 4.0f, -3.0f, 3.0f));
 	win::Font font1(font_renderer, roll["../../fishtank/assets/arial.ttf"], 0.5f);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
@@ -79,28 +86,29 @@ int main()
 		0, 1, 2, 0, 2, 3
 	};
 
-	win::Program program;
-	win::Program program2(win::load_shaders(roll["vertex.vert"], roll["fragment.frag"]));
-	program = std::move(program2);
-	glUseProgram(program.get());
-	float ortho_matrix[16];
-	win::init_ortho(ortho_matrix, -4.0f, 4.0f, -3.0f, 3.0f);
-	const int uniform_projection = glGetUniformLocation(program.get(), "projection");
-	const int uniform_size = glGetUniformLocation(program.get(), "size");
-	glUniformMatrix4fv(uniform_projection, 1, false, ortho_matrix);
+	GLuint program = win::load_gl_shaders(roll["vertex.vert"], roll["fragment.frag"]);
+	glUseProgram(program);
+
+	glm::mat4 ortho = glm::ortho(-4.0f, 4.0f, -3.0f, 3.0f);
+	const int uniform_projection = glGetUniformLocation(program, "projection");
+	const int uniform_size = glGetUniformLocation(program, "size");
+	glUniformMatrix4fv(uniform_projection, 1, false, glm::value_ptr(ortho));
 	glUniform1f(uniform_size, Block::SIZE);
 
-	win::Vao vao;
-	glBindVertexArray(vao.get());
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 
 	// element buffer
-	win::Vbo ebo;
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo.get());
+	GLuint ebo;
+	glGenBuffers(1, &ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// vertex buffer
-	win::Vbo vbo_vertex;
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex.get());
+	GLuint vbo_vertex;
+	glGenBuffers(1, &vbo_vertex);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 4, NULL);
 	glVertexAttribPointer(3, 2, GL_FLOAT, false, sizeof(float) * 4, (void*)(sizeof(float) * 2));
@@ -108,15 +116,17 @@ int main()
 	glEnableVertexAttribArray(3);
 
 	// position buffer
-	win::Vbo vbo_position;
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_position.get());
+	GLuint vbo_position;
+	glGenBuffers(1, &vbo_position);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, NULL);
 	glVertexAttribDivisor(1, 1);
 	glEnableVertexAttribArray(1);
 
 	// color buffer
-	win::Vbo vbo_color;
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_color.get());
+	GLuint vbo_color;
+	glGenBuffers(1, &vbo_color);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
 	glVertexAttribPointer(2, 3, GL_UNSIGNED_BYTE, false, 0, NULL);
 	glVertexAttribDivisor(2, 1);
 	glEnableVertexAttribArray(2);
@@ -135,7 +145,7 @@ int main()
 	{
 		if(press)
 			std::cerr << "key: " << win::key_name(button) << std::endl;
-		if(press && button == win::Button::ESC)
+		if(press && button == win::Button::esc)
 			quit = true;
 		else if(press)
 			audio_engine.play(effect);
@@ -150,7 +160,7 @@ int main()
 
 	display.register_window_handler([&quit](win::WindowEvent event)
 	{
-		if (event == win::WindowEvent::CLOSE)
+		if (event == win::WindowEvent::close)
 			quit = true;
 	});
 
@@ -201,9 +211,9 @@ int main()
 			block_color[1] = 1.0f;
 			block_color[2] = 1.0f;
 
-			glBindBuffer(GL_ARRAY_BUFFER, vbo_position.get());
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_position), block_position, GL_DYNAMIC_DRAW);
-			glBindBuffer(GL_ARRAY_BUFFER, vbo_color.get());
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_color), block_color, GL_DYNAMIC_DRAW);
 			glBindTexture(GL_TEXTURE_2D, atlas.texture());
 
@@ -218,14 +228,23 @@ int main()
 			strcpy(formatted, "null");
 
 		font_renderer.draw(font1, formatted, mousex, mousey, win::Color(1.0f, 1.0f, 0.0f), true);
-		glBindVertexArray(vao.get());
-		glUseProgram(program.get());
+		glBindVertexArray(vao);
+		glUseProgram(program);
 
 		display.swap();
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(4));
 		while(std::chrono::duration<float, std::micro>(std::chrono::high_resolution_clock::now() - start).count() < 16666.0f);
 	}
+
+	glDeleteBuffers(1, &vbo_color);
+	glDeleteBuffers(1, &vbo_position);
+	glDeleteBuffers(1, &vbo_vertex);
+	glDeleteBuffers(1, &ebo);
+
+	glDeleteVertexArrays(1, &vao);
+
+	glDeleteShader(program);
 
 	return 0;
 }

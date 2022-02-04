@@ -1,6 +1,10 @@
-#include <win.h>
+#include <win/win.hpp>
 
 #ifdef WINPLAT_WINDOWS
+#include <algorithm>
+
+#include <win/soundengine.hpp>
+#include <win/display.hpp>
 
 namespace win
 {

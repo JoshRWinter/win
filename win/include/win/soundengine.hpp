@@ -1,15 +1,20 @@
-#ifndef WIN_AUDIO_ENGINE_HPP
-#define WIN_AUDIO_ENGINE_HPP
+#ifndef WIN_SOUND_ENGINE_HPP
+#define WIN_SOUND_ENGINE_HPP
 
 #include <list>
-#include <chrono>
 #include <memory>
+
+#include <win/win.hpp>
 
 #if defined WINPLAT_LINUX
 #include <pulse/pulseaudio.h>
 #elif defined WINPLAT_WINDOWS
+#include <mmsystem.h>
 #include <dsound.h>
 #endif
+
+#include <win/soundbank.hpp>
+
 
 namespace win
 {
@@ -125,12 +130,9 @@ class SoundEngine
 
 public:
 	SoundEngine(Display&, AssetRoll&, SoundConfigFn);
-	SoundEngine(const SoundEngine&) = delete;
-	SoundEngine(SoundEngine&&) = delete;
 	~SoundEngine();
 
-	void operator=(const SoundEngine&) = delete;
-	void operator=(SoundEngine&&) = delete;
+	WIN_NO_COPY_MOVE(SoundEngine);
 
 	void process();
 

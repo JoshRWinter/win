@@ -1,383 +1,133 @@
 #define _USE_MATH_DEFINES
-#include <cmath>
+#include <math.h>
 
-#include <string.h>
-
-#define WIN_STORAGE
-#include <win.h>
+#include <win/utility.hpp>
 
 namespace win
 {
-
-Program::Program()
-{
-	object = UINT_MAX;
-}
-
-Program::Program(GLuint program)
-	: object(program)
-{ }
-
-Program::Program(Program &&rhs)
-{
-	object = rhs.object;
-	rhs.object = UINT_MAX;
-}
-
-Program::~Program()
-{
-	if (object != UINT_MAX)
-		glDeleteProgram(object);
-}
-
-Program &Program::operator=(Program &&rhs)
-{
-	if (object != UINT_MAX)
-		glDeleteProgram(object);
-
-	object = rhs.object;
-	rhs.object = UINT_MAX;
-
-	return *this;
-}
-
-GLuint Program::get() const
-{
-#ifndef NDEBUG
-	if (object == UINT_MAX)
-		win::bug("Uninitialized program");
-#endif
-
-	return object;
-}
-
-Vao::Vao()
-{
-	glGenVertexArrays(1, &object);
-}
-
-Vao::Vao(Vao &&rhs)
-{
-	object = rhs.object;
-	rhs.object = UINT_MAX;
-}
-
-Vao::~Vao()
-{
-	if (object != UINT_MAX)
-		glDeleteVertexArrays(1, &object);
-}
-
-Vao &Vao::operator=(Vao &&rhs)
-{
-	if (object != UINT_MAX)
-		glDeleteVertexArrays(1, &object);
-
-	object = rhs.object;
-	rhs.object = UINT_MAX;
-
-	return *this;
-}
-
-GLuint Vao::get() const
-{
-	return object;
-}
-
-Vbo::Vbo()
-{
-	glGenBuffers(1, &object);
-}
-
-Vbo::Vbo(Vbo &&rhs)
-{
-	object = rhs.object;
-	rhs.object = UINT_MAX;
-}
-
-Vbo::~Vbo()
-{
-	if (object != UINT_MAX)
-		glDeleteBuffers(1, &object);
-}
-
-Vbo &Vbo::operator=(Vbo &&rhs)
-{
-	if (object != UINT_MAX)
-		glDeleteBuffers(1, &object);
-
-	object = rhs.object;
-	rhs.object = UINT_MAX;
-
-	return *this;
-}
-
-GLuint Vbo::get() const
-{
-	return object;
-}
-
-static void *getproc(const char*);
-void load_extensions()
-{
-	glCreateShader = (decltype(glCreateShader))getproc("glCreateShader");
-	glShaderSource = (decltype(glShaderSource))getproc("glShaderSource");
-	glCompileShader = (decltype(glCompileShader))getproc("glCompileShader");
-	glGetShaderiv = (decltype(glGetShaderiv))getproc("glGetShaderiv");
-	glGetShaderInfoLog = (decltype(glGetShaderInfoLog))getproc("glGetShaderInfoLog");
-	glGetProgramiv = (decltype(glGetProgramiv))getproc("glGetProgramiv");
-	glGetProgramInfoLog = (decltype(glGetProgramInfoLog))getproc("glGetProgramInfoLog");
-	glAttachShader = (decltype(glAttachShader))getproc("glAttachShader");
-	glDetachShader = (decltype(glDetachShader))getproc("glDetachShader");
-	glLinkProgram = (decltype(glLinkProgram))getproc("glLinkProgram");
-	glDeleteShader = (decltype(glDeleteShader))getproc("glDeleteShader");
-	glCreateProgram = (decltype(glCreateProgram))getproc("glCreateProgram");
-	glUseProgram = (decltype(glUseProgram))getproc("glUseProgram");
-	glDeleteProgram = (decltype(glDeleteProgram))getproc("glDeleteProgram");
-	glGenVertexArrays = (decltype(glGenVertexArrays))getproc("glGenVertexArrays");
-	glGenBuffers = (decltype(glGenBuffers))getproc("glGenBuffers");
-	glBindVertexArray = (decltype(glBindVertexArray))getproc("glBindVertexArray");
-	glBindBuffer = (decltype(glBindBuffer))getproc("glBindBuffer");
-	glBufferData = (decltype(glBufferData))getproc("glBufferData");
-	glVertexAttribPointer = (decltype(glVertexAttribPointer))getproc("glVertexAttribPointer");
-	glEnableVertexAttribArray = (decltype(glEnableVertexAttribArray))getproc("glEnableVertexAttribArray");
-	glDeleteVertexArrays = (decltype(glDeleteVertexArrays))getproc("glDeleteVertexArrays");
-	glDeleteBuffers = (decltype(glDeleteBuffers))getproc("glDeleteBuffers");
-	glGetUniformLocation = (decltype(glGetUniformLocation))getproc("glGetUniformLocation");
-	glUniformMatrix4fv = (decltype(glUniformMatrix4fv))getproc("glUniformMatrix4fv");
-	glVertexAttribDivisor = (decltype(glVertexAttribDivisor))getproc("glVertexAttribDivisor");
-	glUniform1f = (decltype(glUniform1f))getproc("glUniform1f");
-	glUniform2f = (decltype(glUniform2f))getproc("glUniform2f");
-	glUniform4f = (decltype(glUniform4f))getproc("glUniform4f");
-	glUniform1i = (decltype(glUniform1i))getproc("glUniform1i");
-	glUniform2i = (decltype(glUniform2i))getproc("glUniform2i");
-	glDrawElementsInstanced = (decltype(glDrawElementsInstanced))getproc("glDrawElementsInstanced");
-	glBufferSubData = (decltype(glBufferSubData))getproc("glBufferSubData");
-
-#if defined WINPLAT_LINUX
-	glXSwapIntervalEXT = (decltype(glXSwapIntervalEXT))getproc("glXSwapIntervalEXT");
-#elif defined WINPLAT_WINDOWS
-	wglSwapIntervalEXT = (decltype(wglSwapIntervalEXT))getproc("wglSwapIntervalEXT");
-	glTexImage3D = (decltype(glTexImage3D))getproc("glTexImage3D");
-#endif
-}
-
-unsigned load_shaders(const char *vertex_source, int vertex_length, const char *fragment_source, int fragment_length)
-{
-	const unsigned vshader = glCreateShader(GL_VERTEX_SHADER);
-	const unsigned fshader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(vshader, 1, &vertex_source, &vertex_length);
-	glShaderSource(fshader, 1, &fragment_source, &fragment_length);
-	glCompileShader(vshader);
-	glCompileShader(fshader);
-	int success = 1;
-	char buffer[2000] = "";
-	glGetShaderiv(vshader, GL_COMPILE_STATUS, &success);
-	if(success == 0)
-	{
-		glGetShaderInfoLog(vshader, 2000, NULL, buffer);
-		win::bug(std::string("vertex shader:\n") + buffer);
-	}
-	glGetShaderiv(fshader, GL_COMPILE_STATUS, &success);
-	if(success == 0)
-	{
-		glGetShaderInfoLog(fshader, 2000, NULL, buffer);
-		win::bug(std::string("fragment shader:\n") + buffer);
-	}
-	unsigned program = glCreateProgram();
-	glAttachShader(program, vshader);
-	glAttachShader(program, fshader);
-	glLinkProgram(program);
-	GLint linked = 0;
-	glGetProgramiv(program, GL_LINK_STATUS, &linked);
-	if(!linked)
-	{
-		glGetProgramInfoLog(program, 2000, NULL, buffer);
-		win::bug(std::string("linker:\n") + buffer);
-	}
-	glDetachShader(program, vshader);
-	glDetachShader(program, fshader);
-	glDeleteShader(vshader);
-	glDeleteShader(fshader);
-
-	return program;
-}
-
-unsigned load_shaders(const char *vertex, const char *fragment)
-{
-	return load_shaders(vertex, strlen(vertex), fragment, strlen(fragment));
-}
-
-unsigned load_shaders(Stream vertex, Stream fragment)
-{
-	return load_shaders((char*)vertex.read_all().get(), vertex.size(), (char*)fragment.read_all().get(), fragment.size());
-}
-
-void init_ortho(float *matrix,float left,float right,float bottom,float top)
-{
-	matrix[0] = 2.0f / (right - left);
-	matrix[1] = 0.0f;
-	matrix[2] = 0.0f;
-	matrix[3] = 0.0f;
-	matrix[4] = 0.0f;
-	matrix[5] = 2.0f / (top - bottom);
-	matrix[6] = 0.0f;
-	matrix[7] = 0.0f;
-	matrix[8] = 0.0f;
-	matrix[9] = 0.0f;
-	matrix[10] = -2.0f / (1.0f - -1.0f);
-	matrix[11] = 0.0f;
-	matrix[12] = -((right + left) / (right - left));
-	matrix[13] = -((top + bottom)/(top - bottom));
-	matrix[14] = -((1.0f + -1.0f) / (1.0f - -1.0f));
-	matrix[15] = 1.0f;
-}
-
-#if defined WINPLAT_LINUX
-static void *getproc(const char *name)
-{
-	void *address = (void*)glXGetProcAddress((const unsigned char*)name);
-	if(address == NULL)
-		win::bug(std::string("") + "Could not get extension \"" + name + "\"");
-
-	return address;
-}
-#elif defined WINPLAT_WINDOWS
-static void *getproc(const char *name)
-{
-	void *address = (void*)wglGetProcAddress(name);
-	if(address == NULL)
-	{
-		MessageBox(NULL, ("This software requires support for OpenGL:" + std::string(name)).c_str(), "Missing Opengl extension", MB_ICONEXCLAMATION);
-		std::abort();
-	}
-
-	return address;
-}
-#endif
 
 const char *key_name(const Button key)
 {
 	switch(key)
 	{
-	case Button::MOUSE_LEFT: return "LeftMouse";
-	case Button::MOUSE_RIGHT: return "RightMouse";
-	case Button::MOUSE_MIDDLE: return "MiddleMouse";
-	case Button::MOUSE4: return "Mouse4";
-	case Button::MOUSE5: return "Mouse5";
-	case Button::MOUSE6: return "Mouse6";
-	case Button::MOUSE7: return "Mouse7";
+	case Button::mouse_left: return "LeftMouse";
+	case Button::mouse_right: return "RightMouse";
+	case Button::mouse_middle: return "MiddleMouse";
+	case Button::mouse4: return "Mouse4";
+	case Button::mouse5: return "Mouse5";
+	case Button::mouse6: return "Mouse6";
+	case Button::mouse7: return "Mouse7";
 
-	case Button::A: return "A";
-	case Button::B: return "B";
-	case Button::C: return "C";
-	case Button::D: return "D";
-	case Button::E: return "E";
-	case Button::F: return "F";
-	case Button::G: return "G";
-	case Button::H: return "H";
-	case Button::I: return "I";
-	case Button::J: return "J";
-	case Button::K: return "K";
-	case Button::L: return "L";
-	case Button::M: return "M";
-	case Button::N: return "N";
-	case Button::O: return "O";
-	case Button::P: return "P";
-	case Button::Q: return "Q";
-	case Button::R: return "R";
-	case Button::S: return "S";
-	case Button::T: return "T";
-	case Button::U: return "U";
-	case Button::V: return "V";
-	case Button::W: return "W";
-	case Button::X: return "X";
-	case Button::Y: return "Y";
-	case Button::Z: return "Z";
+	case Button::a: return "A";
+	case Button::b: return "B";
+	case Button::c: return "C";
+	case Button::d: return "D";
+	case Button::e: return "E";
+	case Button::f: return "F";
+	case Button::g: return "G";
+	case Button::h: return "H";
+	case Button::i: return "I";
+	case Button::j: return "J";
+	case Button::k: return "K";
+	case Button::l: return "L";
+	case Button::m: return "M";
+	case Button::n: return "N";
+	case Button::o: return "O";
+	case Button::p: return "P";
+	case Button::q: return "Q";
+	case Button::r: return "R";
+	case Button::s: return "S";
+	case Button::t: return "T";
+	case Button::u: return "U";
+	case Button::v: return "V";
+	case Button::w: return "W";
+	case Button::x: return "X";
+	case Button::y: return "Y";
+	case Button::z: return "Z";
 
-	case Button::D0: return "0";
-	case Button::D1: return "1";
-	case Button::D2: return "2";
-	case Button::D3: return "3";
-	case Button::D4: return "4";
-	case Button::D5: return "5";
-	case Button::D6: return "6";
-	case Button::D7: return "7";
-	case Button::D8: return "8";
-	case Button::D9: return "9";
+	case Button::d0: return "0";
+	case Button::d1: return "1";
+	case Button::d2: return "2";
+	case Button::d3: return "3";
+	case Button::d4: return "4";
+	case Button::d5: return "5";
+	case Button::d6: return "6";
+	case Button::d7: return "7";
+	case Button::d8: return "8";
+	case Button::d9: return "9";
 
-	case Button::BACKTICK: return "BackTick";
-	case Button::DASH: return "Dash";
-	case Button::EQUALS: return "Equals";
-	case Button::LBRACKET: return "LeftBracket";
-	case Button::RBRACKET: return "RightBracket";
-	case Button::SEMICOLON: return "Semicolon";
-	case Button::APOSTROPHE: return "Apostrophe";
-	case Button::COMMA: return "Comma";
-	case Button::PERIOD: return "Period";
-	case Button::SLASH: return "Slash";
-	case Button::BACKSLASH: return "BackSlash";
+	case Button::backtick: return "BackTick";
+	case Button::dash: return "Dash";
+	case Button::equals: return "Equals";
+	case Button::lbracket: return "LeftBracket";
+	case Button::rbracket: return "RightBracket";
+	case Button::semicolon: return "Semicolon";
+	case Button::apostrophe: return "Apostrophe";
+	case Button::comma: return "Comma";
+	case Button::period: return "Period";
+	case Button::slash: return "Slash";
+	case Button::backslash: return "BackSlash";
 
-	case Button::F1: return "Function1";
-	case Button::F2: return "Function2";
-	case Button::F3: return "Function3";
-	case Button::F4: return "Function4";
-	case Button::F5: return "Function5";
-	case Button::F6: return "Function6";
-	case Button::F7: return "Function7";
-	case Button::F8: return "Function8";
-	case Button::F9: return "Function9";
-	case Button::F10: return "Function10";
-	case Button::F11: return "Function11";
-	case Button::F12: return "Function12";
+	case Button::f1: return "Function1";
+	case Button::f2: return "Function2";
+	case Button::f3: return "Function3";
+	case Button::f4: return "Function4";
+	case Button::f5: return "Function5";
+	case Button::f6: return "Function6";
+	case Button::f7: return "Function7";
+	case Button::f8: return "Function8";
+	case Button::f9: return "Function9";
+	case Button::f10: return "Function10";
+	case Button::f11: return "Function11";
+	case Button::f12: return "Function12";
 
-	case Button::ESC: return "Escape";
-	case Button::PRINT_SCR: return "PrintScreen";
-	case Button::PAUSE_BREAK: return "PauseBreak";
-	case Button::INSERT: return "Insert";
-	case Button::DELETE: return "Delete";
-	case Button::HOME: return "Home";
-	case Button::PAGE_UP: return "PageUp";
-	case Button::PAGE_DOWN: return "PageDown";
-	case Button::END: return "End";
-	case Button::BACKSPACE: return "Backspace";
-	case Button::RETURN: return "Return";
-	case Button::ENTER: return "Enter";
-	case Button::LSHIFT: return "LeftShift";
-	case Button::RSHIFT: return "RightShift";
-	case Button::LCTRL: return "LeftControl";
-	case Button::RCTRL: return "RightControl";
-	case Button::LALT: return "LeftAlt";
-	case Button::RALT: return "RightAlt";
-	case Button::SPACE: return "Spacebar";
-	case Button::MENU: return "Menu";
-	case Button::LMETA: return "LeftMeta";
-	case Button::RMETA: return "RightMeta";
-	case Button::UP: return "UpArrow";
-	case Button::LEFT: return "LeftArrow";
-	case Button::RIGHT: return "RightArrow";
-	case Button::DOWN: return "DownArrow";
-	case Button::CAPSLOCK: return "CapsLock";
-	case Button::TAB: return "Tab";
+	case Button::esc: return "Escape";
+	case Button::print_scr: return "PrintScreen";
+	case Button::pause_break: return "PauseBreak";
+	case Button::insert: return "Insert";
+	case Button::del: return "Delete";
+	case Button::home: return "Home";
+	case Button::page_up: return "PageUp";
+	case Button::page_down: return "PageDown";
+	case Button::end: return "End";
+	case Button::backspace: return "Backspace";
+	case Button::ret: return "Return";
+	case Button::enter: return "Enter";
+	case Button::lshift: return "LeftShift";
+	case Button::rshift: return "RightShift";
+	case Button::lctrl: return "LeftControl";
+	case Button::rctrl: return "RightControl";
+	case Button::lalt: return "LeftAlt";
+	case Button::ralt: return "RightAlt";
+	case Button::space: return "Spacebar";
+	case Button::menu: return "Menu";
+	case Button::lmeta: return "LeftMeta";
+	case Button::rmeta: return "RightMeta";
+	case Button::up: return "UpArrow";
+	case Button::left: return "LeftArrow";
+	case Button::right: return "RightArrow";
+	case Button::down: return "DownArrow";
+	case Button::capslock: return "CapsLock";
+	case Button::tab: return "Tab";
 
-	case Button::NUM_LOCK: return "NumLock";
-	case Button::NUM_SLASH: return "NumSlash";
-	case Button::NUM_MULTIPLY: return "NumMultiply";
-	case Button::NUM_MINUS: return "NumMinus";
-	case Button::NUM_PLUS: return "NumPlus";
-	case Button::NUM_DEL: return "NumDelete";
-	case Button::NUM0: return "Num0";
-	case Button::NUM1: return "Num1";
-	case Button::NUM2: return "Num2";
-	case Button::NUM3: return "Num3";
-	case Button::NUM4: return "Num4";
-	case Button::NUM5: return "Num5";
-	case Button::NUM6: return "Num6";
-	case Button::NUM7: return "Num7";
-	case Button::NUM8: return "Num8";
-	case Button::NUM9: return "Num9";
+	case Button::num_lock: return "NumLock";
+	case Button::num_slash: return "NumSlash";
+	case Button::num_multiply: return "NumMultiply";
+	case Button::num_minus: return "NumMinus";
+	case Button::num_plus: return "NumPlus";
+	case Button::num_del: return "NumDelete";
+	case Button::num0: return "Num0";
+	case Button::num1: return "Num1";
+	case Button::num2: return "Num2";
+	case Button::num3: return "Num3";
+	case Button::num4: return "Num4";
+	case Button::num5: return "Num5";
+	case Button::num6: return "Num6";
+	case Button::num7: return "Num7";
+	case Button::num8: return "Num8";
+	case Button::num9: return "Num9";
 
-	case Button::UNDEFINED: return "Unkown";
+	case Button::undefined: return "Unkown";
 	}
 
 	return "UndefinedKey";
