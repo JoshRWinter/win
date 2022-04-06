@@ -50,7 +50,7 @@ static inline float aligny(int iheight, float fheight, float ypos)
 namespace win
 {
 
-FontRenderer::FontRenderer(const IDimensions2D &dims, const FScreenArea &area)
+FontRenderer::FontRenderer(const Dimensions<int> &dims, const Area<float> &area)
 	: dims(dims)
 	, area(area)
 {

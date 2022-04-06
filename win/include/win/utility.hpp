@@ -1,6 +1,8 @@
 #ifndef WIN_UTILITY_HPP
 #define WIN_UTILITY_HPP
 
+#include <type_traits>
+
 #include <win/event.hpp>
 #include <win/stream.hpp>
 
@@ -19,42 +21,33 @@ struct Color
 	float red, green, blue, alpha;
 };
 
-struct FScreenArea
+template <typename T> struct Area
 {
-	FScreenArea()
-		: left(0.0f), right(0.0f), bottom(0.0f), top(0.0f) {}
-	FScreenArea(const float left, const float right, const float bottom, const float top)
+	Area()
+		: left(0), right(0), bottom(0), top(0) {}
+	Area(const typename std::enable_if<std::is_fundamental<T>::value, T>::type left, const T right, const T bottom, const T top)
 		: left(left), right(right), bottom(bottom), top(top) {}
 
-	float left, right, bottom, top;
+	T left, right, bottom, top;
 };
 
-struct IDimensions2D
+template <typename T> struct Dimensions
 {
-	IDimensions2D()
+	Dimensions()
 		: width(0), height(0) {}
-	IDimensions2D(const int width, const int height)
+	Dimensions(const typename std::enable_if<std::is_fundamental<T>::value, T>::type width, const T height)
 		: width(width), height(height) {}
 
-	int width, height;
+	T width, height;
 };
 
-struct FPair
+template <typename T> struct Pair
 {
-	FPair() : x(0.0f), y(0.0f) {}
-	FPair(const float x, const float y) : x(x), y(y) {}
+	Pair() : x(0), y(0) {}
+	Pair(const typename std::enable_if<std::is_fundamental<T>::value, T>::type x, const T y) : x(x), y(y) {}
 
-	float x;
-	float y;
-};
-
-struct IPair
-{
-	IPair() : x(0), y(0) {}
-	IPair(const int x, const int y) : x(x), y(y) {}
-
-	int x;
-	int y;
+	T x;
+	T y;
 };
 
 const char *key_name(Button);

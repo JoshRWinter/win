@@ -20,7 +20,7 @@ class FontRenderer
 {
 	friend class Font;
 public:
-	FontRenderer(const IDimensions2D&, const FScreenArea&);
+	FontRenderer(const Dimensions<int>&, const Area<float>&);
 	~FontRenderer();
 
 	WIN_NO_COPY_MOVE(FontRenderer);
@@ -42,8 +42,8 @@ private:
 	std::vector<float> pos_buffer;
 	std::vector<unsigned short> texcoord_buffer;
 
-	IDimensions2D dims;
-	FScreenArea area;
+	Dimensions<int> dims;
+	Area<float> area;
 };
 
 }
