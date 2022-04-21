@@ -88,7 +88,7 @@ SoundEngine::~SoundEngine()
 	context->Release();
 }
 
-unsigned long long SoundEngine::write_empty(ActiveSound &sound, unsigned long long bytes_left)
+unsigned long long SoundEngine::write_empty(DirectSoundActiveSound &sound, unsigned long long bytes_left)
 {
 	void *buffer1 = NULL;
 	void *buffer2 = NULL;
@@ -111,7 +111,7 @@ unsigned long long SoundEngine::write_empty(ActiveSound &sound, unsigned long lo
 
 std::ifstream samplesfile("c:\\users\\josh\\desktop\\samples.bin", std::ifstream::binary);
 
-void SoundEngine::write_to_stream(ActiveSound &sound)
+void SoundEngine::write_to_stream(DirectSoundActiveSound &sound)
 {
 	if(sound.stop)
 		return;
@@ -170,7 +170,7 @@ void SoundEngine::write_to_stream(ActiveSound &sound)
 
 		sound.firstwrite = false;
 
-		channel_dupe(convbuffer.get() + got, convbuffer.get(), got);
+		soundengine_channel_dupe(convbuffer.get() + got, convbuffer.get(), got);
 
 		if(sound.stream->Lock(sound.write_cursor, got * sizeof(std::int16_t) * 2, &buffer1, &size1, &buffer2, &size2, 0) != DS_OK)
 			win::bug("DirectSound: couldn't lock stream buffer");
@@ -244,7 +244,7 @@ int SoundEngine::play(const char *name, float x, float y, bool loop)
 int SoundEngine::play(const char *name, bool ambient, bool looping, float x, float y)
 {
 	cleanup(false);
-	if(sounds.size() >= MAX_SOUNDS)
+	if(sounds.size() >= SOUNDENGINE_MAX_SOUNDS)
 		return -1;
 
 	WAVEFORMATEX format;

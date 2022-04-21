@@ -9,6 +9,7 @@ add_library(win STATIC
 	src/atlas.cpp
 	src/stream.cpp
 	src/soundengine_linux.cpp
+	src/soundengine_linux_pulseaudio.cpp
 	src/soundengine_windows.cpp
 	src/soundbank.cpp
 	src/gl.cpp
@@ -26,6 +27,10 @@ add_library(win STATIC
 	include/win/sound.hpp
 	include/win/atlas.hpp
 	include/win/soundengine.hpp
+	include/win/soundenginecommon.hpp
+	include/win/soundengine_windows.hpp
+	include/win/soundengine_linux.hpp
+	include/win/soundengine_linux_pulseaudio.hpp
 	include/win/soundbank.hpp
 	include/win/gl.hpp
 	include/win/display.hpp
