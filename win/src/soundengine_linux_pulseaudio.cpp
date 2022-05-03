@@ -8,12 +8,12 @@
 
 static void callback_connect(pa_context*, void *loop)
 {
-	pa_threaded_mainloop_signal((pa_threaded_mainloop*)loop, 0);
+	winpa::pa_threaded_mainloop_signal((pa_threaded_mainloop*)loop, 0);
 }
 
 static void callback_stream(pa_stream*, void *loop)
 {
-	pa_threaded_mainloop_signal((pa_threaded_mainloop*)loop, 0);
+	winpa::pa_threaded_mainloop_signal((pa_threaded_mainloop*)loop, 0);
 }
 
 namespace win
@@ -32,52 +32,52 @@ SoundEngineLinuxPulseAudio::SoundEngineLinuxPulseAudio(Display &p, AssetRoll &as
 		config_fn = fn;
 
 	// loop
-	loop = pa_threaded_mainloop_new();
+	loop = winpa::pa_threaded_mainloop_new();
 	if(loop == NULL)
 		win::bug("Could not initialize process loop");
-	pa_mainloop_api *api = pa_threaded_mainloop_get_api(loop);
+	pa_mainloop_api *api = winpa::pa_threaded_mainloop_get_api(loop);
 
 	// pa context
-	context = pa_context_new(api, "pcm-playback");
+	context = winpa::pa_context_new(api, "pcm-playback");
 	if(context == NULL)
 		win::bug("Could not create PA context");
 
 	// start the loop
-	pa_context_set_state_callback(context, callback_connect, loop);
-	pa_threaded_mainloop_lock(loop);
-	if(pa_threaded_mainloop_start(loop))
+	winpa::pa_context_set_state_callback(context, callback_connect, loop);
+	winpa::pa_threaded_mainloop_lock(loop);
+	if(winpa::pa_threaded_mainloop_start(loop))
 		win::bug("Could not start the process loop");
 
-	if(pa_context_connect(context, NULL, PA_CONTEXT_NOAUTOSPAWN, NULL))
+	if(winpa::pa_context_connect(context, NULL, PA_CONTEXT_NOAUTOSPAWN, NULL))
 		win::bug("Could not connect the PA context");
 
 	// wait for the context
 	for(;;)
 	{
-		const pa_context_state_t context_state = pa_context_get_state(context);
+		const pa_context_state_t context_state = winpa::pa_context_get_state(context);
 		if(context_state == PA_CONTEXT_READY)
 			break;
 		else if(context_state == PA_CONTEXT_FAILED)
 			win::bug("Context connection failed");
-		pa_threaded_mainloop_wait(loop);
+		winpa::pa_threaded_mainloop_wait(loop);
 	}
 
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 }
 
 SoundEngineLinuxPulseAudio::~SoundEngineLinuxPulseAudio()
 {
-	pa_threaded_mainloop_lock(loop);
+	winpa::pa_threaded_mainloop_lock(loop);
 	cleanup(true);
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 
 	if(sounds.size() != 0)
 		win::bug("could not sweep up all streams");
 
-	pa_threaded_mainloop_stop(loop);
-	pa_context_disconnect(context);
-	pa_threaded_mainloop_free(loop);
-	pa_context_unref(context);
+	winpa::pa_threaded_mainloop_stop(loop);
+	winpa::pa_context_disconnect(context);
+	winpa::pa_threaded_mainloop_free(loop);
+	winpa::pa_context_unref(context);
 }
 
 void SoundEngineLinuxPulseAudio::write_to_stream(PulseAudioActiveSound &sound, const size_t bytes)
@@ -113,14 +113,14 @@ void SoundEngineLinuxPulseAudio::write_to_stream(PulseAudioActiveSound &sound, c
 
 		soundengine_channel_dupe(stereobuffer, readbuffer, mono_requested_samples);
 
-		if(pa_stream_write(sound.stream, stereobuffer, samples_actually_read * sizeof(std::int16_t) * 2, NULL, 0, PA_SEEK_RELATIVE))
+		if(winpa::pa_stream_write(sound.stream, stereobuffer, samples_actually_read * sizeof(std::int16_t) * 2, NULL, 0, PA_SEEK_RELATIVE))
 			win::bug("pa_stream_write() failure");
 	}
 	else if(sound.sound->channels.load() == 2)
 	{
 		const auto samples_actually_read = sound.sound->read(conversion_buffer.get(), requested_samples);
 
-		if(pa_stream_write(sound.stream, conversion_buffer.get(), samples_actually_read * sizeof(std::int16_t), NULL, 0, PA_SEEK_RELATIVE))
+		if(winpa::pa_stream_write(sound.stream, conversion_buffer.get(), samples_actually_read * sizeof(std::int16_t), NULL, 0, PA_SEEK_RELATIVE))
 			win::bug("pa_stream_write() failure");
 	}
 	else win::bug("PulseAudio: invalid channels");
@@ -135,13 +135,13 @@ void SoundEngineLinuxPulseAudio::process()
 	last_process = now;
 	*/
 
-	pa_threaded_mainloop_lock(loop);
+	winpa::pa_threaded_mainloop_lock(loop);
 
 	cleanup(false);
 
 	for (auto &sound : sounds)
 	{
-		const auto requested_bytes = pa_stream_writable_size(sound.stream);
+		const auto requested_bytes = winpa::pa_stream_writable_size(sound.stream);
 		if (requested_bytes == (size_t)-1)
 			continue;
 		if (requested_bytes == 0)
@@ -150,7 +150,7 @@ void SoundEngineLinuxPulseAudio::process()
 		write_to_stream(sound, requested_bytes);
 	}
 
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 }
 
 // ambient (for music)
@@ -167,13 +167,13 @@ int SoundEngineLinuxPulseAudio::play(const char *path, float x, float y, bool lo
 
 int SoundEngineLinuxPulseAudio::play(const char *path, float x, float y, bool ambient, bool looping)
 {
-	pa_threaded_mainloop_lock(loop);
+	winpa::pa_threaded_mainloop_lock(loop);
 
 	cleanup(false);
 
 	if(sounds.size() > SOUNDENGINE_MAX_SOUNDS)
 	{
-		pa_threaded_mainloop_unlock(loop);
+		winpa::pa_threaded_mainloop_unlock(loop);
 		return -1;
 	}
 
@@ -194,7 +194,7 @@ int SoundEngineLinuxPulseAudio::play(const char *path, float x, float y, bool am
 	attr.prebuf = (std::uint32_t) -1;
 	attr.minreq = (std::uint32_t) -1;
 
-	pa_stream *stream = pa_stream_new(context, namestr, &spec, NULL);
+	pa_stream *stream = winpa::pa_stream_new(context, namestr, &spec, NULL);
 	if(stream == NULL)
 		win::bug("Could not create stream object");
 
@@ -203,90 +203,90 @@ int SoundEngineLinuxPulseAudio::play(const char *path, float x, float y, bool am
 	// wait for channels property to get filled in by another thread
 	while(sound.channels == -1) ;
 
-	pa_stream_set_state_callback(stream, callback_stream, loop);
+	winpa::pa_stream_set_state_callback(stream, callback_stream, loop);
 
-	if(pa_stream_connect_playback(stream, NULL, &attr, (pa_stream_flags)0, NULL, NULL))
+	if(winpa::pa_stream_connect_playback(stream, NULL, &attr, (pa_stream_flags)0, NULL, NULL))
 		win::bug("Could not connect the playback stream");
 
 	for(;;)
 	{
-		pa_stream_state_t state = pa_stream_get_state(stream);
+		pa_stream_state_t state = winpa::pa_stream_get_state(stream);
 		if(state == PA_STREAM_READY)
 			break;
 		else if(state == PA_STREAM_FAILED)
 			win::bug("Stream connection failed");
-		pa_threaded_mainloop_wait(loop);
+		winpa::pa_threaded_mainloop_wait(loop);
 	}
 
 	pa_cvolume volume;
-	pa_cvolume_init(&volume);
-	pa_cvolume_set(&volume, 2, PA_VOLUME_NORM);
-	pa_operation_unref(pa_context_set_sink_input_volume(context, pa_stream_get_index(stream), &volume, NULL, NULL));
+	winpa::pa_cvolume_init(&volume);
+	winpa::pa_cvolume_set(&volume, 2, PA_VOLUME_NORM);
+	winpa::pa_operation_unref(winpa::pa_context_set_sink_input_volume(context, winpa::pa_stream_get_index(stream), &volume, NULL, NULL));
 
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 
 	return sid;
 }
 
 void SoundEngineLinuxPulseAudio::pause(int id)
 {
-	pa_threaded_mainloop_lock(loop);
+	winpa::pa_threaded_mainloop_lock(loop);
 
 	for(auto &snd : sounds)
 	{
 		if(id != snd.id)
 			continue;
 
-		if(!pa_stream_is_corked(snd.stream))
-			pa_operation_unref(pa_stream_cork(snd.stream, 1, NULL, NULL));
+		if(!winpa::pa_stream_is_corked(snd.stream))
+			winpa::pa_operation_unref(winpa::pa_stream_cork(snd.stream, 1, NULL, NULL));
 
 		break;
 	}
 
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 }
 
 void SoundEngineLinuxPulseAudio::resume(int id)
 {
-	pa_threaded_mainloop_lock(loop);
+	winpa::pa_threaded_mainloop_lock(loop);
 
 	for(auto &snd : sounds)
 	{
 		if(id != snd.id)
 			continue;
 
-		if(pa_stream_is_corked(snd.stream))
-			pa_operation_unref(pa_stream_cork(snd.stream, 0, NULL, NULL));
+		if(winpa::pa_stream_is_corked(snd.stream))
+			winpa::pa_operation_unref(winpa::pa_stream_cork(snd.stream, 0, NULL, NULL));
 
 		continue;
 	}
 
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 }
 
 void SoundEngineLinuxPulseAudio::stop(int id)
 {
-	pa_threaded_mainloop_lock(loop);
+	winpa::pa_threaded_mainloop_lock(loop);
 
 	for(auto &snd : sounds)
 	{
 		if(id != snd.id)
 			continue;
 
-		if(!pa_stream_is_corked(snd.stream))
-			pa_operation_unref(pa_stream_cork(snd.stream, 1, NULL, NULL));
+		if(!winpa::pa_stream_is_corked(snd.stream))
+			winpa::pa_operation_unref(winpa::pa_stream_cork(snd.stream, 1, NULL, NULL));
 
 		snd.stop = true;
 
 		continue;
 	}
 
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 }
 
 void SoundEngineLinuxPulseAudio::source(int id, float x, float y)
 {
-	pa_threaded_mainloop_lock(loop);
+	winpa::pa_threaded_mainloop_lock(loop);
 
 	for(auto &snd : sounds)
 	{
@@ -305,11 +305,11 @@ void SoundEngineLinuxPulseAudio::source(int id, float x, float y)
 		volume.values[0] = PA_VOLUME_NORM * volume_left;
 		volume.values[1] = PA_VOLUME_NORM * volume_right;
 
-		pa_operation_unref(pa_context_set_sink_input_volume(context, pa_stream_get_index(snd.stream), &volume, NULL, NULL));
+		winpa::pa_operation_unref(winpa::pa_context_set_sink_input_volume(context, winpa::pa_stream_get_index(snd.stream), &volume, NULL, NULL));
 		break;
 	}
 
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 }
 
 void SoundEngineLinuxPulseAudio::listener(float x, float y)
@@ -317,7 +317,7 @@ void SoundEngineLinuxPulseAudio::listener(float x, float y)
 	listener_x = x;
 	listener_y = y;
 
-	pa_threaded_mainloop_lock(loop);
+	winpa::pa_threaded_mainloop_lock(loop);
 
 	for(auto &snd : sounds)
 	{
@@ -330,15 +330,15 @@ void SoundEngineLinuxPulseAudio::listener(float x, float y)
 		volume.values[0] = PA_VOLUME_NORM * volume_left;
 		volume.values[1] = PA_VOLUME_NORM * volume_right;
 
-		pa_operation_unref(pa_context_set_sink_input_volume(context, pa_stream_get_index(snd.stream), &volume, NULL, NULL));
+		winpa::pa_operation_unref(winpa::pa_context_set_sink_input_volume(context, winpa::pa_stream_get_index(snd.stream), &volume, NULL, NULL));
 	}
 
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 }
 
 void SoundEngineLinuxPulseAudio::cleanup(bool all)
 {
-	pa_threaded_mainloop_lock(loop);
+	winpa::pa_threaded_mainloop_lock(loop);
 	for(auto it = sounds.begin(); it != sounds.end();)
 	{
 		auto &sound = *it;
@@ -358,17 +358,17 @@ void SoundEngineLinuxPulseAudio::cleanup(bool all)
 			{
 				// check if a drain operation has been issued yet
 				if(sound.drain_op == NULL)
-					sound.drain_op = pa_stream_drain(sound.stream, [](pa_stream*, int success, void *data){ ((PulseAudioActiveSound*)data)->drained = success != 0; }, &sound);
+					sound.drain_op = winpa::pa_stream_drain(sound.stream, [](pa_stream*, int success, void *data){ ((PulseAudioActiveSound*)data)->drained = success != 0; }, &sound);
 
 				bool drained = false;
 				if(sound.drain_op != NULL)
 				{
-					bool op_completed = pa_operation_get_state(sound.drain_op) == PA_OPERATION_DONE;
+					bool op_completed = winpa::pa_operation_get_state(sound.drain_op) == PA_OPERATION_DONE;
 					drained = op_completed && sound.drained;
 
 					if(op_completed)
 					{
-						pa_operation_unref(sound.drain_op);
+						winpa::pa_operation_unref(sound.drain_op);
 						sound.drain_op = NULL;
 					}
 				}
@@ -381,16 +381,16 @@ void SoundEngineLinuxPulseAudio::cleanup(bool all)
 			}
 		}
 
-		pa_stream_set_state_callback(sound.stream, [](pa_stream*, void*){}, NULL);
+		winpa::pa_stream_set_state_callback(sound.stream, [](pa_stream*, void*){}, NULL);
 
-		if(pa_stream_disconnect(sound.stream))
+		if(winpa::pa_stream_disconnect(sound.stream))
 			win::bug("Couldn't disconnect stream");
-		pa_stream_unref(sound.stream);
+		winpa::pa_stream_unref(sound.stream);
 
 		soundbank.unload(*sound.sound);
 		it = sounds.erase(it);
 	}
-	pa_threaded_mainloop_unlock(loop);
+	winpa::pa_threaded_mainloop_unlock(loop);
 }
 
 }

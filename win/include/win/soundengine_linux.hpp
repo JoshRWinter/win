@@ -38,6 +38,7 @@ class SoundEngine
 
 public:
 	SoundEngine(Display&, AssetRoll&, SoundConfigFn);
+	~SoundEngine();
 
 	void process() { inner->process(); }
 
@@ -52,6 +53,7 @@ public:
 
 private:
 	std::unique_ptr<SoundEngineLinuxProxy> inner;
+	void *so;
 };
 
 }

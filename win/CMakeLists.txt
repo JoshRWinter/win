@@ -31,6 +31,7 @@ add_library(win STATIC
 	include/win/soundengine_windows.hpp
 	include/win/soundengine_linux.hpp
 	include/win/soundengine_linux_pulseaudio.hpp
+	include/win/soundengine_linux_pulseaudio_functions.hpp
 	include/win/soundbank.hpp
 	include/win/gl.hpp
 	include/win/display.hpp
@@ -86,7 +87,6 @@ else()
 	find_package(Threads REQUIRED)
 	find_package(ZLIB REQUIRED)
 	find_package(OggVorbis REQUIRED)
-	find_package(PulseAudio REQUIRED)
 
 	target_include_directories(win
 		PUBLIC
@@ -104,7 +104,6 @@ else()
 		${CMAKE_THREAD_LIBS_INIT}
 		${ZLIB_LIBRARIES}
 		${OGGVORBIS_LIBRARIES}
-		${PULSEAUDIO_LIBRARIES}
 		)
 
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
