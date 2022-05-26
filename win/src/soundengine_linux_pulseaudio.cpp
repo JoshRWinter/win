@@ -19,6 +19,7 @@ static void callback_stream(pa_stream*, void *loop)
 namespace win
 {
 
+/*
 SoundEngineLinuxPulseAudio::SoundEngineLinuxPulseAudio(Display &p, AssetRoll &asset_roll, SoundConfigFn fn)
 	: soundbank(asset_roll)
 {
@@ -133,7 +134,6 @@ void SoundEngineLinuxPulseAudio::process()
 	if(std::chrono::duration<double, std::milli>(now - last_process).count() < 10)
 		return;
 	last_process = now;
-	*/
 
 	winpa::pa_threaded_mainloop_lock(loop);
 
@@ -392,6 +392,7 @@ void SoundEngineLinuxPulseAudio::cleanup(bool all)
 	}
 	winpa::pa_threaded_mainloop_unlock(loop);
 }
+*/
 
 }
 

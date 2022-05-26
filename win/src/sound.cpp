@@ -208,6 +208,10 @@ bool Sound::is_stream_completed()
 		return false;
 
 	std::lock_guard lock(pages_lock);
+
+	if (pages.size() == 0)
+		return true;
+
 	auto &lastpage = pages.back();
 	return lastpage.samples_consumed.load() == lastpage.samples_filled.load();
 }

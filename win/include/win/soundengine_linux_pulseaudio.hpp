@@ -15,6 +15,7 @@
 namespace win
 {
 
+/*
 struct PulseAudioActiveSound
 {
 	WIN_NO_COPY_MOVE(PulseAudioActiveSound);
@@ -71,6 +72,7 @@ private:
 	SoundBank soundbank;
 	std::list<PulseAudioActiveSound> sounds;
 };
+*/
 
 }
 

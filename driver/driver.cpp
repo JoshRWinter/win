@@ -33,11 +33,23 @@ static float distance(float x1, float y1, float x2, float y2)
 }
 */
 
+#include <unistd.h>
+
 static void sound_config(float listenerx, float listenery, float sourcex, float sourcey, float *volume, float *balance)
 {
 	*volume = 1.0f;// - (distance(listenerx, listenery, sourcex, sourcey) / 38.0f);
 	*balance = (sourcex - listenerx) / 15.0f;
 }
+
+struct YeetMeister
+{
+	YeetMeister(int fuck)
+		: fuck(fuck)
+	{}
+
+	int fuck;
+	int peepee = 420;
+};
 
 #if defined WINPLAT_WINDOWS && defined NDEBUG
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
@@ -45,6 +57,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 int main()
 #endif
 {
+	//win::AssetRoll roll("/home/josh/programming/win/driver/assets.roll");
+	win::AssetRoll roll("/home/josh/soundtesting/music.roll");
+	win::SoundEngine se(roll, NULL);
+	//se.play("../../fishtank/assets_local/platform_destroy.ogg");
+	se.play("gow.ogg");
+	sleep(30000);
+	/*
 	win::DisplayOptions display_options;
 	display_options.caption = "window caption";
 	display_options.width = 800;
@@ -248,4 +267,5 @@ int main()
 	glDeleteShader(program);
 
 	return 0;
+	*/
 }

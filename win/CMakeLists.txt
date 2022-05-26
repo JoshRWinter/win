@@ -10,6 +10,7 @@ add_library(win STATIC
 	src/stream.cpp
 	src/soundengine_linux.cpp
 	src/soundengine_linux_pulseaudio.cpp
+	src/soundengine_linux_pipewire.cpp
 	src/soundengine_windows.cpp
 	src/soundbank.cpp
 	src/gl.cpp
@@ -27,12 +28,15 @@ add_library(win STATIC
 	include/win/pool.hpp
 	include/win/sound.hpp
 	include/win/atlas.hpp
+	include/win/activesoundstore.hpp
 	include/win/soundengine.hpp
 	include/win/soundenginecommon.hpp
 	include/win/soundengine_windows.hpp
 	include/win/soundengine_linux.hpp
 	include/win/soundengine_linux_pulseaudio.hpp
 	include/win/soundengine_linux_pulseaudio_functions.hpp
+	include/win/soundengine_linux_pipewire.hpp
+	include/win/soundengine_linux_pipewire_functions.hpp
 	include/win/soundbank.hpp
 	include/win/gl.hpp
 	include/win/display.hpp
@@ -87,12 +91,15 @@ else()
 	find_package(Threads REQUIRED)
 	find_package(ZLIB REQUIRED)
 	find_package(OggVorbis REQUIRED)
+	find_package(PipeWire REQUIRED)
 
 	target_include_directories(win
 		PUBLIC
 		include
 		PRIVATE
 		${FREETYPE_INCLUDE_DIRS}
+		${PipeWire_INCLUDE_DIRS}
+		${Spa_INCLUDE_DIRS}
 		glm
 		)
 
@@ -104,6 +111,7 @@ else()
 		${CMAKE_THREAD_LIBS_INIT}
 		${ZLIB_LIBRARIES}
 		${OGGVORBIS_LIBRARIES}
+		${PipeWire_LIBRARIES}
 		)
 
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

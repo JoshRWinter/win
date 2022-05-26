@@ -43,10 +43,12 @@ struct SoundPage
 class SoundBank;
 class SoundEngine;
 class SoundEngineLinuxPulseAudio;
+class SoundEngineLinuxPipeWire;
 class Sound
 {
 	friend class SoundEngine;
 	friend class SoundEngineLinuxPulseAudio;
+	friend class SoundEngineLinuxPipeWire;
 	friend void ::decodeogg(win::Stream, win::Sound*, std::atomic<bool>*);
 public:
 	static constexpr int MAX_PAGES = 3;
