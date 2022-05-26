@@ -24,6 +24,7 @@ add_library(win STATIC
 	src/utility.cpp
 
 	include/win/win.hpp
+	include/win/pool.hpp
 	include/win/sound.hpp
 	include/win/atlas.hpp
 	include/win/soundengine.hpp
@@ -44,7 +45,6 @@ add_library(win STATIC
 	include/win/targa.hpp
 	include/win/utility.hpp
 	include/win/event.hpp
-	include/win/objectpool.hpp
 	)
 
 if(WIN32)
