@@ -64,7 +64,11 @@ void AssetRollStreamRaw::seek(unsigned long long pos)
 
 unsigned long long AssetRollStreamRaw::tell()
 {
-	return stream.tellg();
+	const long long spot = stream.tellg();
+	if (spot == -1)
+		win::bug("AssetRollStreamRaw: tellg() failure");
+
+	return spot - begin;
 }
 
 }
