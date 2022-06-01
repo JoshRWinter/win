@@ -401,7 +401,9 @@ void decodeogg(win::Stream source, win::Sound *sound_p, std::atomic<bool> *cance
 		if(!eos)
 		{
 			buffer = ogg_sync_buffer(&state, 4096);
-			if(source.size() - source.tell() >= 4096)
+			unsigned long long bigness = source.size();
+			unsigned long long place = source.tell();
+			if(bigness - place >= 4096)
 				bytes = 4096;
 			else
 				bytes = source.size() - source.tell();

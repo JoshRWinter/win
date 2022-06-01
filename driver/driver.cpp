@@ -58,10 +58,10 @@ int main()
 #endif
 {
 	//win::AssetRoll roll("/home/josh/programming/win/driver/assets.roll");
-	win::AssetRoll roll("/home/josh/soundtesting/music.roll");
+	win::AssetRoll roll("/home/josh/gow.roll");
 	win::SoundEngine se(roll, NULL);
 	//se.play("../../fishtank/assets_local/platform_destroy.ogg");
-	se.play("gow.ogg");
+	se.play("gow2.ogg");
 	sleep(30000);
 	/*
 	win::DisplayOptions display_options;
