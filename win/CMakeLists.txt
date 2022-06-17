@@ -5,14 +5,15 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(win STATIC
-	src/sound.cpp
 	src/atlas.cpp
 	src/stream.cpp
+	src/ogg.cpp
+	src/soundcache.cpp
+	src/soundstream.cpp
 	src/soundengine_linux.cpp
 	src/soundengine_linux_pulseaudio.cpp
 	src/soundengine_linux_pipewire.cpp
 	src/soundengine_windows.cpp
-	src/soundbank.cpp
 	src/gl.cpp
 	src/display_linux.cpp
 	src/display_windows.cpp
@@ -26,18 +27,20 @@ add_library(win STATIC
 
 	include/win/win.hpp
 	include/win/pool.hpp
+	include/win/ringbuffer.hpp
+	include/win/ogg.hpp
+	include/win/soundcache.hpp
+	include/win/soundstream.hpp
 	include/win/sound.hpp
 	include/win/atlas.hpp
 	include/win/activesoundstore.hpp
 	include/win/soundengine.hpp
-	include/win/soundenginecommon.hpp
 	include/win/soundengine_windows.hpp
 	include/win/soundengine_linux.hpp
 	include/win/soundengine_linux_pulseaudio.hpp
 	include/win/soundengine_linux_pulseaudio_functions.hpp
 	include/win/soundengine_linux_pipewire.hpp
 	include/win/soundengine_linux_pipewire_functions.hpp
-	include/win/soundbank.hpp
 	include/win/gl.hpp
 	include/win/display.hpp
 	include/win/font.hpp

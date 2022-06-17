@@ -3,7 +3,6 @@
 #if defined WINPLAT_LINUX
 #include <unistd.h>
 
-#include <win/soundenginecommon.hpp>
 #include <win/soundengine_linux_pulseaudio.hpp>
 
 static void callback_connect(pa_context*, void *loop)

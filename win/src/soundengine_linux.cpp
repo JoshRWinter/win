@@ -11,20 +11,22 @@
 namespace win
 {
 
-SoundEngine::SoundEngine(/*Display &p, */AssetRoll &asset_roll, SoundConfigFn fn)
+/*
+SoundEngine::SoundEngine(/*Display &p, AssetRoll &asset_roll)
 {
 	so = dlopen("/usr/lib/libpulse.so.0", RTLD_LAZY);
 	if (so == NULL)
 		win::bug("nope");
 
 	winpa::load_pulseaudio_functions(so);
-	inner.reset(new SoundEngineLinuxPipeWire(/*p, */asset_roll, fn));
+	inner.reset(new SoundEngineLinuxPipeWire(/*p, asset_roll));
 }
 
 SoundEngine::~SoundEngine()
 {
 	dlclose(so);
 }
+*/
 
 }
 

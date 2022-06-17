@@ -10,7 +10,6 @@
 #include <win/soundengine_linux_pulseaudio_functions.hpp>
 #include <win/soundengine_linux.hpp>
 #include <win/sound.hpp>
-#include <win/soundbank.hpp>
 
 namespace win
 {

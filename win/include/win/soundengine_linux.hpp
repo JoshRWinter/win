@@ -7,7 +7,6 @@
 
 #include <win/assetroll.hpp>
 #include <win/soundengine.hpp>
-#include <win/soundenginecommon.hpp>
 
 namespace win
 {
@@ -17,16 +16,13 @@ class SoundEngineLinuxProxy
 public:
 	virtual ~SoundEngineLinuxProxy() = 0;
 
-	virtual void process() = 0;
-
 	virtual std::uint32_t play(const char*, bool = false) = 0; // ambient
 	virtual std::uint32_t play(const char*, float, float, bool = false) = 0; // stereo
 	virtual std::uint32_t play(const char*, float, float, bool, bool) = 0; // fully dressed function
 	virtual void pause(std::uint32_t) = 0;
 	virtual void resume(std::uint32_t) = 0;
 	virtual void stop(std::uint32_t) = 0;
-	virtual void source(int, float, float) = 0;
-	virtual void listener(float, float) = 0;
+	virtual void config(std::uint32_t, float, float) = 0;
 };
 
 inline SoundEngineLinuxProxy::~SoundEngineLinuxProxy() {}
@@ -37,10 +33,8 @@ class SoundEngine
 	WIN_NO_COPY_MOVE(SoundEngine);
 
 public:
-	SoundEngine(/*Display&, */AssetRoll&, SoundConfigFn);
+	SoundEngine(/*Display&, */AssetRoll&);
 	~SoundEngine();
-
-	void process() { inner->process(); }
 
 	std::uint32_t play(const char *path, bool looping = false) { return inner->play(path, looping); }
 	std::uint32_t play(const char *path, float x, float y, bool looping = false) { return inner->play(path, x, y, looping); }
@@ -48,8 +42,7 @@ public:
 	void pause(std::uint32_t sid) { inner->pause(sid); }
 	void resume(std::uint32_t sid) { inner->resume(sid); }
 	void stop(std::uint32_t sid) { inner->stop(sid); }
-	void source(int sid, float x, float y) { inner->source(sid, x, y); }
-	void listener(float x, float y) { inner->listener(x, y); }
+	void config(std::uint32_t sid, float pan, float volume) { inner->config(sid, pan, volume); }
 
 private:
 	std::unique_ptr<SoundEngineLinuxProxy> inner;

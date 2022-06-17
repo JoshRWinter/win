@@ -34,8 +34,10 @@ template <typename T> struct ActiveSoundStoreItem : T
 	int spot;
 };
 
+template <typename T, int capacity> class ActiveSoundStore;
 template <typename T, int capacity> class ActiveSoundStoreIterator
 {
+	friend class ActiveSoundStore<T, capacity>;
 public:
 	ActiveSoundStoreIterator(typename win::Pool<ActiveSoundStoreItem<T>, capacity>::Iterator iterator)
 		: iterator(iterator)
@@ -58,6 +60,8 @@ template <typename T, int capacity> class ActiveSoundStore
 
 public:
 	typedef class ActiveSoundStoreIterator<T, capacity> Iterator;
+
+	static constexpr int maxsize = capacity;
 
 	ActiveSoundStore()
 		: next_id(0)
