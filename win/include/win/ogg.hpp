@@ -4,8 +4,8 @@
 #include <condition_variable>
 
 #include <win/stream.hpp>
-#include <win/soundstream.hpp>
+#include <win/pcmstream.hpp>
 
-void decodeogg(win::Stream, win::SoundStream&, std::condition_variable&, std::mutex&);
+void decodeogg(win::Stream, win::PCMStream&, std::condition_variable&, std::mutex&);
 
 #endif

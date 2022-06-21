@@ -18,7 +18,7 @@
 }
 
 // this is copied from a vorbis decoder sample, god have mercy on ye
-void decodeogg(win::Stream source, win::SoundStream &target, std::condition_variable &signal, std::mutex &mutex)
+void decodeogg(win::Stream source, win::PCMStream &target, std::condition_variable &signal, std::mutex &mutex)
 {
 	ogg_sync_state state;
 	ogg_stream_state stream;

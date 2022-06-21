@@ -7,16 +7,10 @@
 
 #include <win/win.hpp>
 #include <win/pool.hpp>
+#include <win/soundpriority.hpp>
 
 namespace win
 {
-
-enum class SoundPriority
-{
-	low,
-	med,
-	high
-};
 
 template <typename T> struct ActiveSoundStoreItem : T
 {

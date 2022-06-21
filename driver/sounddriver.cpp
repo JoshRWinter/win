@@ -11,10 +11,9 @@ static void sleep(int seconds)
 #include <unistd.h>
 #endif
 
-/*
 int main()
 {
-	win::AssetRoll roll("/home/josh/soundtesting/music.roll");
+	win::AssetRoll roll("/home/josh/gow.roll");
 	win::SoundEngine se(roll);
 
 	auto key = se.play("gow.ogg");
@@ -23,5 +22,3 @@ int main()
 	sleep(10);
 	return 0;
 }
-
-*/

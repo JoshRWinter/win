@@ -26,6 +26,8 @@ struct Block
 	float x, y, xv, yv;
 };
 
+int main() {}
+
 /*
 static float distance(float x1, float y1, float x2, float y2)
 {

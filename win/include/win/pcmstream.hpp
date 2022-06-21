@@ -5,31 +5,32 @@
 #include <thread>
 
 #include <win/win.hpp>
-#include <win/assetroll.hpp>
+#include <win/stream.hpp>
 #include <win/ringbuffer.hpp>
 
 namespace win
 {
 
-enum class SoundStreamKind
+enum class PCMStreamCacheMode
 {
 	not_cached,
-    partially_cached,
+	partially_cached,
 	fully_cached
 };
 
-class SoundCache;
-class SoundStream
+class PCMStreamCache;
+class PCMStream
 {
 	static constexpr int ringbuf_size = 4096;
-    WIN_NO_COPY_MOVE(SoundStream);
+	WIN_NO_COPY_MOVE(PCMStream);
 
 public:
-	SoundStream(SoundCache*, Stream*, SoundStreamKind);
-	~SoundStream();
+	PCMStream(PCMStreamCache*, Stream*, PCMStreamCacheMode);
+	~PCMStream();
 
 	int read_samples(std::int16_t*, int);
 	int write_samples(const std::int16_t*, int);
+	int size() const;
 	void complete_writing();
 	bool is_writing_completed() const;
 	int channels() const { return channel_count; }
@@ -39,8 +40,8 @@ public:
 private:
 	int write_samples_impl(const std::int16_t*, int);
 
-    SoundCache *parent;
-	SoundStreamKind kind;
+	PCMStreamCache *parent;
+	PCMStreamCacheMode kind;
 
 public:
 	int channel_count;
