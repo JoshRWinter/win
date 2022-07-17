@@ -39,7 +39,6 @@ private:
 	pw_stream *stream;
 	pw_stream_events events;
 
-	PCMStreamCache streamcache;
 	PCMMixer mixer;
 };
 

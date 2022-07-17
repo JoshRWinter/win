@@ -13,12 +13,13 @@ static void sleep(int seconds)
 
 int main()
 {
-	win::AssetRoll roll("/home/josh/gow.roll");
+	win::AssetRoll roll("/home/josh/soundtesting/music.roll");
 	win::SoundEngine se(roll);
 
-	auto key = se.play("gow.ogg");
-	se.config(key, 1.0, 1.0);
+	auto key = se.play(win::SoundPriority::high, "gow.ogg", 1.0, 1.0, false);
+	//auto key = se.play(win::SoundPriority::high, "../programming/fishtank/assets_local/platform_destroy.ogg");
+	se.config(key, 1.0, 0.3);
 
-	sleep(10);
+	sleep(600);
 	return 0;
 }

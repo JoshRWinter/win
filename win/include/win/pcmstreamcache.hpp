@@ -11,12 +11,36 @@
 namespace win
 {
 
+struct CachedPCMStream
+{
+	static constexpr int pcm_cache_len = 44100 * 5; // 5 seconds of mono, or 2.5 seconds of stereo
+
+	CachedPCMStream(const char *name)
+		: name(name)
+		, fully_cached(false)
+		, cache_fill(0)
+		, completed(false)
+	{}
+
+	void complete(bool fully_cached, int cache_fill)
+	{
+		this->fully_cached = fully_cached;
+		this->cache_fill = cache_fill;
+		completed = true;
+	}
+
+	const std::string name;
+    bool fully_cached;
+	int cache_fill;
+	std::array<std::int16_t, pcm_cache_len> pcm;
+	bool completed;
+};
+
 class PCMStreamCache
 {
 	WIN_NO_COPY_MOVE(PCMStreamCache);
 
 public:
-	static constexpr int pcm_chunk_cache_size = 44100 * 5; // 5 seconds of mono, or 2.5 seconds of stereo
 	PCMStreamCache(win::AssetRoll&);
 	~PCMStreamCache();
 
@@ -25,9 +49,8 @@ public:
 
 private:
 	win::AssetRoll &roll;
-	win::Pool<PCMStream> loaded_streams;
-	//win::Pool<std::string> name_cache;
-	//win::Pool<std::array<std::int16_t, pcm_chunk_cache_size>> pcm_chunk_cache;
+	win::Pool<PCMStream, 25> loaded_streams;
+	win::Pool<CachedPCMStream, 25> cached_streams;
 };
 
 }

@@ -6,6 +6,6 @@
 #include <win/stream.hpp>
 #include <win/pcmstream.hpp>
 
-void decodeogg(win::Stream, win::PCMStream&, std::condition_variable&, std::mutex&);
+void decodeogg(win::Stream, win::PCMStream&, int, std::condition_variable&, std::mutex&);
 
 #endif

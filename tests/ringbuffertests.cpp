@@ -73,6 +73,14 @@ template <typename T> void run()
 		memcheck();
 	}
 
+	// make sure empty write works
+	{
+		reset();
+		T src[] = { 1, 2, 3, 4 };
+
+		const int wrote = win::RingBufferBase::write(ringbuf, 4, (T*)NULL, 0, read, write);
+	}
+
 	// general comprehensive tests
 	{
 		reset();

@@ -63,7 +63,7 @@ public:
 			write_cursor = (write_cursor + put) % ringbuffer_length;
 
 			// handle wrap case
-			if (write_cursor == 0)
+			if (write_cursor == 0 && len - put > 0)
 				return put + write(ringbuffer, ringbuffer_length, src + put, len - put, read_cursor, write_cursor);
 			else
 				return put;

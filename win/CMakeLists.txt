@@ -8,6 +8,7 @@ add_library(win STATIC
 	src/atlas.cpp
 	src/stream.cpp
 	src/ogg.cpp
+	src/pcmdecoder.cpp
 	src/pcmstreamcache.cpp
 	src/pcmstream.cpp
 	src/pcmmixer.cpp
@@ -31,6 +32,7 @@ add_library(win STATIC
 	include/win/ringbuffer.hpp
 	include/win/ogg.hpp
 	include/win/soundpriority.hpp
+	include/win/pcmdecoder.hpp
 	include/win/pcmstreamcache.hpp
 	include/win/pcmstream.hpp
 	include/win/pcmmixer.hpp

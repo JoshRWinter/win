@@ -26,9 +26,6 @@ struct Block
 	float x, y, xv, yv;
 };
 
-int main() {}
-
-/*
 static float distance(float x1, float y1, float x2, float y2)
 {
 	return std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));;
@@ -69,7 +66,7 @@ int main()
 	auto music = "../../fishtank/assets_local/Motions.ogg";
 	auto effect = "../../fishtank/assets_local/platform_destroy.ogg";
 
-	win::SoundEngine audio_engine(display, roll, sound_config);
+	win::SoundEngine audio_engine(roll);
 
 	win::FontRenderer font_renderer(win::Dimensions<int>(display.width(), display.height()), win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f));
 	win::Font font1(font_renderer, roll["../../fishtank/assets/arial.ttf"], 0.5f);
@@ -152,7 +149,7 @@ int main()
 		if(press && button == win::Button::esc)
 			quit = true;
 		else if(press)
-			audio_engine.play(effect);
+			audio_engine.play(win::SoundPriority::high, effect);
 	});
 
 	float mousex = 0.0f, mousey = 0.0f;
@@ -173,13 +170,11 @@ int main()
 	// 	std::cerr << (char)key;
 	// });
 
-	const int block_sid = audio_engine.play(music, block.x, block.y, true);
+	const int block_sid = audio_engine.play(win::SoundPriority::high, music, 1.0f, 1.0f, true);
 	while(!quit)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
 		display.process();
-
-		audio_engine.process();
 
 		// process entities
 		{
@@ -207,7 +202,7 @@ int main()
 				block.yv = -block.yv;
 			}
 
-			audio_engine.source(block_sid, block.x, block.y);
+			//audio_engine.source(block_sid, block.x, block.y);
 
 			block_position[0] = block.x;
 			block_position[1] = block.y;
@@ -252,4 +247,3 @@ int main()
 
 	return 0;
 }
-*/

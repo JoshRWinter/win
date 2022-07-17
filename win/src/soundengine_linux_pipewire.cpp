@@ -12,8 +12,8 @@
 namespace win
 {
 
-SoundEngineLinuxPipeWire::SoundEngineLinuxPipeWire(AssetRoll &asset_roll)
-	: streamcache(asset_roll)
+SoundEngineLinuxPipeWire::SoundEngineLinuxPipeWire(AssetRoll &roll)
+	: mixer(roll)
 {
 	pw_init(0, NULL);
 
@@ -97,14 +97,13 @@ void SoundEngineLinuxPipeWire::stream_process(void *userdata)
 		win::bug("PipeWire: Couldn't dequeue buffer");
 
 	spa_buffer *buffer = pwbuffer->buffer;
-	std::int16_t *dest = (std::int16_t*)buffer->datas[0].data;
-	if (dest == NULL)
+	if (buffer->datas[0].data == NULL)
 		return;
 
 	if (buffer->n_datas > 0)
 	{
-		const auto pw_needs_samples = buffer->datas[0].maxsize / sizeof(std::int16_t);
-		const auto got_samples = engine.mixer.mix_samples((std::int16_t*)buffer->datas[0].data, pw_needs_samples);
+		const auto pw_wants_samples = buffer->datas[0].maxsize / sizeof(std::int16_t);
+		const auto got_samples = engine.mixer.mix_stereo((std::int16_t*)buffer->datas[0].data, pw_wants_samples);
 
 		buffer->datas[0].chunk->offset = 0;
 		buffer->datas[0].chunk->stride = sizeof(std::int16_t) * 2;
@@ -117,16 +116,18 @@ void SoundEngineLinuxPipeWire::stream_process(void *userdata)
 
 std::uint32_t SoundEngineLinuxPipeWire::play(win::SoundPriority priority, const char *path, bool looping)
 {
-	return play(priority, path, 1.0f, 1.0f, true, looping);
+	return play(priority, path, 1.0f, 1.0f, looping);
 }
 
 std::uint32_t SoundEngineLinuxPipeWire::play(win::SoundPriority priority, const char *path, float left, float right, bool looping)
 {
 	pw_thread_loop_lock(loop);
 
-	mixer.add(priority,
+	std::uint32_t key = mixer.add(priority, path, left, right, looping);
 
 	pw_thread_loop_unlock(loop);
+
+	return key;
 }
 
 void SoundEngineLinuxPipeWire::pause(std::uint32_t id)
