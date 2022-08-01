@@ -114,16 +114,16 @@ void SoundEngineLinuxPipeWire::stream_process(void *userdata)
 		win::bug("PipeWire: Couldn't queue buffer");
 }
 
-std::uint32_t SoundEngineLinuxPipeWire::play(win::SoundPriority priority, const char *path, bool looping)
+std::uint32_t SoundEngineLinuxPipeWire::play(const char *path, win::SoundResidencyPriority priority, float compression_priority, bool looping)
 {
-	return play(priority, path, 1.0f, 1.0f, looping);
+	return play(path, priority, compression_priority, 1.0f, 1.0f, looping);
 }
 
-std::uint32_t SoundEngineLinuxPipeWire::play(win::SoundPriority priority, const char *path, float left, float right, bool looping)
+std::uint32_t SoundEngineLinuxPipeWire::play(const char *path, win::SoundResidencyPriority priority, float compression_priority, float left, float right, bool looping)
 {
 	pw_thread_loop_lock(loop);
 
-	std::uint32_t key = mixer.add(priority, path, left, right, looping);
+	std::uint32_t key = mixer.add(path, priority, compression_priority, left, right, looping);
 
 	pw_thread_loop_unlock(loop);
 

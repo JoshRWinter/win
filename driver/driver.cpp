@@ -149,7 +149,7 @@ int main()
 		if(press && button == win::Button::esc)
 			quit = true;
 		else if(press)
-			audio_engine.play(win::SoundPriority::high, effect);
+			audio_engine.play(effect, win::SoundResidencyPriority::high, 1.0f);
 	});
 
 	float mousex = 0.0f, mousey = 0.0f;
@@ -170,7 +170,7 @@ int main()
 	// 	std::cerr << (char)key;
 	// });
 
-	const int block_sid = audio_engine.play(win::SoundPriority::high, music, 1.0f, 1.0f, true);
+	const int block_sid = audio_engine.play(music, win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true);
 	while(!quit)
 	{
 		auto start = std::chrono::high_resolution_clock::now();

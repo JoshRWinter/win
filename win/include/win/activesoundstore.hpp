@@ -7,14 +7,14 @@
 
 #include <win/win.hpp>
 #include <win/pool.hpp>
-#include <win/soundpriority.hpp>
+#include <win/soundresidencypriority.hpp>
 
 namespace win
 {
 
 template <typename T> struct ActiveSoundStoreItem : T
 {
-	template <typename... Ts> ActiveSoundStoreItem(SoundPriority priority, std::uint16_t id, std::uint16_t spot, Ts&&... ts)
+	template <typename... Ts> ActiveSoundStoreItem(SoundResidencyPriority priority, std::uint16_t id, std::uint16_t spot, Ts&&... ts)
 		: T(std::forward<Ts>(ts)...)
 		, priority(priority)
 		, id(id)
@@ -22,7 +22,7 @@ template <typename T> struct ActiveSoundStoreItem : T
 		, spot(spot)
 	{}
 
-	SoundPriority priority;
+	SoundResidencyPriority priority;
 	std::uint16_t id;
 	int start_time;
 	int spot;
@@ -97,7 +97,7 @@ public:
 		return item;
 	}
 
-	template <typename... Ts> std::uint32_t add(SoundPriority priority, Ts&&... args)
+	template <typename... Ts> std::uint32_t add(SoundResidencyPriority priority, Ts&&... args)
 	{
 		if (store.size() >= capacity)
 			return -1;
@@ -120,12 +120,12 @@ public:
 		return get_key_composite(item.id, spot);
 	}
 
-	std::uint32_t find_kickable(SoundPriority priority)
+	std::uint32_t find_kickable(SoundResidencyPriority priority)
 	{
 		const int now = time(NULL);
 		int spot = -1;
 
-		if (priority == SoundPriority::low)
+		if (priority == SoundResidencyPriority::low)
 			return -1;
 
 		for (const ActiveSoundStoreItem<T> &item : store)
@@ -139,10 +139,10 @@ public:
 				continue;
 			}
 
-			const SoundPriority candidate_priority = index[spot]->priority;
+			const SoundResidencyPriority candidate_priority = index[spot]->priority;
 			const int candidate_age = now - index[spot]->start_time;
 
-			const SoundPriority current_priority = item.priority;
+			const SoundResidencyPriority current_priority = item.priority;
 			const int current_age = now - item.start_time;
 
 			if (current_priority < candidate_priority)

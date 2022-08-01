@@ -6,45 +6,46 @@
 #include <win/pcmdecoder.hpp>
 #include <win/ogg.hpp>
 
-// the ergonomics of std::condition_variable are feckin terrible
-class OneshotSignal
-{
-public:
-	OneshotSignal() : signaled(false) {}
-
-	void wait()
-	{
-		std::unique_lock<std::mutex> lock(mutex);
-		cvar.wait(lock, [this]() { return signaled == true; });
-	}
-
-	void notify()
-	{
-		{
-			std::lock_guard<std::mutex> lock(mutex);
-			signaled = true;
-		}
-
-		cvar.notify_one();
-	}
-
-private:
-	bool signaled;
-	std::mutex mutex;
-	std::condition_variable cvar;
-};
-
-static void decodeogg(win::Stream&, win::PCMStream&, int, OneshotSignal*, std::atomic<bool>&);
-static void decodeogg_wrapper(win::Stream, win::PCMStream&, std::atomic<int>&, OneshotSignal&, std::atomic<bool>&, std::atomic<bool>&);
-
 namespace win
 {
 
-PCMDecoder::PCMDecoder()
+PCMDecoder::PCMDecoder(PCMStream &target, PCMResource *resource, Stream *data, int seek_start)
+	: target(target)
+	, pcmresource(resource)
+	, seek_start(seek_start)
+    , cancel(false)
+	, restart(false)
+	, seek_to(seek_start)
 {
-    cancel.store(false);
-	restart.store(false);
-	seek_to.store(0);
+	// hydrate the stream
+	if (resource != NULL)
+	{
+		const int fill = resource->fill();
+		if (target.write_samples(resource->data(), fill) != fill)
+			win::bug("PCMDecoder: Failed to rehydrate PCMStream");
+
+		if (resource->is_completed() && !resource->is_partial())
+			target.complete_writing();
+	}
+
+	// figure out whether to start the decoder
+    if (resource == NULL || !resource->is_completed() || resource->is_partial())
+    {
+		const int channels = resource ? resource->channels() : -1;
+		seek_to.store(seek_start + (resource ? resource->fill() : 0));
+
+	    if (channels == -1)
+	    {
+		    impl::OneshotSignal channel_signal;
+	    	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), &channel_signal));
+	    	channel_signal.wait();
+		}
+		else
+		{
+			target.set_channels(channels);
+	    	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), (impl::OneshotSignal*)NULL));
+		}
+	}
 }
 
 PCMDecoder::~PCMDecoder()
@@ -54,24 +55,77 @@ PCMDecoder::~PCMDecoder()
 		worker.join();
 }
 
-void PCMDecoder::start(win::Stream stream, win::PCMStream &pcm, int seek)
+void PCMDecoder::reset()
 {
-	if (worker.joinable())
-		win::bug("PCMDecoder restarted");
+	if (!target.is_writing_completed())
+		win::bug("PCMDecoder: reset before pcm stream finished!");
+	if (target.size() != 0)
+		win::bug("PCMDecoder: reset on non-empty PCMStream!");
 
-	seek_to.store(seek);
+	target.reset();
 
-	OneshotSignal channel_signal;
-	worker = std::move(std::thread(decodeogg_wrapper, std::move(stream), std::ref(pcm), std::ref(seek_to), std::ref(channel_signal), std::ref(cancel), std::ref(restart)));
-	channel_signal.wait();
+	if (pcmresource == NULL)
+	{
+		seek_to.store(seek_start);
+		restart.store(true);
+	}
+	else if (pcmresource->is_partial())
+	{
+		const int fill = pcmresource->fill();
+
+		// rehydrate stream
+		if (target.write_samples(pcmresource->data(), fill) != fill)
+			win::bug("PCMDecoder: Failed to rehydrate PCMStream");
+
+		seek_to.store(seek_start + fill);
+		restart.store(true);
+	}
+	else // resource is "full" instead of partial
+	{
+		// no need to restart the ogg decoder
+		// just rehydrate stream
+		const int fill = pcmresource->fill();
+		if (target.write_samples(pcmresource->data(), fill) != fill)
+			win::bug("PCMDecoder: Failed to rehydrate PCMStream");
+
+		target.complete_writing();
+	}
 }
 
-void PCMDecoder::reset(int seek)
+PCMResource *PCMDecoder::resource()
 {
-	seek_to.store(seek);
-	restart.store(true);
+	return pcmresource;
 }
 
+int PCMDecoder::write_samples(const std::int16_t *samples, int len)
+{
+	const int put = target.write_samples(samples, len);
+
+	// also save this data to the "resource"
+	// the resource caches pcm data
+	if (pcmresource)
+		pcmresource->write_samples(samples, put);
+
+	return put;
+}
+
+void PCMDecoder::set_channels(int c)
+{
+	if (pcmresource && pcmresource->channels() != -1)
+		win::bug("PCMDecoder: channels already set");
+
+	if (pcmresource)
+		pcmresource->set_channels(c);
+
+	target.set_channels(c);
+}
+
+void PCMDecoder::complete_writing()
+{
+	if (pcmresource && !pcmresource->is_completed())
+		pcmresource->complete();
+
+	target.complete_writing();
 }
 
 #if defined WINPLAT_WINDOWS
@@ -79,19 +133,19 @@ void PCMDecoder::reset(int seek)
 void platform_sleep(int millis) { Sleep(millis); }
 #elif defined WINPLAT_LINUX
 #include <unistd.h>
-void platform_sleep(int millis) { usleep(millis * 1000); }
+static void platform_sleep(int millis) { usleep(millis * 1000); }
 #endif
 
-void decodeogg_wrapper(win::Stream stream, win::PCMStream &pcm, std::atomic<int>& seek_to, OneshotSignal &channel_signal, std::atomic<bool> &cancel, std::atomic<bool> &restart)
+void PCMDecoder::decodeogg_loop(win::PCMDecoder &parent, win::Stream datafile, impl::OneshotSignal *channel_signal)
 {
-    decodeogg(stream, pcm, seek_to.load(), &channel_signal, cancel);
+    decodeogg(parent, datafile, parent.seek_to.load(), channel_signal);
 
-	while (!cancel.load())
+	while (!parent.cancel.load())
 	{
-		if (restart.load())
+		if (parent.restart.load())
 		{
-			restart.store(false);
-			decodeogg(stream, pcm, seek_to.load(), NULL, cancel);
+			parent.restart.store(false);
+			decodeogg(parent, datafile, parent.seek_to.load(), NULL);
 		}
 		else
 			platform_sleep(100);
@@ -103,7 +157,7 @@ void decodeogg_wrapper(win::Stream stream, win::PCMStream &pcm, std::atomic<int>
 	win::bug("Ogg-Vorbis: " + msg);
 }
 
-void decodeogg(win::Stream &source, win::PCMStream &target, int skip_samples, OneshotSignal *channel_signal, std::atomic<bool> &cancel)
+void PCMDecoder::decodeogg(win::PCMDecoder &parent, win::Stream &datafile, int skip_samples, impl::OneshotSignal *channel_signal)
 {
 	ogg_sync_state state;
 	ogg_stream_state stream;
@@ -123,8 +177,8 @@ void decodeogg(win::Stream &source, win::PCMStream &target, int skip_samples, On
 	int i;
 
 	buffer = ogg_sync_buffer(&state, 4096);
-	bytes = std::min(source.size(), (long long unsigned)4096);
-	source.read(buffer, bytes);
+	bytes = std::min(datafile.size(), (long long unsigned)4096);
+	datafile.read(buffer, bytes);
 
 	ogg_sync_wrote(&state, bytes);
 
@@ -176,11 +230,11 @@ void decodeogg(win::Stream &source, win::PCMStream &target, int skip_samples, On
 		}
 
 		buffer = ogg_sync_buffer(&state, 4096);
-		if(source.size() - source.tell() >= 4096)
+		if(datafile.size() - datafile.tell() >= 4096)
 			bytes = 4096;
 		else
-			bytes = source.size() - source.tell();
-		source.read(buffer, bytes);
+			bytes = datafile.size() - datafile.tell();
+		datafile.read(buffer, bytes);
 
 		if(bytes < 4096 && i < 2)
 			ogg_vorbis_error("EOF before reading all Vorbis headers");
@@ -188,9 +242,14 @@ void decodeogg(win::Stream &source, win::PCMStream &target, int skip_samples, On
 		ogg_sync_wrote(&state, bytes);
 	}
 
+	if (info.channels != 1 && info.channels != 2)
+		ogg_vorbis_error("Only mono or stereo data");
+
+	// if it's null, then the parent is not interested in the channels
+	// (because it was already informed on a past run)
 	if (channel_signal != NULL)
 	{
-		target.set_channels(info.channels);
+		parent.set_channels(info.channels);
 		channel_signal->notify();
 	}
 
@@ -264,12 +323,12 @@ void decodeogg(win::Stream &source, win::PCMStream &target, int skip_samples, On
 
 					for(;;)
 					{
-						samples_written += target.write_samples(convbuffer + samples_written, want_to_write_samples - samples_written);
+						samples_written += parent.write_samples(convbuffer + samples_written, want_to_write_samples - samples_written);
 
 						if (samples_written == want_to_write_samples)
 							break;
 
-						if (cancel.load())
+						if (parent.cancel.load())
 							goto cleanup;
 
 						platform_sleep(8);
@@ -286,14 +345,14 @@ void decodeogg(win::Stream &source, win::PCMStream &target, int skip_samples, On
 		if(!eos)
 		{
 			buffer = ogg_sync_buffer(&state, 4096);
-			unsigned long long bigness = source.size();
-			unsigned long long place = source.tell();
+			unsigned long long bigness = datafile.size();
+			unsigned long long place = datafile.tell();
 			if(bigness - place >= 4096)
 				bytes = 4096;
 			else
-				bytes = source.size() - source.tell();
+				bytes = bigness - place;
 
-			source.read(buffer, bytes);
+			datafile.read(buffer, bytes);
 			ogg_sync_wrote(&state, bytes);
 			if(bytes == 0)
 				eos = 1;
@@ -309,5 +368,7 @@ cleanup:
 	vorbis_info_clear(&info);
 	ogg_sync_clear(&state);
 
-	target.complete_writing();
+	parent.complete_writing();
+}
+
 }

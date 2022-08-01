@@ -4,9 +4,9 @@
 #include <pipewire/pipewire.h>
 
 #include <win/soundengine_linux.hpp>
-#include <win/pcmstreamcache.hpp>
-#include <win/pcmmixer.hpp>
-#include <win/soundpriority.hpp>
+#include <win/soundcache.hpp>
+#include <win/soundmixer.hpp>
+#include <win/soundresidencypriority.hpp>
 
 namespace win
 {
@@ -19,8 +19,8 @@ public:
 
 	WIN_NO_COPY_MOVE(SoundEngineLinuxPipeWire);
 
-	virtual std::uint32_t play(win::SoundPriority, const char*, bool = false) override;
-	virtual std::uint32_t play(win::SoundPriority, const char*, float, float, bool = false) override;
+	virtual std::uint32_t play(const char*, win::SoundResidencyPriority, float, bool = false) override;
+	virtual std::uint32_t play(const char*, win::SoundResidencyPriority, float, float, float, bool = false) override;
 	virtual void pause(std::uint32_t) override;
 	virtual void resume(std::uint32_t) override;
 	virtual void config(std::uint32_t, float, float) override;
@@ -39,7 +39,7 @@ private:
 	pw_stream *stream;
 	pw_stream_events events;
 
-	PCMMixer mixer;
+	SoundMixer mixer;
 };
 
 }

@@ -16,7 +16,7 @@ int main()
 	win::AssetRoll roll("/home/josh/soundtesting/music.roll");
 	win::SoundEngine se(roll);
 
-	auto key = se.play(win::SoundPriority::high, "gow.ogg", 1.0, 1.0, false);
+	auto key = se.play("gow.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, false);
 	//auto key = se.play(win::SoundPriority::high, "../programming/fishtank/assets_local/platform_destroy.ogg");
 	se.config(key, 1.0, 0.3);
 

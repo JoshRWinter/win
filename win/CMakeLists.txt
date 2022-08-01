@@ -8,10 +8,11 @@ add_library(win STATIC
 	src/atlas.cpp
 	src/stream.cpp
 	src/ogg.cpp
-	src/pcmdecoder.cpp
-	src/pcmstreamcache.cpp
 	src/pcmstream.cpp
-	src/pcmmixer.cpp
+	src/pcmresource.cpp
+	src/pcmdecoder.cpp
+	src/soundcache.cpp
+	src/soundmixer.cpp
 	src/soundengine_linux.cpp
 	src/soundengine_linux_pulseaudio.cpp
 	src/soundengine_linux_pipewire.cpp
@@ -31,11 +32,13 @@ add_library(win STATIC
 	include/win/pool.hpp
 	include/win/ringbuffer.hpp
 	include/win/ogg.hpp
-	include/win/soundpriority.hpp
-	include/win/pcmdecoder.hpp
-	include/win/pcmstreamcache.hpp
+	include/win/soundresidencypriority.hpp
 	include/win/pcmstream.hpp
-	include/win/pcmmixer.hpp
+	include/win/pcmresource.hpp
+	include/win/pcmdecoder.hpp
+        include/win/sound.hpp
+	include/win/soundcache.hpp
+	include/win/soundmixer.hpp
 	include/win/activesoundstore.hpp
 	include/win/soundengine.hpp
 	include/win/soundengine_windows.hpp
