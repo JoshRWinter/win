@@ -15,8 +15,9 @@ namespace win
 
 struct SoundMixerSound
 {
-	SoundMixerSound(Sound &sound, float compression_priority, float left, float right, bool looping)
+	SoundMixerSound(Sound &sound, SoundResidencyPriority residency_priority, float compression_priority, float left, float right, bool looping)
 		: sound(sound)
+		, residency_priority(residency_priority)
 		, compression_priority(compression_priority)
 		, left(left)
 		, right(right)
@@ -26,6 +27,7 @@ struct SoundMixerSound
 	{}
 
 	Sound &sound;
+	SoundResidencyPriority residency_priority;
 	float compression_priority;
 	float left;
 	float right;
@@ -44,7 +46,7 @@ public:
 	SoundMixer(win::AssetRoll&);
 	~SoundMixer();
 
-	int add(const char*, win::SoundResidencyPriority, float, float, float, bool);
+	int add(const char*, win::SoundResidencyPriority, float, float, float, bool, int);
 	void config(std::uint32_t, float, float);
 	void pause(std::uint32_t);
 	void resume(std::uint32_t);

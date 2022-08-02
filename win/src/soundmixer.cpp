@@ -18,12 +18,17 @@ SoundMixer::~SoundMixer()
 	cleanup(true);
 }
 
-int SoundMixer::add(const char *name, win::SoundResidencyPriority priority, float compression_priority, float left, float right, bool looping)
+int SoundMixer::add(const char *name, win::SoundResidencyPriority residency_priority, float compression_priority, float left, float right, bool looping, int seek)
 {
 	cleanup(false);
 
-	Sound &sound = cache.load(name, 0);
-	const auto key = sounds.add(priority, sound, compression_priority, std::max(std::min(left, 1.0f), 0.0f), std::max(std::min(right, 1.0f), 0.0f), looping);
+	Sound &sound = cache.load(name, seek);
+	const auto key = sounds.add(sound, residency_priority, compression_priority, std::max(std::min(left, 1.0f), 0.0f), std::max(std::min(right, 1.0f), 0.0f), looping);
+	if (key == -1)
+	{
+		// nevermind, need to unload it
+		cache.unload(sound);
+	}
 
 	return key;
 }
@@ -96,10 +101,32 @@ int SoundMixer::mix_stereo(std::int16_t *const dest, int len)
 		const int stream_channels = sound.sound.stream.channels();
 		if (stream_channels == 2)
 		{
-			//win::bug("STEREO");
 			const int got = sound.sound.stream.read_samples((conversion_buffers + (buffer * mix_samples)), len);
-			if (got < len) // just blank out what we couldn't get
-				memset((conversion_buffers + (buffer * mix_samples)) + got, 0, (len - got) * sizeof(std::int16_t)); // allow a skip
+
+			if (got < len)
+			{
+				if (sound.sound.stream.is_writing_completed() && sound.sound.stream.size() == 0)
+				{
+					fprintf(stderr, "SoundMixer: reached end of stream\n");
+
+					if (sound.looping)
+					{
+						fprintf(stderr, "SoundMixer: loop\n");
+						sound.sound.source.reset();
+
+						const int got2 = sound.sound.stream.read_samples(conversion_buffers + (buffer * mix_samples) + got, len - got);
+						if (got + got2 < len)
+							memset(conversion_buffers + (buffer * mix_samples) + got + got2, 0, (len - (got + got2)) * sizeof(std::int16_t)); // allow a skip
+					}
+					else
+					{
+						memset(conversion_buffers + (buffer * mix_samples) + got, 0, (len - got) * sizeof(std::int16_t));
+						sound.done = true;
+					}
+				}
+				else
+					memset((conversion_buffers + (buffer * mix_samples)) + got, 0, (len - got) * sizeof(std::int16_t)); // allow a skip
+			}
 		}
 		else if (stream_channels == 1)
 		{
@@ -124,7 +151,10 @@ int SoundMixer::mix_stereo(std::int16_t *const dest, int len)
 							memset(convbuf + got + got2, 0, (half - (got + got2)) * sizeof(std::int16_t)); // allow a skip
 					}
 					else
+					{
+						memset(convbuf + got, 0, (half - got) * sizeof(std::int16_t));
 						sound.done = true;
+					}
 				}
 				else
 					memset(convbuf + got, 0, (half - got) * sizeof(std::int16_t)); // allow a skip
@@ -153,8 +183,14 @@ int SoundMixer::mix_stereo(std::int16_t *const dest, int len)
 			const int left_dest = dest[frame];
 			const int right_dest = dest[frame + 1];
 
-			const std::int16_t left_clipped = std::min((int)std::numeric_limits<std::int16_t>::max(), left_dest + left_source);
-			const std::int16_t right_clipped = std::min((int)std::numeric_limits<std::int16_t>::max(), right_dest + right_source);
+			const int left = left_dest + left_source;
+			const int right = right_dest + right_source;
+
+			const int left_clipped_high = std::min((int)std::numeric_limits<std::int16_t>::max(), left);
+			const int right_clipped_high = std::min((int)std::numeric_limits<std::int16_t>::max(), right);
+
+			const std::int16_t left_clipped_high_low = std::max((int)std::numeric_limits<std::int16_t>::min(), left_clipped_high);
+			const std::int16_t right_clipped_high_low = std::max((int)std::numeric_limits<std::int16_t>::min(), right_clipped_high);
 
 			/*
 			if (left_clipped != right_clipped)
@@ -168,8 +204,8 @@ int SoundMixer::mix_stereo(std::int16_t *const dest, int len)
 				fprintf(stderr, "right clip\n");
 				*/
 
-			dest[frame] = left_clipped;
-			dest[frame + 1] = right_clipped;
+			dest[frame] = left_clipped_high_low;
+			dest[frame + 1] = right_clipped_high_low;
 		}
 	}
 

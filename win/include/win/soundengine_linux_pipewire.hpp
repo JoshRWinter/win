@@ -19,8 +19,8 @@ public:
 
 	WIN_NO_COPY_MOVE(SoundEngineLinuxPipeWire);
 
-	virtual std::uint32_t play(const char*, win::SoundResidencyPriority, float, bool = false) override;
-	virtual std::uint32_t play(const char*, win::SoundResidencyPriority, float, float, float, bool = false) override;
+	virtual std::uint32_t play(const char*, win::SoundResidencyPriority, float, bool, int) override;
+	virtual std::uint32_t play(const char*, win::SoundResidencyPriority, float, float, float, bool, int) override;
 	virtual void pause(std::uint32_t) override;
 	virtual void resume(std::uint32_t) override;
 	virtual void config(std::uint32_t, float, float) override;

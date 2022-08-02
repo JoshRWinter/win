@@ -18,24 +18,34 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource *resource, Stream *data, i
 	, seek_to(seek_start)
 {
 	// hydrate the stream
-	if (resource != NULL)
+	if (resource != NULL && resource->is_completed())
 	{
+		fprintf(stderr, "PCMDecoder: rehydrating stream\n");
+
 		const int fill = resource->fill();
 		if (target.write_samples(resource->data(), fill) != fill)
 			win::bug("PCMDecoder: Failed to rehydrate PCMStream");
 
-		if (resource->is_completed() && !resource->is_partial())
+		if (!resource->is_partial())
+		{
+			fprintf(stderr, "PCMDecoder: completely hydrated stream\n");
+
 			target.complete_writing();
+		}
 	}
 
 	// figure out whether to start the decoder
     if (resource == NULL || !resource->is_completed() || resource->is_partial())
     {
+		fprintf(stderr, "PCMDecoder: starting decoder\n");
+
 		const int channels = resource ? resource->channels() : -1;
 		seek_to.store(seek_start + (resource ? resource->fill() : 0));
+		fprintf(stderr, "channels: %d\n", channels);
 
 	    if (channels == -1)
 	    {
+		    fprintf(stderr, "PCMDecoder: collecting channels\n");
 		    impl::OneshotSignal channel_signal;
 	    	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), &channel_signal));
 	    	channel_signal.wait();
@@ -45,6 +55,12 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource *resource, Stream *data, i
 			target.set_channels(channels);
 	    	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), (impl::OneshotSignal*)NULL));
 		}
+	}
+	else
+	{
+		// decoder will not be started. fill in the channels since no one else is going to.
+
+		target.set_channels(resource->channels());
 	}
 }
 

@@ -142,7 +142,7 @@ int main()
 
 	bool quit = false;
 	bool paused = false;
-	display.register_button_handler([&effect, &quit, &paused, &audio_engine](win::Button button, bool press)
+	display.register_button_handler([&](win::Button button, bool press)
 	{
 		if(press)
 			std::cerr << "key: " << win::key_name(button) << std::endl;
@@ -170,7 +170,7 @@ int main()
 	// 	std::cerr << (char)key;
 	// });
 
-	const int block_sid = audio_engine.play(music, win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true);
+	//const int block_sid = audio_engine.play(music, win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true);
 	while(!quit)
 	{
 		auto start = std::chrono::high_resolution_clock::now();

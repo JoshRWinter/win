@@ -7,24 +7,19 @@
 
 #include <win/win.hpp>
 #include <win/pool.hpp>
-#include <win/soundresidencypriority.hpp>
 
 namespace win
 {
 
 template <typename T> struct ActiveSoundStoreItem : T
 {
-	template <typename... Ts> ActiveSoundStoreItem(SoundResidencyPriority priority, std::uint16_t id, std::uint16_t spot, Ts&&... ts)
+	template <typename... Ts> ActiveSoundStoreItem(std::uint16_t id, std::uint16_t spot, Ts&&... ts)
 		: T(std::forward<Ts>(ts)...)
-		, priority(priority)
 		, id(id)
-		, start_time(time(NULL))
 		, spot(spot)
 	{}
 
-	SoundResidencyPriority priority;
 	std::uint16_t id;
-	int start_time;
 	int spot;
 };
 
@@ -97,7 +92,7 @@ public:
 		return item;
 	}
 
-	template <typename... Ts> std::uint32_t add(SoundResidencyPriority priority, Ts&&... args)
+	template <typename... Ts> std::uint32_t add(Ts&&... args)
 	{
 		if (store.size() >= capacity)
 			return -1;
@@ -113,57 +108,11 @@ public:
 			index_free_list.erase(index_free_list.end() - 1);
 		}
 
-		ActiveSoundStoreItem<T> &item = store.add(priority, next_id, spot, std::forward<Ts>(args)...);
+		ActiveSoundStoreItem<T> &item = store.add(next_id, spot, std::forward<Ts>(args)...);
 		++next_id;
 		index[spot] = &item;
 
 		return get_key_composite(item.id, spot);
-	}
-
-	std::uint32_t find_kickable(SoundResidencyPriority priority)
-	{
-		const int now = time(NULL);
-		int spot = -1;
-
-		if (priority == SoundResidencyPriority::low)
-			return -1;
-
-		for (const ActiveSoundStoreItem<T> &item : store)
-		{
-			if (item.priority >= priority)
-				continue;
-
-			if (spot == -1)
-			{
-				spot = item.spot;
-				continue;
-			}
-
-			const SoundResidencyPriority candidate_priority = index[spot]->priority;
-			const int candidate_age = now - index[spot]->start_time;
-
-			const SoundResidencyPriority current_priority = item.priority;
-			const int current_age = now - item.start_time;
-
-			if (current_priority < candidate_priority)
-			{
-				spot = item.spot;
-				continue;
-			}
-
-			if (current_age < candidate_age)
-			{
-				spot = item.spot;
-				continue;
-			}
-		}
-
-		if (spot == -1)
-			return -1;
-
-		spot_check(spot);
-
-		return get_key_composite(index[spot]->id, index[spot]->spot);
 	}
 
 	ActiveSoundStoreIterator<T, capacity> remove(ActiveSoundStoreIterator<T, capacity> it)

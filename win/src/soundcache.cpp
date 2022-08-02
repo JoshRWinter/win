@@ -19,7 +19,7 @@ Sound &SoundCache::load(const char *name, int seek)
     PCMResource *found = NULL;
     for (PCMResource &r : resources)
 	{
-		if (r.name() == name && r.seek_start() == seek)
+		if (!strcmp(r.name(), name) && r.seek_start() == seek)
 		{
 			found = &r;
 			break;
@@ -33,7 +33,9 @@ Sound &SoundCache::load(const char *name, int seek)
 		// no cache entry yet. make one
 		PCMResource &resource = resources.add(name, seek);
 
-		// need to hit the disk
+		// need to hit the disk			{
+		// check if the stream is done
+
 		Stream s = roll[name];
 
 		// the win::PCMDecoder will std::move the "s" into itself

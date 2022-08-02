@@ -39,25 +39,25 @@ static void smoke()
 
 	// add a bunch of stuff, make sure the basics work
 	int num = 0;
-	const std::uint32_t red = store.add(win::SoundPriority::med, num, "red");
+	const std::uint32_t red = store.add(num, "red");
 	assert(num == 1);
 	assert(store.size() == 1);
-	const std::uint32_t orange = store.add(win::SoundPriority::med, num, "orange");
+	const std::uint32_t orange = store.add(num, "orange");
 	assert(num == 2);
 	assert(store.size() == 2);
-	const std::uint32_t yellow = store.add(win::SoundPriority::med, num, "yellow");
+	const std::uint32_t yellow = store.add(num, "yellow");
 	assert(num == 3);
 	assert(store.size() == 3);
-	const std::uint32_t green = store.add(win::SoundPriority::med, num, "green");
+	const std::uint32_t green = store.add(num, "green");
 	assert(num == 4);
 	assert(store.size() == 4);
-	const std::uint32_t blue = store.add(win::SoundPriority::med, num, "blue");
+	const std::uint32_t blue = store.add(num, "blue");
 	assert(num == 5);
 	assert(store.size() == 5);
-	const std::uint32_t indigo = store.add(win::SoundPriority::med, num, "indigo");
+	const std::uint32_t indigo = store.add(num, "indigo");
 	assert(num == 6);
 	assert(store.size() == 6);
-	const std::uint32_t violet = store.add(win::SoundPriority::med, num, "violet");
+	const std::uint32_t violet = store.add(num, "violet");
 	assert(num == 7);
 	assert(store.size() == 7);
 
@@ -109,7 +109,7 @@ static void smoke()
 	assert(num == 6);
 	assert(store.size() == 6);
 
-	const std::uint32_t rainbow = store.add(win::SoundPriority::med, num, "rainbow");
+	const std::uint32_t rainbow = store.add(num, "rainbow");
 	assert(get_id(rainbow) == 7);
 	assert(get_index(rainbow) == 2);
 	assert(store[rainbow]->name == "rainbow");
@@ -169,13 +169,13 @@ static void smoke_with_iterators()
 {
 	win::ActiveSoundStore<TestObject, 32> store;
 	int num = 0;
-	store.add(win::SoundPriority::med, num, "red");
-	store.add(win::SoundPriority::med, num, "orange");
-	store.add(win::SoundPriority::med, num, "yellow");
-	store.add(win::SoundPriority::med, num, "green");
-	store.add(win::SoundPriority::med, num, "blue");
-	store.add(win::SoundPriority::med, num, "indigo");
-	store.add(win::SoundPriority::med, num, "violet");
+	store.add(num, "red");
+	store.add(num, "orange");
+	store.add(num, "yellow");
+	store.add(num, "green");
+	store.add(num, "blue");
+	store.add(num, "indigo");
+	store.add(num, "violet");
 
 	win::ActiveSoundStore<TestObject, 32>::Iterator it = store.begin();
 
@@ -228,13 +228,13 @@ static void destructor()
 	int num = 0;
 	{
 		win::ActiveSoundStore<TestObject, 32> store;
-		store.add(win::SoundPriority::med, num, "red");
-		store.add(win::SoundPriority::med, num, "orange");
-		store.add(win::SoundPriority::med, num, "yellow");
-		store.add(win::SoundPriority::med, num, "green");
-		store.add(win::SoundPriority::med, num, "blue");
-		store.add(win::SoundPriority::med, num, "indigo");
-		store.add(win::SoundPriority::med, num, "violet");
+		store.add(num, "red");
+		store.add(num, "orange");
+		store.add(num, "yellow");
+		store.add(num, "green");
+		store.add(num, "blue");
+		store.add(num, "indigo");
+		store.add(num, "violet");
 
 		assert(store.size() == 7);
 		assert(num == 7);
@@ -248,13 +248,13 @@ static void small_store()
 	win::ActiveSoundStore<TestObject, 4> store;
 	int num;
 
-	const auto red = store.add(win::SoundPriority::med, num, "red");
-	const auto orange = store.add(win::SoundPriority::med, num, "orange");
-	const auto yellow = store.add(win::SoundPriority::med, num, "yellow");
-	const auto green = store.add(win::SoundPriority::med, num, "green");
-	const auto blue = store.add(win::SoundPriority::med, num, "blue");
-	const auto indigo = store.add(win::SoundPriority::med, num, "indigo");
-	const auto violet = store.add(win::SoundPriority::med, num, "violet");
+	const auto red = store.add(num, "red");
+	const auto orange = store.add(num, "orange");
+	const auto yellow = store.add(num, "yellow");
+	const auto green = store.add(num, "green");
+	const auto blue = store.add(num, "blue");
+	const auto indigo = store.add(num, "indigo");
+	const auto violet = store.add(num, "violet");
 
 	assert(red == get_key(0, 0));
 	assert(orange == get_key(1, 1));
@@ -268,51 +268,12 @@ static void small_store()
 	assert(store[blue] == NULL);
 }
 
-static void find_kickable()
-{
-	int num = 0;
-	{
-		win::ActiveSoundStore<TestObject, 10> store;
-		assert(store.find_kickable(win::SoundPriority::low) == -1);
-	}
-
-	{
-		win::ActiveSoundStore<TestObject, 10> store;
-		store.add(win::SoundPriority::low, num, "red");
-		assert(store.find_kickable(win::SoundPriority::low) == -1);
-	}
-
-	{
-		win::ActiveSoundStore<TestObject, 10> store;
-		store.add(win::SoundPriority::low, num, "red");
-		assert(store.find_kickable(win::SoundPriority::med) == get_key(0, 0));
-	}
-
-	{
-		win::ActiveSoundStore<TestObject, 10> store;
-		store.add(win::SoundPriority::low, num, "red");
-		std::this_thread::sleep_for(std::chrono::duration<int, std::milli>(1000));
-		store.add(win::SoundPriority::low, num, "orange");
-		store.add(win::SoundPriority::med, num, "yellow");
-		assert(store.find_kickable(win::SoundPriority::med) == get_key(1, 1));
-	}
-
-	{
-		win::ActiveSoundStore<TestObject, 10> store;
-		store.add(win::SoundPriority::high, num, "red");
-		store.add(win::SoundPriority::high, num, "orange");
-		store.add(win::SoundPriority::high, num, "yellow");
-		assert(store.find_kickable(win::SoundPriority::med) == -1);
-	}
-}
-
 int main()
 {
 	smoke();
 	smoke_with_iterators();
 	destructor();
 	small_store();
-	find_kickable();
 
 	fprintf(stderr, "All tests ran successfully\n");
 }
