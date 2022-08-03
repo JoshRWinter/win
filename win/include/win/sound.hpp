@@ -14,7 +14,7 @@ class Sound
 	WIN_NO_COPY_MOVE(Sound);
 
 public:
-	Sound(PCMResource *resource, win::Stream *datafile, int seek_start)
+	Sound(PCMResource &resource, win::Stream *datafile, int seek_start)
 		: source(stream, resource, datafile, seek_start)
 	{}
 

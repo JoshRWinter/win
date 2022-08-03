@@ -9,7 +9,7 @@
 namespace win
 {
 
-PCMDecoder::PCMDecoder(PCMStream &target, PCMResource *resource, Stream *data, int seek_start)
+PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, int seek_start)
 	: target(target)
 	, pcmresource(resource)
 	, seek_start(seek_start)
@@ -17,16 +17,16 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource *resource, Stream *data, i
 	, restart(false)
 	, seek_to(seek_start)
 {
-	// hydrate the stream
-	if (resource != NULL && resource->is_completed())
+	if (resource.is_completed())
 	{
+		// hydrate the stream
 		fprintf(stderr, "PCMDecoder: rehydrating stream\n");
 
-		const int fill = resource->fill();
-		if (target.write_samples(resource->data(), fill) != fill)
+		const int fill = resource.fill();
+		if (target.write_samples(resource.data(), fill) != fill)
 			win::bug("PCMDecoder: Failed to rehydrate PCMStream");
 
-		if (!resource->is_partial())
+		if (!resource.is_partial())
 		{
 			fprintf(stderr, "PCMDecoder: completely hydrated stream\n");
 
@@ -35,17 +35,20 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource *resource, Stream *data, i
 	}
 
 	// figure out whether to start the decoder
-    if (resource == NULL || !resource->is_completed() || resource->is_partial())
+    if (!resource.is_completed() || resource.is_partial())
     {
 		fprintf(stderr, "PCMDecoder: starting decoder\n");
 
-		const int channels = resource ? resource->channels() : -1;
-		seek_to.store(seek_start + (resource ? resource->fill() : 0));
-		fprintf(stderr, "channels: %d\n", channels);
+		const int fill = resource.is_completed() ? resource.fill() : 0;
+		const int channels = resource.channels();
+
+		// potentially tell the decoder to skip what has already been cached
+		seek_to.store(seek_start + fill);
 
 	    if (channels == -1)
 	    {
 		    fprintf(stderr, "PCMDecoder: collecting channels\n");
+
 		    impl::OneshotSignal channel_signal;
 	    	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), &channel_signal));
 	    	channel_signal.wait();
@@ -60,7 +63,7 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource *resource, Stream *data, i
 	{
 		// decoder will not be started. fill in the channels since no one else is going to.
 
-		target.set_channels(resource->channels());
+		target.set_channels(resource.channels());
 	}
 }
 
@@ -73,6 +76,9 @@ PCMDecoder::~PCMDecoder()
 
 void PCMDecoder::reset()
 {
+	// enforce some invariants
+	if (!pcmresource.is_completed())
+		win::bug("PCMDecoder: reset on incomplete pcm resource!");
 	if (!target.is_writing_completed())
 		win::bug("PCMDecoder: reset before pcm stream finished!");
 	if (target.size() != 0)
@@ -80,17 +86,12 @@ void PCMDecoder::reset()
 
 	target.reset();
 
-	if (pcmresource == NULL)
+	if (pcmresource.is_partial())
 	{
-		seek_to.store(seek_start);
-		restart.store(true);
-	}
-	else if (pcmresource->is_partial())
-	{
-		const int fill = pcmresource->fill();
+		const int fill = pcmresource.fill();
 
 		// rehydrate stream
-		if (target.write_samples(pcmresource->data(), fill) != fill)
+		if (target.write_samples(pcmresource.data(), fill) != fill)
 			win::bug("PCMDecoder: Failed to rehydrate PCMStream");
 
 		seek_to.store(seek_start + fill);
@@ -100,15 +101,15 @@ void PCMDecoder::reset()
 	{
 		// no need to restart the ogg decoder
 		// just rehydrate stream
-		const int fill = pcmresource->fill();
-		if (target.write_samples(pcmresource->data(), fill) != fill)
+		const int fill = pcmresource.fill();
+		if (target.write_samples(pcmresource.data(), fill) != fill)
 			win::bug("PCMDecoder: Failed to rehydrate PCMStream");
 
 		target.complete_writing();
 	}
 }
 
-PCMResource *PCMDecoder::resource()
+PCMResource &PCMDecoder::resource()
 {
 	return pcmresource;
 }
@@ -119,27 +120,24 @@ int PCMDecoder::write_samples(const std::int16_t *samples, int len)
 
 	// also save this data to the "resource"
 	// the resource caches pcm data
-	if (pcmresource)
-		pcmresource->write_samples(samples, put);
+	pcmresource.write_samples(samples, put);
 
 	return put;
 }
 
 void PCMDecoder::set_channels(int c)
 {
-	if (pcmresource && pcmresource->channels() != -1)
+	if (pcmresource.channels() != -1)
 		win::bug("PCMDecoder: channels already set");
 
-	if (pcmresource)
-		pcmresource->set_channels(c);
-
+	pcmresource.set_channels(c);
 	target.set_channels(c);
 }
 
 void PCMDecoder::complete_writing()
 {
-	if (pcmresource && !pcmresource->is_completed())
-		pcmresource->complete();
+	if (!pcmresource.is_completed())
+		pcmresource.complete();
 
 	target.complete_writing();
 }

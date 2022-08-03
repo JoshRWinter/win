@@ -19,7 +19,7 @@ Sound &SoundCache::load(const char *name, int seek)
     PCMResource *found = NULL;
     for (PCMResource &r : resources)
 	{
-		if (!strcmp(r.name(), name) && r.seek_start() == seek)
+		if (r.is_completed() && !strcmp(r.name(), name) && r.seek_start() == seek)
 		{
 			found = &r;
 			break;
@@ -28,66 +28,70 @@ Sound &SoundCache::load(const char *name, int seek)
 
 	if (found == NULL)
 	{
-		fprintf(stderr, "SoundCache: No cached resource with name %s and seek %d\n", name, seek);
+		fprintf(stderr, "SoundCache: No completed cached resource with name %s and seek %d\n", name, seek);
 
-		// no cache entry yet. make one
+		// no completed cache entry yet. make one
 		PCMResource &resource = resources.add(name, seek);
-
-		// need to hit the disk			{
-		// check if the stream is done
-
-		Stream s = roll[name];
-
-		// the win::PCMDecoder will std::move the "s" into itself
-		return loaded_sounds.add(&resource, &s, seek);
-	}
-	else if (!found->is_completed())
-	{
-		fprintf(stderr, "SoundCache: cache present, but incomplete\n");
-		// there is a cache entry, but it isn't done yet. don't use it, and don't make a new one
 
 		// need to hit the disk
 		Stream s = roll[name];
 
-		// the win::PCMStream will std::move the "s" into itself
-		return loaded_sounds.add((win::PCMResource*)NULL, &s, seek);
+		// the win::PCMDecoder will std::move the "s" into itself
+		return loaded_sounds.add(resource, &s, seek);
 	}
 	else if (found->is_partial())
 	{
 		fprintf(stderr, "SoundCache: partial cache present\n");
 		// partially cached
 
+		// need to hit the disk
 		Stream s = roll[name];
-		// the win::PCMStream will std::move the "s" into itself
-		return loaded_sounds.add(found, &s, seek);
+
+		// the win::PCMDecoder will std::move the "s" into itself
+		return loaded_sounds.add(*found, &s, seek);
 	}
 	else
 	{
 		fprintf(stderr, "SoundCache: full cache present\n");
-    	return loaded_sounds.add(found, (win::Stream*)NULL, seek);
+    	return loaded_sounds.add(*found, (win::Stream*)NULL, seek);
 	}
 }
 
 void SoundCache::unload(Sound &sound)
 {
-	PCMResource *const resource = sound.source.resource();
+	PCMResource &resource = sound.source.resource();
 
-	if (resource == NULL)
+	// does this resource already exist?
+    PCMResource *found = NULL;
+	for (PCMResource &r : resources)
 	{
-		// the sound was never given a resource
-		fprintf(stderr, "SoundCache: unload - resource was null\n");
-		loaded_sounds.remove(sound);
+		if (!strcmp(r.name(), resource.name()) && r.seek_start() == resource.seek_start() && &r != &resource)
+		{
+			found = &r;
+			break;
+		}
 	}
-	else if (!resource->is_completed())
+
+	if (!resource.is_completed())
 	{
 		// the sound was given a resource but was stopped before the resource could fill up
 		fprintf(stderr, "SoundCache: unload - resource was incomplete\n");
+
 		loaded_sounds.remove(sound);
-		resources.remove(*resource);
+		resources.remove(resource);
+	}
+	else if (found)
+	{
+		// this sound's resource is a duplicate
+		fprintf(stderr, "SoundCache: unload - duplicate resource. removing...\n");
+
+		loaded_sounds.remove(sound);
+		resources.remove(resource);
 	}
 	else
 	{
 		fprintf(stderr, "SoundCache: unload - normal\n");
+
 		loaded_sounds.remove(sound);
 	}
 }

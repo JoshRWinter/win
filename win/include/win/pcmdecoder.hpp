@@ -19,12 +19,19 @@ namespace impl
 class OneshotSignal
 {
 public:
-	OneshotSignal() : signaled(false) {}
+	OneshotSignal()
+		: signaled(false)
+		, dirty(false)
+    {}
 
 	void wait()
 	{
+		if (dirty)
+			win::bug("Dirty oneshot");
+
 		std::unique_lock<std::mutex> lock(mutex);
 		cvar.wait(lock, [this]() { return signaled == true; });
+		dirty = true;
 	}
 
 	void notify()
@@ -39,6 +46,7 @@ public:
 
 private:
 	bool signaled;
+	bool dirty;
 	std::mutex mutex;
 	std::condition_variable cvar;
 };
@@ -50,11 +58,11 @@ class PCMDecoder
 {
 	WIN_NO_COPY_MOVE(PCMDecoder);
 public:
-	PCMDecoder(PCMStream&, PCMResource*, Stream*, int);
+	PCMDecoder(PCMStream&, PCMResource&, Stream*, int);
 	~PCMDecoder();
 
 	void reset();
-	PCMResource *resource();
+	PCMResource &resource();
 
 private:
 	int write_samples(const std::int16_t*, int);
@@ -65,7 +73,7 @@ private:
 	static void decodeogg(PCMDecoder&, win::Stream&, int, impl::OneshotSignal*);
 
 	PCMStream &target;
-	PCMResource *pcmresource;
+	PCMResource &pcmresource;
 	int seek_start;
 	std::atomic<bool> cancel;
 	std::atomic<bool> restart;
