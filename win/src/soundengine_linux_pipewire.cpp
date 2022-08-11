@@ -144,6 +144,15 @@ void SoundEngineLinuxPipeWire::resume(std::uint32_t id)
 	pw_thread_loop_unlock(loop);
 }
 
+void SoundEngineLinuxPipeWire::stop(std::uint32_t id)
+{
+	pw_thread_loop_lock(loop);
+
+	mixer.stop(id);
+
+	pw_thread_loop_unlock(loop);
+}
+
 void SoundEngineLinuxPipeWire::config(std::uint32_t id, float pan, float volume)
 {
 	pw_thread_loop_lock(loop);

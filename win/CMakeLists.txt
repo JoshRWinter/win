@@ -36,7 +36,7 @@ add_library(win STATIC
 	include/win/pcmstream.hpp
 	include/win/pcmresource.hpp
 	include/win/pcmdecoder.hpp
-        include/win/sound.hpp
+	include/win/sound.hpp
 	include/win/soundcache.hpp
 	include/win/soundmixer.hpp
 	include/win/activesoundstore.hpp
@@ -47,6 +47,7 @@ add_library(win STATIC
 	include/win/soundengine_linux_pulseaudio_functions.hpp
 	include/win/soundengine_linux_pipewire.hpp
 	include/win/soundengine_linux_pipewire_functions.hpp
+	include/win/test/soundintegrationtests.hpp
 	include/win/gl.hpp
 	include/win/display.hpp
 	include/win/font.hpp
@@ -59,7 +60,7 @@ add_library(win STATIC
 	include/win/targa.hpp
 	include/win/utility.hpp
 	include/win/event.hpp
-	)
+)
 
 if(WIN32)
 	find_package(OpenGL REQUIRED)

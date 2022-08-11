@@ -47,22 +47,22 @@ void SoundMixer::resume(std::uint32_t key)
 
 void SoundMixer::cleanup(bool all)
 {
-	for (auto stream = sounds.begin(); stream != sounds.end();)
+	for (auto sound = sounds.begin(); sound != sounds.end();)
 	{
-		const bool kill = stream->done || all;
+		const bool kill = sound->done || all;
 
 		if (kill)
 		{
-			cache.unload(stream->sound);
-			stream = sounds.remove(stream);
+			cache.unload(sound->sound);
+			sound = sounds.remove(sound);
 			continue;
 		}
 
-		++stream;
+		++sound;
 	}
 }
 
-void SoundMixer::remove(std::uint32_t key)
+void SoundMixer::stop(std::uint32_t key)
 {
 	SoundMixerSound *sound = sounds[key];
 	if (sound == NULL)

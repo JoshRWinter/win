@@ -6,6 +6,10 @@
 #include <win/pcmdecoder.hpp>
 #include <win/ogg.hpp>
 
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+#include <win/test/soundintegrationtests.hpp>
+#endif
+
 namespace win
 {
 
@@ -20,7 +24,9 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, i
 	if (resource.is_completed())
 	{
 		// hydrate the stream
-		fprintf(stderr, "PCMDecoder: rehydrating stream\n");
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+		win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_rehydrate, resource.name(), seek_start, "PCMDecoder: initial stream hydration, fill " + std::to_string(resource.fill())));
+#endif
 
 		const int fill = resource.fill();
 		if (target.write_samples(resource.data(), fill) != fill)
@@ -28,7 +34,9 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, i
 
 		if (!resource.is_partial())
 		{
-			fprintf(stderr, "PCMDecoder: completely hydrated stream\n");
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_full_rehydrate, resource.name(), seek_start, "PCMDecoder: full stream hydration"));
+#endif
 
 			target.complete_writing();
 		}
@@ -37,7 +45,9 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, i
 	// figure out whether to start the decoder
     if (!resource.is_completed() || resource.is_partial())
     {
-		fprintf(stderr, "PCMDecoder: starting decoder\n");
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_start, resource.name(), seek_start, "PCMDecoder: decoder start"));
+#endif
 
 		const int fill = resource.is_completed() ? resource.fill() : 0;
 		const int channels = resource.channels();
@@ -47,11 +57,13 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, i
 
 	    if (channels == -1)
 	    {
-		    fprintf(stderr, "PCMDecoder: collecting channels\n");
-
 		    impl::OneshotSignal channel_signal;
 	    	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), &channel_signal));
 	    	channel_signal.wait();
+
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_collect_channels, resource.name(), seek_start, "PCMDecoder: collecting channels"));
+#endif
 		}
 		else
 		{
@@ -88,6 +100,10 @@ void PCMDecoder::reset()
 
 	if (pcmresource.is_partial())
 	{
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_reset_partial, pcmresource.name(), seek_start, "PCMDecoder: reset, partial rehydration"));
+#endif
+
 		const int fill = pcmresource.fill();
 
 		// rehydrate stream
@@ -99,6 +115,10 @@ void PCMDecoder::reset()
 	}
 	else // resource is "full" instead of partial
 	{
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_reset_full, pcmresource.name(), seek_start, "PCMDecoder: reset, full rehydration"));
+#endif
+
 		// no need to restart the ogg decoder
 		// just rehydrate stream
 		const int fill = pcmresource.fill();
@@ -136,6 +156,10 @@ void PCMDecoder::set_channels(int c)
 
 void PCMDecoder::complete_writing()
 {
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_writing_completed, pcmresource.name(), seek_start, "PCMDecoder: writing completed"));
+#endif
+
 	if (!pcmresource.is_completed())
 		pcmresource.complete();
 
@@ -159,6 +183,7 @@ void PCMDecoder::decodeogg_loop(win::PCMDecoder &parent, win::Stream datafile, i
 		if (parent.restart.load())
 		{
 			parent.restart.store(false);
+			datafile.seek(0);
 			decodeogg(parent, datafile, parent.seek_to.load(), NULL);
 		}
 		else
@@ -173,6 +198,8 @@ void PCMDecoder::decodeogg_loop(win::PCMDecoder &parent, win::Stream datafile, i
 
 void PCMDecoder::decodeogg(win::PCMDecoder &parent, win::Stream &datafile, int skip_samples, impl::OneshotSignal *channel_signal)
 {
+	bool finished = false;
+
 	ogg_sync_state state;
 	ogg_stream_state stream;
 	ogg_page page;
@@ -373,6 +400,7 @@ void PCMDecoder::decodeogg(win::PCMDecoder &parent, win::Stream &datafile, int s
 		}
 	}
 
+	finished = true;
 cleanup:
 	vorbis_block_clear(&block);
 	vorbis_dsp_clear(&dsp);
@@ -382,7 +410,8 @@ cleanup:
 	vorbis_info_clear(&info);
 	ogg_sync_clear(&state);
 
-	parent.complete_writing();
+	if (finished)
+		parent.complete_writing();
 }
 
 }

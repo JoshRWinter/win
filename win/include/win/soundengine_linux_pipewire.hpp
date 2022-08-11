@@ -23,6 +23,7 @@ public:
 	virtual std::uint32_t play(const char*, win::SoundResidencyPriority, float, float, float, bool, int) override;
 	virtual void pause(std::uint32_t) override;
 	virtual void resume(std::uint32_t) override;
+	virtual void stop(std::uint32_t) override;
 	virtual void config(std::uint32_t, float, float) override;
 
 private:

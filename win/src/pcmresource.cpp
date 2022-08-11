@@ -85,7 +85,6 @@ bool PCMResource::is_partial() const
 void PCMResource::complete()
 {
 	completed.store(true);
-	fprintf(stderr, "PCMResource: cache completed: fill %d\n", cache_fill.load());
 }
 
 }

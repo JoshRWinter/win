@@ -50,7 +50,7 @@ public:
 	void config(std::uint32_t, float, float);
 	void pause(std::uint32_t);
 	void resume(std::uint32_t);
-	void remove(std::uint32_t);
+	void stop(std::uint32_t);
 	void cleanup(bool);
 	int mix_stereo(std::int16_t*, int);
 

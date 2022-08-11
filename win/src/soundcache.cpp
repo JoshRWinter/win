@@ -1,5 +1,9 @@
 #include <win/soundcache.hpp>
 
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+#include <win/test/soundintegrationtests.hpp>
+#endif
+
 namespace win
 {
 
@@ -28,7 +32,9 @@ Sound &SoundCache::load(const char *name, int seek)
 
 	if (found == NULL)
 	{
-		fprintf(stderr, "SoundCache: No completed cached resource with name %s and seek %d\n", name, seek);
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_first_load, name, seek, "SoundCache: No cache"));
+#endif
 
 		// no completed cache entry yet. make one
 		PCMResource &resource = resources.add(name, seek);
@@ -41,9 +47,11 @@ Sound &SoundCache::load(const char *name, int seek)
 	}
 	else if (found->is_partial())
 	{
-		fprintf(stderr, "SoundCache: partial cache present\n");
-		// partially cached
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_partial_load, name, seek, "SoundCache: Partial cache found"));
+#endif
 
+		// partially cached
 		// need to hit the disk
 		Stream s = roll[name];
 
@@ -52,7 +60,10 @@ Sound &SoundCache::load(const char *name, int seek)
 	}
 	else
 	{
-		fprintf(stderr, "SoundCache: full cache present\n");
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_full_load, name, seek, "SoundCache: Full cache found"));
+#endif
+
     	return loaded_sounds.add(*found, (win::Stream*)NULL, seek);
 	}
 }
@@ -74,23 +85,29 @@ void SoundCache::unload(Sound &sound)
 
 	if (!resource.is_completed())
 	{
-		// the sound was given a resource but was stopped before the resource could fill up
-		fprintf(stderr, "SoundCache: unload - resource was incomplete\n");
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_incomplete_unload, sound.source.resource().name(), sound.source.resource().seek_start(), "SoundCache: removing incomplete resource"));
+#endif
 
+		// the sound was given a resource but was stopped before the resource could fill up
 		loaded_sounds.remove(sound);
 		resources.remove(resource);
 	}
 	else if (found)
 	{
-		// this sound's resource is a duplicate
-		fprintf(stderr, "SoundCache: unload - duplicate resource. removing...\n");
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_duplicate_unload, sound.source.resource().name(), sound.source.resource().seek_start(), "SoundCache: removing duplicate resource"));
+#endif
 
+		// this sound's resource is a duplicate
 		loaded_sounds.remove(sound);
 		resources.remove(resource);
 	}
 	else
 	{
-		fprintf(stderr, "SoundCache: unload - normal\n");
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_normal_unload, sound.source.resource().name(), sound.source.resource().seek_start(), "SoundCache: normal unload"));
+#endif
 
 		loaded_sounds.remove(sound);
 	}
