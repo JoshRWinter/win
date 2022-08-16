@@ -62,6 +62,11 @@ add_library(win STATIC
 	include/win/event.hpp
 )
 
+if(USE_ASAN)
+	target_compile_options(win PRIVATE -fsanitize=address)
+	target_link_options(win PRIVATE -fsanitize=address)
+endif()
+
 if(WIN32)
 	find_package(OpenGL REQUIRED)
 	find_package(DSound REQUIRED)

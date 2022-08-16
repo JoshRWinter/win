@@ -101,7 +101,7 @@ void PCMDecoder::reset()
 	if (pcmresource.is_partial())
 	{
 #ifdef WIN_USE_SOUND_INTEGRATION_TESTS
-			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_reset_partial, pcmresource.name(), seek_start, "PCMDecoder: reset, partial rehydration"));
+		win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_reset_partial, pcmresource.name(), seek_start, "PCMDecoder: reset, partial rehydration"));
 #endif
 
 		const int fill = pcmresource.fill();
@@ -116,7 +116,7 @@ void PCMDecoder::reset()
 	else // resource is "full" instead of partial
 	{
 #ifdef WIN_USE_SOUND_INTEGRATION_TESTS
-			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_reset_full, pcmresource.name(), seek_start, "PCMDecoder: reset, full rehydration"));
+		win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_reset_full, pcmresource.name(), seek_start, "PCMDecoder: reset, full rehydration"));
 #endif
 
 		// no need to restart the ogg decoder

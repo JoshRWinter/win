@@ -21,6 +21,13 @@ else()
 	add_executable(sounddriver sounddriver.cpp)
 endif()
 
+if(USE_ASAN)
+	target_compile_options(driver PRIVATE -fsanitize=address)
+	target_link_options(driver PRIVATE -fsanitize=address)
+	target_compile_options(sounddriver PRIVATE -fsanitize=address)
+	target_link_options(sounddriver PRIVATE -fsanitize=address)
+endif()
+
 target_link_libraries(driver win)
 target_link_libraries(sounddriver win)
 
