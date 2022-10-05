@@ -16,9 +16,11 @@ int main()
 	win::AssetRoll roll("/home/josh/soundtesting/music.roll");
 	win::SoundEngine se(roll);
 
-	//auto key = se.play("gow.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, false, 52 * 60 * 44100 * 2);
-	auto key = se.play("gow.ogg", win::SoundResidencyPriority::high, 1.0f, true, (60 + 13 + 0.75) * 60 * 44100 * 2);
-	usleep(1000 * 60 * 1000);
+	//auto key = se.play("gow.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, (24 + 0.85) * 60 * 44100 * 2);
+	auto key = se.play("spiderman.ogg", win::SoundResidencyPriority::high, 1.0f, 2.0f, 2.0f, true);
+	//auto key2 = se.play("soft.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, 0);
+	//auto key3 = se.play("soft.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, 0);
+	usleep(1000 * 60 * 30 * 1000);
 
 	return 0;
 }
