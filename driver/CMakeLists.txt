@@ -26,6 +26,7 @@ if(USE_ASAN)
 	target_link_options(driver PRIVATE -fsanitize=address)
 	target_compile_options(sounddriver PRIVATE -fsanitize=address)
 	target_link_options(sounddriver PRIVATE -fsanitize=address)
+	message("Enabling ASAN")
 endif()
 
 target_link_libraries(driver win)

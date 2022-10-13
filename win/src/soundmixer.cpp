@@ -26,6 +26,9 @@ int SoundMixer::add(const char *name, win::SoundResidencyPriority residency_prio
 {
 	cleanup(false);
 
+	if (compression_priority > 0.99f)
+		compression_priority = 0.99f;
+
 	Sound &sound = cache.load(name, seek);
 	const auto key = sounds.add(sound, residency_priority, compression_priority, std::max(left, 0.0f), std::max(right, 0.0f), looping);
 	if (key == -1)
@@ -77,267 +80,6 @@ void SoundMixer::stop(std::uint32_t key)
 
 // called by audio callback thread
 // all other methods are called by "main" thread
-/*
-int SoundMixer::mix_stereo(std::int16_t *const dest, int len)
-{
-	const auto now = std::chrono::high_resolution_clock::now();
-	auto start = now;
-
-	len = std::min(len, mix_samples); // cap it
-	if (len % 2 != 0) --len; // make sure it's even
-	if (len <= 0) return 0;
-
-	const float micros_since_last_call = std::chrono::duration<float, std::ratio<1, 1'000'000>>(now - last_call).count();
-	last_call = now;
-
-	// to store the left/right volumes for the streams
-	struct vol { float left, right; };
-	vol volumes[max_sounds];
-	float accountabilities[max_sounds];
-
-	/*
-	 * Stage 1.
-	 * Pull <mix_samples> of raw audio data out of the streams.
-	 * If there isn't enough data in the stream, pad the end with zeros. Causes "skips" in the sound but oh well. Makes the code simpler
-	 * Double-up mono data and make it stereo (duplicate the channels)
-	 * Handle looping and marking streams as "done"
-
-	int buffer = 0;
-	for (SoundMixerSound &sound : sounds)
-	{
-		if (!sound.playing)
-			continue;
-
-		if (sound.done)
-			continue;
-
-		volumes[buffer].left = sound.left;
-		volumes[buffer].right = sound.right;
-
-		accountabilities[buffer] = 1.0f / sound.compression_priority;
-
-		const int stream_channels = sound.sound.stream.channels();
-		if (stream_channels == 2)
-		{
-			const int got = sound.sound.stream.read_samples((conversion_buffers + (buffer * mix_samples)), len);
-
-			if (got < len)
-			{
-				if (sound.sound.stream.is_writing_completed() && sound.sound.stream.size() == 0)
-				{
-					fprintf(stderr, "SoundMixer: reached end of stream\n");
-
-					if (sound.looping)
-					{
-						fprintf(stderr, "SoundMixer: loop\n");
-						sound.sound.source.reset();
-
-						const int got2 = sound.sound.stream.read_samples(conversion_buffers + (buffer * mix_samples) + got, len - got);
-						if (got + got2 < len)
-							memset(conversion_buffers + (buffer * mix_samples) + got + got2, 0, (len - (got + got2)) * sizeof(std::int16_t)); // allow a skip
-					}
-					else
-					{
-						memset(conversion_buffers + (buffer * mix_samples) + got, 0, (len - got) * sizeof(std::int16_t));
-						sound.done = true;
-					}
-				}
-				else
-					memset((conversion_buffers + (buffer * mix_samples)) + got, 0, (len - got) * sizeof(std::int16_t)); // allow a skip
-			}
-		}
-		else if (stream_channels == 1)
-		{
-			const int half = len / 2;
-			std::int16_t convbuf[mix_samples / 2];
-
-			const int got = sound.sound.stream.read_samples(convbuf, half);
-			if (got < half)
-			{
-				// check if the stream is done
-				if (sound.sound.stream.is_writing_completed() && sound.sound.stream.size() == 0)
-				{
-					fprintf(stderr, "SoundMixer: reached end of stream\n");
-
-					if (sound.looping)
-					{
-						fprintf(stderr, "SoundMixer: loop\n");
-						sound.sound.source.reset();
-
-						const int got2 = sound.sound.stream.read_samples(convbuf + got, half - got);
-						if (got + got2 < half)
-							memset(convbuf + got + got2, 0, (half - (got + got2)) * sizeof(std::int16_t)); // allow a skip
-					}
-					else
-					{
-						memset(convbuf + got, 0, (half - got) * sizeof(std::int16_t));
-						sound.done = true;
-					}
-				}
-				else
-					memset(convbuf + got, 0, (half - got) * sizeof(std::int16_t)); // allow a skip
-			}
-
-			for (int frame = 0; frame < len; frame += 2)
-			{
-				(conversion_buffers + (buffer * mix_samples))[frame + 0] = convbuf[(frame / 2)];
-				(conversion_buffers + (buffer * mix_samples))[frame + 1] = convbuf[(frame / 2)];
-			}
-		}
-		else
-			win::bug("SoundMixer: invalid channels");
-
-		++buffer;
-	}
-
-	/*
-	 * Stage 2.
-	 * Amplitude compression
-	int global_overage;
-
-	do
-	{
-		/*
-		 * Stage 2a.
-		 * Determine global overage
-		int staging[mix_samples];
-		memset(staging, 0, sizeof(staging));
-
-		int left_global_max = 0;
-		int right_global_max = 0;
-		int left_global_max_position;
-		int right_global_max_position;
-
-		for (int i = 0; i < sounds.size(); i++)
-		{
-			for (int frame = 0; frame < len; frame += 2)
-			{
-				// do left
-				const int left = (conversion_buffers + (i * mix_samples))[frame] * volumes[i].left; // possible overflow
-				staging[frame] += left;
-
-				if (std::abs(staging[frame]) > left_global_max)
-				{
-					left_global_max = std::abs(staging[frame]);
-					left_global_max_position = frame;
-				}
-
-				// do right
-				const int right = (conversion_buffers + (i * mix_samples))[frame + 1] * volumes[i].right; // possible overflow
-				staging[frame + 1] += right;
-
-				if (std::abs(staging[frame + 1]) > right_global_max)
-				{
-					right_global_max = std::abs(staging[frame + 1]);
-					right_global_max_position = frame + 1;
-				}
-			}
-		}
-
-		/*
-		 * Stage 2b.
-		 * Compute limiters to account for the overage
-
-
-		// notes for next time.
-		// convert to float. will help with rounding errors
-		// continue with naiveish compression
-
-		left_global_overage = global_max - std::numeric_limits<std::int16_t>::max();
-		int unaccounted = 0;
-
-		if (global_overage > 0)
-		{
-			//fprintf(stderr, "overage of %d\n", global_overage);
-
-			float priority_sum = 0;
-			for (int i = 0; i < sounds.size(); ++i)
-				priority_sum += accountabilities[i];
-
-			const float multiplier = 1.0f / priority_sum;
-
-			for (int i = 0; i < sounds.size(); ++i)
-			{
-				const float volume_adjust = global_max_position % 2 == 0 ? volumes[i].left : volumes[i].right;
-				const int local_max = std::abs((conversion_buffers + (i * mix_samples))[global_max_position] * volume_adjust); // highest point in this wave (for the section being processed by this function call)
-				const float adjusted_accountability = accountabilities[i] * multiplier; // this wave is *this* percent accountable for the global overage
-				const int shed = std::ceil(adjusted_accountability * global_overage); // get rid of *this* much of the amplitude of the wave
-				const int target = std::max(0, local_max - shed); // compress the wave so that the highest point is *this*
-
-				const float limiter = target / (float)local_max;
-				limiters[i] = std::min(limiters[i], limiter);
-		}
-	} while (global_overage > 0);
-
-	/*
-	 * Stage 3.
-	 * Mix the waves together (in s32), and apply the limiters
-
-	int staging2[mix_samples];
-	memset(staging2, 0, sizeof(staging2));
-	for (int i = 0; i < sounds.size(); ++i)
-	{
-		for (int frame = 0; frame < len; frame += 2)
-		{
-			const int left_source = (conversion_buffers + (i * mix_samples))[frame] * volumes[i].left * limiters[i];
-			const int right_source = (conversion_buffers + (i * mix_samples))[frame + 1] * volumes[i].right * limiters[i];
-
-			const int left_dest = staging2[frame];
-			const int right_dest = staging2[frame + 1];
-
-			const int left = left_dest + left_source;
-			const int right = right_dest + right_source;
-
-			staging2[frame] = left;
-			staging2[frame + 1] = right;
-		}
-	}
-
-	/*
-	 * Stage 4.
-	 * Convert to s16
-
-	for (int i = 0; i < mix_samples; ++i)
-	{
-		const int tolerance = 0;
-		if (staging2[i] > std::numeric_limits<std::int16_t>::max() - tolerance || staging2[i] < std::numeric_limits<std::int16_t>::min() + tolerance)
-			fprintf(stderr, "%s clip %d.\n", i % 2 == 0 ? "left" : "right", staging2[i]);
-
-		dest[i] = staging2[i];
-	}
-
-	const float limiter_step = 0.0025f * (micros_since_last_call / 4000);
-	// bring the limiters back up
-	for (int i = 0; i < max_sounds; ++i)
-	{
-		limiters[i] = std::min(limiters[i] + limiter_step, 1.0f);
-	}
-
-	// debugging schtuff
-	{
-		auto end = std::chrono::high_resolution_clock::now();
-
-		static int cycles = 0;
-		static long long accum = 0;
-		constexpr int period = 500;
-		constexpr int budget = 4000;
-		std::chrono::duration<float, std::ratio<1, 1000000>> diff = end - start;
-		accum += diff.count();
-
-		if (++cycles > period)
-		{
-			double micros = accum / (double)period;
-			fprintf(stderr, "Took %.2f micros (%.2f%% of budget) \n", micros, (micros / budget) * 100);
-			fprintf(stderr, "limiter is %.4f\n", limiters[0]);
-			accum = 0;
-			cycles = 0;
-		}
-	}
-
-	return len;
-}
-*/
-
 int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 {
 	const auto start = std::chrono::high_resolution_clock::now();
@@ -349,6 +91,9 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 	const float micros_since_last_call = std::chrono::duration<float, std::ratio<1, 1'000'000>>(start - last_call).count();
 	last_call = start;
 
+	std::array<StereoLimiter, max_sounds> limiters;
+	std::array<float, max_sounds> priorities;
+
 	// fill up the conv buffer
 	int buffer = 0;
 	for (SoundMixerSound &sound : sounds)
@@ -356,13 +101,17 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 		if (!sound.playing || sound.done)
 			continue;
 
+		limiters[buffer].left = &sound.left_limiter;
+		limiters[buffer].right = &sound.right_limiter;
+		priorities[buffer] = sound.compression_priority;
+
 		extract_stereo_f32(sound, conversion_buffers + (buffer * mix_samples), len);
 
 		++buffer;
 	}
 
-	// compress the individual waves to fit them in the digital range
-	compress_stereo(len);
+	// calculate limiters so that the waves can be compressed the right amount
+	calculate_stereo_limiters(len, limiters, priorities);
 
 	float staging[mix_samples]; // mix_samples is >= len
 	for (int i = 0; i < mix_samples; ++i)
@@ -371,19 +120,33 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 	// MIX!!
 	for (int i = 0; i < buffer; ++i)
 	{
-		for (int j = 0; j < len; j += 2)
+		for (int frame = 0; frame < len; frame += 2)
 		{
-			const float source_left = (conversion_buffers + (i * mix_samples))[j];
-			const float source_right = (conversion_buffers + (i * mix_samples))[j + 1];
+			const float source_left = (conversion_buffers + (i * mix_samples))[frame] * *limiters[i].left;
+			const float source_right = (conversion_buffers + (i * mix_samples))[frame + 1] * *limiters[i].right;
 
-			staging[j] += source_left;
-			staging[j + 1] += source_right;
+			staging[frame] += source_left;
+			staging[frame + 1] += source_right;
 		}
 	}
 
+	/*
 	// clip
 	for (int frame = 0; frame < len; frame += 2)
 	{
+		// logging
+		const float tolerance = 0.00f;
+		if (staging[frame] > 1.0f - tolerance)
+			fprintf(stderr, "left clip high: %.8f\n", staging[frame]);
+		else if (staging[frame] < -1.0f + tolerance)
+			fprintf(stderr, "left clip low: %.8f\n", staging[frame]);
+
+		if (staging[frame + 1] > 1.0f - tolerance)
+			fprintf(stderr, "right clip high: %.8f\n", staging[frame + 1]);
+		else if (staging[frame + 1] < -1.0f + tolerance)
+			fprintf(stderr, "right clip low: %.8f\n", staging[frame + 1]);
+
+
 		if (staging[frame] > 1.0f)
 			staging[frame] = 1.0f;
 		else if (staging[frame] < -1.0f)
@@ -394,11 +157,27 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 		else if (staging[frame + 1] < -1.0f)
 			staging[frame + 1] = -1.0f;
 	}
+	*/
 
 	// convert f32 to s16
-	for (int j = 0; j < len; ++j)
+	for (int i = 0; i < len; ++i)
 	{
-		dest[j] = staging[j] * (staging[j] < 0.0f ? 32768.0f : 32767);
+		dest[i] = (std::int16_t)(staging[i] * (staging[i] < 0.0f ? 32768.0f : 32767.0f));
+	}
+
+	// slowly bring the limiters back up
+	for (int i = 0; i < buffer; ++i)
+	{
+		const float increase = micros_since_last_call / 1'000'000.0f;
+
+		*limiters[i].left += increase;
+		*limiters[i].right += increase;
+
+		if (*limiters[i].left > 1.0f)
+			*limiters[i].left = 1.0f;
+
+		if (*limiters[i].right > 1.0f)
+			*limiters[i].right = 1.0f;
 	}
 
 	// debugging schtuff
@@ -406,8 +185,8 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 		auto end = std::chrono::high_resolution_clock::now();
 
 		static int cycles = 0;
-		static long long accum = 0;
-		constexpr int period = 500;
+		static float accum = 0;
+		constexpr int period = 1000;
 		constexpr int budget = 4000;
 		std::chrono::duration<float, std::ratio<1, 1000000>> diff = end - start;
 		accum += diff.count();
@@ -423,84 +202,128 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 	return len;
 }
 
-void SoundMixer::compress_stereo(const int len)
+void SoundMixer::calculate_stereo_limiters(const int len, const std::array<StereoLimiter, max_sounds> &limiters, const std::array<float, max_sounds> &priorities)
 {
 	const int count = sounds.size();
 
 	float staging[mix_samples];
-	for (int i = 0; i < len; ++i)
+	for (int i = 0; i < mix_samples; ++i)
 		staging[i] = 0.0f;
 
 	// premix
-	for (int sound = 0; sound < count; ++sound)
+	for (int i = 0; i < count; ++i)
 	{
 		for (int frame = 0; frame < len; frame += 2)
 		{
-			staging[frame] += (conversion_buffers + (sound * mix_samples))[frame];
-			staging[frame + 1] += (conversion_buffers + (sound * mix_samples))[frame + 1];
+			staging[frame] += (conversion_buffers + (i * mix_samples))[frame] * *limiters[i].left;
+			staging[frame + 1] += (conversion_buffers + (i * mix_samples))[frame + 1] * *limiters[i].right;
 		}
 	}
 
 	// determine overages
 	float left_global_max = 0.0f, right_global_max = 0.0f;
-	int left_global_max_position, right_global_max_position;
+	int left_global_max_position = 0, right_global_max_position = 0;
 
 	for (int frame = 0; frame < len; frame += 2)
 	{
 		const float abs_left = std::abs(staging[frame]);
 		const float abs_right = std::abs(staging[frame + 1]);
 
-		if (abs_left > 1.0f)
+		if (abs_left > left_global_max)
 		{
 			left_global_max = abs_left;
 			left_global_max_position = frame;
 		}
 
-		if (abs_right > 1.0f)
+		if (abs_right > right_global_max)
 		{
 			right_global_max = abs_right;
 			right_global_max_position = frame + 1;
 		}
 	}
 
-	if (left_global_max > 1.0f)
-		fprintf(stderr, "left channel over by %.4f\n", left_global_max - 1.0f);
-	if (right_global_max > 1.0f)
-		fprintf(stderr, "right channel over by %.4f\n", right_global_max - 1.0f);
-
 	const float left_global_overage = left_global_max - 1.0f;
 	const float right_global_overage = right_global_max - 1.0f;
 
-	if (left_global_overage > 0.0f || right_global_overage > 0.0f)
+	if (left_global_overage <= 0.0f && right_global_overage <= 0.0f)
 		return;
 
-	// find the non-contributers
-	bool left_non_contributers[max_sounds];
-	bool right_non_contributers[max_sounds];
+	// find the contributors
+	bool left_overage_contributors[max_sounds];
+	bool right_overage_contributors[max_sounds];
 	for (int i = 0; i < count; ++i)
 	{
-		const float left_sample = (conversion_buffers + (i * mix_samples))[left_global_max_position];
-		const float right_sample = (conversion_buffers + (i * mix_samples))[right_global_max_position];
+		const float left_sample = (conversion_buffers + (i * mix_samples))[left_global_max_position] * *limiters[i].left;
+		const float right_sample = (conversion_buffers + (i * mix_samples))[right_global_max_position] * *limiters[i].right;
 
-		left_non_contributers[i] = std::abs(left_sample) < 0.0001f;
-		right_non_contributers[i] = std::abs(right_sample) < 0.0001f;
+		left_overage_contributors[i] = std::abs(left_sample) > 0.00001f;
+		right_overage_contributors[i] = std::abs(right_sample) > 0.00001f;
 	}
 
+	// figure out the priorities / accountabilities
+	float left_accountability_sum = 0.0f;
+	float right_accountability_sum = 0.0f;
+	for (int i = 0; i < count; ++i)
+	{
+		const float accountability = 1.0f - priorities[i];
 
-	todo: factor in the priority nonsense
+		if (left_overage_contributors[i])
+			left_accountability_sum += accountability;
+		if (right_overage_contributors[i])
+			right_accountability_sum += accountability;
+	}
 
+	const float left_accountability_multiplier = 1.0f / left_accountability_sum;
+	const float right_accountability_multiplier = 1.0f / right_accountability_sum;
+	float left_accountabilities[max_sounds];
+	float right_accountabilities[max_sounds];
+	for (int i = 0; i < count; ++i)
+	{
+		const float accountability = 1.0f - priorities[i];
 
+		if (left_overage_contributors[i])
+			left_accountabilities[i] = accountability * left_accountability_multiplier;
+		if (right_overage_contributors[i])
+			right_accountabilities[i] = accountability * right_accountability_multiplier;
+	}
+
+	bool more_compression_needed = false;
+	// calculate limiters
 	for (int i = 0; i < count; ++i)
 	{
 		if (left_global_overage > 0.0f)
 		{
-			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[left_global_max_position]);
-			const float accountability = accountabilities[i] * left_global_overage; // this channel is accountable for *this* much of the overage
-			const float new_target = local_max - accountability > 0.0f ?: 0.0f;
+			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[left_global_max_position]) * *limiters[i].left;
+			const float accountability = left_accountabilities[i] * left_global_overage; // this wave is accountable for *this* much of the overage
+			float target = local_max - accountability;
+			if (target < 0.0f)
+			{
+				target = 0.0f;
+				more_compression_needed = true;
+			}
 
-			limiters[i].left = new_target / local_max;
+			const float limiter = target / local_max;
+			*limiters[i].left = std::floor((*limiters[i].left * limiter) * 10000.0f) / 10000.0f;
+		}
+
+		if (right_global_overage > 0.0f)
+		{
+			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[right_global_max_position]) * *limiters[i].right;
+			const float accountability = right_accountabilities[i] * right_global_overage; // this wave is accountable for *this* much of the overage
+			float target = local_max - accountability;
+			if (target < 0.0f)
+			{
+				target = 0.0f;
+				more_compression_needed = true;
+			}
+
+			const float limiter = target / local_max;
+			*limiters[i].right = std::floor((*limiters[i].right * limiter) * 10000.0f) / 10000.0f;
 		}
 	}
+
+	if (more_compression_needed)
+		calculate_stereo_limiters(len, limiters, priorities); // go go tail call optimization
 }
 
 void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, const int buf_len)
