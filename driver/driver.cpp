@@ -2,7 +2,6 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
-#include <string>
 #include <thread>
 
 #include <glm/glm.hpp>
@@ -56,7 +55,7 @@ int main()
 	display.cursor(true);
 
 #if defined WINPLAT_LINUX
-	win::AssetRoll roll("/home/josh/programming/win/driver/assets.roll");
+	win::AssetRoll roll("roll");
 #elif defined WINPLAT_WINDOWS
 	win::AssetRoll roll("c:\\users\\josh\\desktop\\win\\driver\\assets.roll");
 #endif
@@ -170,7 +169,7 @@ int main()
 	// 	std::cerr << (char)key;
 	// });
 
-	//const int block_sid = audio_engine.play(music, win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true);
+	const int block_sid = audio_engine.play(music, win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true);
 	while(!quit)
 	{
 		auto start = std::chrono::high_resolution_clock::now();

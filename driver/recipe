@@ -4,7 +4,7 @@
 ../../fishtank/assets_local/Motions.ogg # end comment
 ../../fishtank/assets/arial.ttf
 ../../fishtank/assets_local/platform_destroy.ogg
-../../fishtank/assets_local/beacon_1.tga:z
-main.atlas:z
-vertex.vert:z
-fragment.frag:z
+../../fishtank/assets_local/beacon_1.tga z
+main.atlas z
+vertex.vert z
+fragment.frag z

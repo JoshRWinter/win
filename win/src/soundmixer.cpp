@@ -1,7 +1,7 @@
 #include <limits>
 #include <cmath>
+#include <algorithm>
 
-#include <random>
 #include <win/soundmixer.hpp>
 
 namespace win
@@ -111,7 +111,7 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 	}
 
 	// calculate limiters so that the waves can be compressed the right amount
-	calculate_stereo_limiters(len, limiters, priorities);
+	calculate_stereo_limiters(buffer, len, limiters, priorities);
 
 	float staging[mix_samples]; // mix_samples is >= len
 	for (int i = 0; i < mix_samples; ++i)
@@ -131,7 +131,6 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 	}
 
 	/*
-	// clip
 	for (int frame = 0; frame < len; frame += 2)
 	{
 		// logging
@@ -145,23 +144,14 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 			fprintf(stderr, "right clip high: %.8f\n", staging[frame + 1]);
 		else if (staging[frame + 1] < -1.0f + tolerance)
 			fprintf(stderr, "right clip low: %.8f\n", staging[frame + 1]);
-
-
-		if (staging[frame] > 1.0f)
-			staging[frame] = 1.0f;
-		else if (staging[frame] < -1.0f)
-			staging[frame] = -1.0f;
-
-		if (staging[frame + 1] > 1.0f)
-			staging[frame + 1] = 1.0f;
-		else if (staging[frame + 1] < -1.0f)
-			staging[frame + 1] = -1.0f;
 	}
 	*/
 
-	// convert f32 to s16
+	// convert f32 to s16 and clip
 	for (int i = 0; i < len; ++i)
 	{
+		staging[i] = std::clamp(staging[i], -1.0f, 1.0f);
+
 		dest[i] = (std::int16_t)(staging[i] * (staging[i] < 0.0f ? 32768.0f : 32767.0f));
 	}
 
@@ -202,10 +192,8 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 	return len;
 }
 
-void SoundMixer::calculate_stereo_limiters(const int len, const std::array<StereoLimiter, max_sounds> &limiters, const std::array<float, max_sounds> &priorities)
+void SoundMixer::calculate_stereo_limiters(const int count, const int len, const std::array<StereoLimiter, max_sounds> &limiters, const std::array<float, max_sounds> &priorities)
 {
-	const int count = sounds.size();
-
 	float staging[mix_samples];
 	for (int i = 0; i < mix_samples; ++i)
 		staging[i] = 0.0f;
@@ -291,10 +279,12 @@ void SoundMixer::calculate_stereo_limiters(const int len, const std::array<Stere
 	// calculate limiters
 	for (int i = 0; i < count; ++i)
 	{
-		if (left_global_overage > 0.0f)
+		if (left_global_overage > 0.0f && left_overage_contributors[i])
 		{
-			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[left_global_max_position]) * *limiters[i].left;
-			const float accountability = left_accountabilities[i] * left_global_overage; // this wave is accountable for *this* much of the overage
+			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[left_global_max_position]) *
+									*limiters[i].left;
+			const float accountability = left_accountabilities[i] *
+										 left_global_overage; // this wave is accountable for *this* much of the overage
 			float target = local_max - accountability;
 			if (target < 0.0f)
 			{
@@ -303,13 +293,15 @@ void SoundMixer::calculate_stereo_limiters(const int len, const std::array<Stere
 			}
 
 			const float limiter = target / local_max;
-			*limiters[i].left = std::floor((*limiters[i].left * limiter) * 10000.0f) / 10000.0f;
+			*limiters[i].left = *limiters[i].left * limiter;
 		}
 
-		if (right_global_overage > 0.0f)
+		if (right_global_overage > 0.0f && right_overage_contributors[i])
 		{
-			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[right_global_max_position]) * *limiters[i].right;
-			const float accountability = right_accountabilities[i] * right_global_overage; // this wave is accountable for *this* much of the overage
+			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[right_global_max_position]) *
+									*limiters[i].right;
+			const float accountability = right_accountabilities[i] *
+										 right_global_overage; // this wave is accountable for *this* much of the overage
 			float target = local_max - accountability;
 			if (target < 0.0f)
 			{
@@ -318,12 +310,12 @@ void SoundMixer::calculate_stereo_limiters(const int len, const std::array<Stere
 			}
 
 			const float limiter = target / local_max;
-			*limiters[i].right = std::floor((*limiters[i].right * limiter) * 10000.0f) / 10000.0f;
+			*limiters[i].right = *limiters[i].right * limiter;
 		}
 	}
 
 	if (more_compression_needed)
-		calculate_stereo_limiters(len, limiters, priorities); // go go tail call optimization
+		calculate_stereo_limiters(count, len, limiters, priorities); // go go tail call optimization
 }
 
 void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, const int buf_len)

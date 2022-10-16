@@ -63,7 +63,7 @@ public:
 	int mix_stereo(std::int16_t*, int);
 
 private:
-	void calculate_stereo_limiters(int, const std::array<StereoLimiter, max_sounds>&, const std::array<float, max_sounds>&);
+	void calculate_stereo_limiters(int, int, const std::array<StereoLimiter, max_sounds>&, const std::array<float, max_sounds>&);
 	static void extract_stereo_f32(SoundMixerSound&, float*, int);
 
 	std::unique_ptr<float[]> conversion_buffers_owner;

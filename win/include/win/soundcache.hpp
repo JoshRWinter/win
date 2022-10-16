@@ -15,7 +15,7 @@ class SoundCache
 	WIN_NO_COPY_MOVE(SoundCache);
 
 public:
-	SoundCache(win::AssetRoll&);
+	explicit SoundCache(win::AssetRoll&);
 	~SoundCache();
 
 	Sound &load(const char*, int);
