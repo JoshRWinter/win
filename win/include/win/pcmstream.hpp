@@ -14,7 +14,6 @@ namespace win
 
 class PCMStream
 {
-	friend class PCMStreamCache;
 	static constexpr int ringbuf_size = (44100 * 5) + 1; // n - 1 needs to be divisible by both 1 and 2
 	WIN_NO_COPY_MOVE(PCMStream);
 
