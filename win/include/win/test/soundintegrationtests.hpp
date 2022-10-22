@@ -26,6 +26,7 @@ enum class EventType
 	soundcache_incomplete_unload,
 	soundcache_duplicate_unload,
 	soundcache_normal_unload,
+	soundcache_resource_promoted,
 	decoder_rehydrate,
 	decoder_full_rehydrate,
 	decoder_start,
@@ -51,6 +52,8 @@ inline const char *to_string(EventType type)
 		return "soundcache_duplicate_unload";
 	case EventType::soundcache_normal_unload:
 		return "soundcache_normal_unload";
+	case EventType::soundcache_resource_promoted:
+		return "soundcache_resource_promoted";
 	case EventType::decoder_rehydrate:
 		return "decoder_rehydrate";
 	case EventType::decoder_full_rehydrate:

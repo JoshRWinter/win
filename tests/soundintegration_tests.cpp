@@ -63,11 +63,11 @@ void smoke_reset_stream(win::AssetRoll &roll)
 	sit_assert(event->seek == 0);
 	sit_assert(event->message == "PCMDecoder: reset, partial rehydration");
 
-	event = win::sit::pop_event(win::sit::EventType::soundcache_normal_unload);
+	event = win::sit::pop_event(win::sit::EventType::soundcache_resource_promoted);
 	sit_assert(event.has_value());
 	sit_assert(event->name == "6secstereo.ogg");
 	sit_assert(event->seek == 0);
-	sit_assert(event->message == "SoundCache: normal unload");
+	sit_assert(event->message == "SoundCache: resource promoted");
 
 	sit_assert(win::sit::pending_events() == 0);
 
@@ -107,11 +107,11 @@ void smoke_reset_stream(win::AssetRoll &roll)
 	sit_assert(event->seek == 0);
 	sit_assert(event->message == "PCMDecoder: reset, full rehydration");
 
-	event = win::sit::pop_event(win::sit::EventType::soundcache_normal_unload);
+	event = win::sit::pop_event(win::sit::EventType::soundcache_resource_promoted);
 	sit_assert(event.has_value());
 	sit_assert(event->name == "1secmono.ogg");
 	sit_assert(event->seek == 0);
-	sit_assert(event->message == "SoundCache: normal unload");
+	sit_assert(event->message == "SoundCache: resource promoted");
 
 	sit_assert(win::sit::pending_events() == 0);
 }
@@ -213,11 +213,11 @@ void smoke_unloads(win::AssetRoll &roll)
 	sit_assert(event->message == "SoundCache: removing incomplete resource");
 
 	// second
-	event = win::sit::pop_event(win::sit::EventType::soundcache_normal_unload);
+	event = win::sit::pop_event(win::sit::EventType::soundcache_resource_promoted);
 	sit_assert(event.has_value());
 	sit_assert(event->name == "3secstereo.ogg");
 	sit_assert(event->seek == 0);
-	sit_assert(event->message == "SoundCache: normal unload");
+	sit_assert(event->message == "SoundCache: resource promoted");
 
 	// third
 	event = win::sit::pop_event(win::sit::EventType::soundcache_duplicate_unload);
@@ -264,11 +264,11 @@ void smoke_partial_cache(win::AssetRoll &roll)
 	sit_assert(event->seek == 0);
 	sit_assert(event->message == "PCMDecoder: writing completed");
 
-	event = win::sit::pop_event(win::sit::EventType::soundcache_normal_unload);
+	event = win::sit::pop_event(win::sit::EventType::soundcache_resource_promoted);
 	sit_assert(event.has_value());
 	sit_assert(event->name == "6secmono.ogg");
 	sit_assert(event->seek == 0);
-	sit_assert(event->message == "SoundCache: normal unload");
+	sit_assert(event->message == "SoundCache: resource promoted");
 
 	// now comes the second sound
 
@@ -343,11 +343,11 @@ void smoke_full_cache(win::AssetRoll &roll)
 	sit_assert(event->seek == 2);
 	sit_assert(event->message == "PCMDecoder: writing completed");
 
-	event = win::sit::pop_event(win::sit::EventType::soundcache_normal_unload);
+	event = win::sit::pop_event(win::sit::EventType::soundcache_resource_promoted);
 	sit_assert(event.has_value());
 	sit_assert(event->name == "1secmono.ogg");
 	sit_assert(event->seek == 2);
-	sit_assert(event->message == "SoundCache: normal unload");
+	sit_assert(event->message == "SoundCache: resource promoted");
 
 	// now comes the second sound
 
@@ -401,11 +401,11 @@ void smoke_full_cache(win::AssetRoll &roll)
 	sit_assert(event->seek == 0);
 	sit_assert(event->message == "PCMDecoder: writing completed");
 
-	event = win::sit::pop_event(win::sit::EventType::soundcache_normal_unload);
+	event = win::sit::pop_event(win::sit::EventType::soundcache_resource_promoted);
 	sit_assert(event.has_value());
 	sit_assert(event->name == "1secmono.ogg");
 	sit_assert(event->seek == 0);
-	sit_assert(event->message == "SoundCache: normal unload");
+	sit_assert(event->message == "SoundCache: resource promoted");
 
 	sit_assert(win::sit::pending_events() == 0);
 }

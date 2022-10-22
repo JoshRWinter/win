@@ -11,9 +11,21 @@ PCMResource::PCMResource(const char *name, int seek_start)
 	, cache_fill(0)
 	, completed(false)
 	, channel_count(-1)
+	, finalized(false)
 {
 	cache_fill.store(0);
 	completed.store(false);
+}
+
+PCMResource::PCMResource(PCMResource &&rhs) noexcept
+	: stream_name(std::move(rhs.stream_name))
+	, stream_seek_start(rhs.stream_seek_start)
+	, cache_fill(rhs.cache_fill.load())
+	, completed(rhs.completed.load())
+	, channel_count(rhs.channel_count.load())
+	, finalized(rhs.finalized.load())
+{
+	memcpy(pcm, rhs.pcm, sizeof(pcm));
 }
 
 void PCMResource::write_samples(const std::int16_t *samples, int len)
@@ -74,6 +86,11 @@ bool PCMResource::is_completed() const
 	return completed.load();
 }
 
+bool PCMResource::is_finalized() const
+{
+	return finalized.load();
+}
+
 bool PCMResource::is_partial() const
 {
 	if (!completed.load())
@@ -85,6 +102,11 @@ bool PCMResource::is_partial() const
 void PCMResource::complete()
 {
 	completed.store(true);
+}
+
+void PCMResource::finalize()
+{
+	finalized.store(true);
 }
 
 }

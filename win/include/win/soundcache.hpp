@@ -25,6 +25,7 @@ private:
 	win::AssetRoll &roll;
 	win::Pool<win::Sound, 25> loaded_sounds;
 	win::Pool<PCMResource, 25> resources;
+	win::Pool<PCMResource, 8> resources_staging;
 };
 
 }

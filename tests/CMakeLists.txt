@@ -18,4 +18,20 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(activesoundstore_tests PRIVATE -fno-exceptions)
 	target_compile_options(ringbuffer_tests PRIVATE -fno-exceptions)
 	target_compile_options(soundintegration_tests PRIVATE -fno-exceptions)
+
+	if(USE_ASAN)
+		target_compile_options(pool_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+		target_link_options(pool_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+
+		target_compile_options(activesoundstore_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+		target_link_options(activesoundstore_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+
+		target_compile_options(ringbuffer_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+		target_link_options(ringbuffer_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+
+		target_compile_options(soundintegration_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+		target_link_options(soundintegration_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+
+		message("Enabling ASAN")
+	endif()
 endif()

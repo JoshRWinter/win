@@ -23,7 +23,7 @@ Sound &SoundCache::load(const char *name, int seek)
     PCMResource *found = NULL;
     for (PCMResource &r : resources)
 	{
-		if (r.is_completed() && !strcmp(r.name(), name) && r.seek_start() == seek)
+		if (!strcmp(r.name(), name) && r.seek_start() == seek)
 		{
 			found = &r;
 			break;
@@ -37,7 +37,7 @@ Sound &SoundCache::load(const char *name, int seek)
 #endif
 
 		// no completed cache entry yet. make one
-		PCMResource &resource = resources.add(name, seek);
+		PCMResource &resource = resources_staging.add(name, seek);
 
 		// need to hit the disk
 		Stream s = roll[name];
@@ -72,15 +72,25 @@ void SoundCache::unload(Sound &sound)
 {
 	PCMResource &resource = sound.source.resource();
 
-	// does this resource already exist?
+	// does this resource already exist (in the non-staging list)?
     PCMResource *found = NULL;
 	for (PCMResource &r : resources)
 	{
-		if (!strcmp(r.name(), resource.name()) && r.seek_start() == resource.seek_start() && &r != &resource)
+		if (!strcmp(r.name(), resource.name()) && r.seek_start() == resource.seek_start())
 		{
 			found = &r;
 			break;
 		}
+	}
+
+	if (resource.is_finalized())
+	{
+#ifdef WIN_USE_SOUND_INTEGRATION_TESTS
+		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_normal_unload, sound.source.resource().name(), sound.source.resource().seek_start(), "SoundCache: normal unload"));
+#endif
+
+		loaded_sounds.remove(sound);
+		return; // no need to mess with the resource lists
 	}
 
 	if (!resource.is_completed())
@@ -89,9 +99,9 @@ void SoundCache::unload(Sound &sound)
 		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_incomplete_unload, sound.source.resource().name(), sound.source.resource().seek_start(), "SoundCache: removing incomplete resource"));
 #endif
 
-		// the sound was given a resource but was stopped before the resource could fill up
 		loaded_sounds.remove(sound);
-		resources.remove(resource);
+		// the sound was given a resource but was stopped before the resource could fill up
+		resources_staging.remove(resource);
 	}
 	else if (found)
 	{
@@ -99,17 +109,20 @@ void SoundCache::unload(Sound &sound)
 		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_duplicate_unload, sound.source.resource().name(), sound.source.resource().seek_start(), "SoundCache: removing duplicate resource"));
 #endif
 
-		// this sound's resource is a duplicate
 		loaded_sounds.remove(sound);
-		resources.remove(resource);
+		// this sound's resource is a duplicate
+		resources_staging.remove(resource);
 	}
 	else
 	{
 #ifdef WIN_USE_SOUND_INTEGRATION_TESTS
-		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_normal_unload, sound.source.resource().name(), sound.source.resource().seek_start(), "SoundCache: normal unload"));
+		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_resource_promoted, sound.source.resource().name(), sound.source.resource().seek_start(), "SoundCache: resource promoted"));
 #endif
-
 		loaded_sounds.remove(sound);
+		// finalize it, and add it to the non-staging list. then remove it from the staging list
+		resource.finalize();
+		resources.add(std::move(resource));
+		resources_staging.remove(resource);
 	}
 }
 
