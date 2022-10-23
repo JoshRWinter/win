@@ -90,10 +90,8 @@ void SoundCache::unload(Sound &sound)
 #endif
 
 		loaded_sounds.remove(sound);
-		return; // no need to mess with the resource lists
 	}
-
-	if (!resource.is_completed())
+	else if (!resource.is_completed())
 	{
 #ifdef WIN_USE_SOUND_INTEGRATION_TESTS
 		win::sit::send_event(win::sit::Event(win::sit::EventType::soundcache_incomplete_unload, sound.source.resource().name(), sound.source.resource().seek_start(), "SoundCache: removing incomplete resource"));
