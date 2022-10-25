@@ -6,10 +6,10 @@
 #include <array>
 
 #include <win/win.hpp>
-#include <win/activesoundstore.hpp>
-#include <win/pcmstream.hpp>
-#include <win/soundresidencypriority.hpp>
-#include <win/soundcache.hpp>
+#include <win/sound/activesoundstore.hpp>
+#include <win/sound/pcmstream.hpp>
+#include <win/sound/soundresidencypriority.hpp>
+#include <win/sound/soundcache.hpp>
 #include <win/assetroll.hpp>
 
 namespace win

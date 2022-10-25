@@ -7,16 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(win STATIC
 	src/atlas.cpp
 	src/stream.cpp
-	src/ogg.cpp
-	src/pcmstream.cpp
-	src/pcmresource.cpp
-	src/pcmdecoder.cpp
-	src/soundcache.cpp
-	src/soundmixer.cpp
-	src/soundengine_linux.cpp
-	src/soundengine_linux_pulseaudio.cpp
-	src/soundengine_linux_pipewire.cpp
-	src/soundengine_windows.cpp
 	src/gl.cpp
 	src/display_linux.cpp
 	src/display_windows.cpp
@@ -27,27 +17,19 @@ add_library(win STATIC
 	src/assetrollstreamcompressed.cpp
 	src/targa.cpp
 	src/utility.cpp
+	src/sound/pcmstream.cpp
+	src/sound/pcmresource.cpp
+	src/sound/pcmdecoder.cpp
+	src/sound/soundcache.cpp
+	src/sound/soundmixer.cpp
+	src/sound/soundengine_linux.cpp
+	src/sound/soundengine_linux_pulseaudio.cpp
+	src/sound/soundengine_linux_pipewire.cpp
+	src/sound/soundengine_windows.cpp
 
 	include/win/win.hpp
 	include/win/pool.hpp
 	include/win/ringbuffer.hpp
-	include/win/ogg.hpp
-	include/win/soundresidencypriority.hpp
-	include/win/pcmstream.hpp
-	include/win/pcmresource.hpp
-	include/win/pcmdecoder.hpp
-	include/win/sound.hpp
-	include/win/soundcache.hpp
-	include/win/soundmixer.hpp
-	include/win/activesoundstore.hpp
-	include/win/soundengine.hpp
-	include/win/soundengine_windows.hpp
-	include/win/soundengine_linux.hpp
-	include/win/soundengine_linux_pulseaudio.hpp
-	include/win/soundengine_linux_pulseaudio_functions.hpp
-	include/win/soundengine_linux_pipewire.hpp
-	include/win/soundengine_linux_pipewire_functions.hpp
-	include/win/test/soundintegrationtests.hpp
 	include/win/gl.hpp
 	include/win/display.hpp
 	include/win/font.hpp
@@ -60,6 +42,22 @@ add_library(win STATIC
 	include/win/targa.hpp
 	include/win/utility.hpp
 	include/win/event.hpp
+	include/win/sound/soundresidencypriority.hpp
+	include/win/sound/pcmstream.hpp
+	include/win/sound/pcmresource.hpp
+	include/win/sound/pcmdecoder.hpp
+	include/win/sound/sound.hpp
+	include/win/sound/soundcache.hpp
+	include/win/sound/soundmixer.hpp
+	include/win/sound/activesoundstore.hpp
+	include/win/sound/soundengine.hpp
+	include/win/sound/soundengine_windows.hpp
+	include/win/sound/soundengine_linux.hpp
+	include/win/sound/soundengine_linux_pulseaudio.hpp
+	include/win/sound/soundengine_linux_pulseaudio_functions.hpp
+	include/win/sound/soundengine_linux_pipewire.hpp
+	include/win/sound/soundengine_linux_pipewire_functions.hpp
+	include/win/sound/test/soundintegrationtests.hpp
 )
 
 if(USE_ASAN)

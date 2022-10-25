@@ -3,8 +3,8 @@
 
 #include <win/win.hpp>
 #include <win/stream.hpp>
-#include <win/pcmstream.hpp>
-#include <win/pcmdecoder.hpp>
+#include <win/sound/pcmstream.hpp>
+#include <win/sound/pcmdecoder.hpp>
 
 namespace win
 {

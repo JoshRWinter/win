@@ -3,10 +3,10 @@
 
 #include <pipewire/pipewire.h>
 
-#include <win/soundengine_linux.hpp>
-#include <win/soundcache.hpp>
-#include <win/soundmixer.hpp>
-#include <win/soundresidencypriority.hpp>
+#include <win/sound/soundengine_linux.hpp>
+#include <win/sound/soundcache.hpp>
+#include <win/sound/soundmixer.hpp>
+#include <win/sound/soundresidencypriority.hpp>
 
 namespace win
 {

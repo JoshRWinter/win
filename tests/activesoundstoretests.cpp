@@ -1,7 +1,7 @@
 #include <thread>
 
 #define private public
-#include <win/activesoundstore.hpp>
+#include <win/sound/activesoundstore.hpp>
 #undef private
 
 #define assert(exp) if (!(exp)) win::bug("Assertion failed (" #exp ") on line " + std::to_string(__LINE__))

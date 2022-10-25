@@ -3,8 +3,8 @@
 
 #include <win/win.hpp>
 #include <win/assetroll.hpp>
-#include <win/sound.hpp>
-#include <win/pcmresource.hpp>
+#include <win/sound/sound.hpp>
+#include <win/sound/pcmresource.hpp>
 #include <win/pool.hpp>
 
 namespace win

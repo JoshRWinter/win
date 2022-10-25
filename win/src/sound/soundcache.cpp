@@ -1,4 +1,4 @@
-#include <win/soundcache.hpp>
+#include <win/sound/soundcache.hpp>
 
 #ifdef WIN_USE_SOUND_INTEGRATION_TESTS
 #include <win/test/soundintegrationtests.hpp>

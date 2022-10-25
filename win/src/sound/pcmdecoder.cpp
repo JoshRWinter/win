@@ -3,8 +3,7 @@
 #include <vorbis/vorbisfile.h>
 
 #include <win/win.hpp>
-#include <win/pcmdecoder.hpp>
-#include <win/ogg.hpp>
+#include <win/sound/pcmdecoder.hpp>
 
 #ifdef WIN_USE_SOUND_INTEGRATION_TESTS
 #include <win/test/soundintegrationtests.hpp>

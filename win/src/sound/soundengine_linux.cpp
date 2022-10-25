@@ -4,9 +4,9 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
-#include <win/soundengine.hpp>
-#include <win/soundengine_linux_pulseaudio.hpp>
-#include <win/soundengine_linux_pipewire.hpp>
+#include <win/sound/soundengine.hpp>
+#include <win/sound/soundengine_linux_pulseaudio.hpp>
+#include <win/sound/soundengine_linux_pipewire.hpp>
 
 namespace win
 {

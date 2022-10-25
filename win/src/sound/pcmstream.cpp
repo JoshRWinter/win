@@ -1,7 +1,4 @@
-#include <string.h>
-
-#include <win/pcmstream.hpp>
-#include <win/ogg.hpp>
+#include <win/sound/pcmstream.hpp>
 
 namespace win
 {

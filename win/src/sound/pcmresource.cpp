@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include <win/pcmresource.hpp>
+#include <win/sound/pcmresource.hpp>
 
 namespace win
 {

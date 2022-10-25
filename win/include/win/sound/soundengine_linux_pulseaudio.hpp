@@ -7,8 +7,8 @@
 
 #include <pulse/pulseaudio.h>
 
-#include <win/soundengine_linux_pulseaudio_functions.hpp>
-#include <win/soundengine_linux.hpp>
+#include <win/sound/soundengine_linux_pulseaudio_functions.hpp>
+#include <win/sound/soundengine_linux.hpp>
 
 namespace win
 {

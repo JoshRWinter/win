@@ -7,7 +7,7 @@
 #include <win/win.hpp>
 #include <win/stream.hpp>
 #include <win/ringbuffer.hpp>
-#include <win/pcmdecoder.hpp>
+#include <win/sound/pcmdecoder.hpp>
 
 namespace win
 {

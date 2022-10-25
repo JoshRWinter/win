@@ -6,7 +6,7 @@
 #ifdef WINPLAT_LINUX
 
 #include <win/assetroll.hpp>
-#include <win/soundresidencypriority.hpp>
+#include <win/sound/soundresidencypriority.hpp>
 
 namespace win
 {

@@ -1,5 +1,5 @@
 #include <win/win.hpp>
-#include <win/soundengine.hpp>
+#include <win/sound/soundengine.hpp>
 
 #if defined WINPLAT_WINDOWS
 #include <windows.h>

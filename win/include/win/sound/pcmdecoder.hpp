@@ -7,7 +7,8 @@
 
 #include <win/win.hpp>
 #include <win/stream.hpp>
-#include <win/pcmresource.hpp>
+#include <win/sound/pcmstream.hpp>
+#include <win/sound/pcmresource.hpp>
 
 namespace win
 {

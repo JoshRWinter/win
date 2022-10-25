@@ -7,7 +7,7 @@
 #include <win/win.hpp>
 
 #if defined WINPLAT_LINUX
-#include <win/soundengine_linux.hpp>
+#include <win/sound/soundengine_linux.hpp>
 #elif defined WINPLAT_WINDOWS
 #include <win/soundengine_windows.hpp>
 #endif

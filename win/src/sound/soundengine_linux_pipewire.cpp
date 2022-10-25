@@ -6,7 +6,7 @@
 #include <spa/param/audio/format-utils.h>
 #include <spa/param/props.h>
 
-#include <win/soundengine_linux_pipewire.hpp>
+#include <win/sound/soundengine_linux_pipewire.hpp>
 
 
 namespace win

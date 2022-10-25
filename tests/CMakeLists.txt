@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(pool_tests pooltests.cpp)
 add_executable(activesoundstore_tests activesoundstoretests.cpp)
 add_executable(ringbuffer_tests ringbuffertests.cpp)
-add_executable(soundintegration_tests soundintegration_tests.cpp ../win/include/win/test/soundintegrationtests.hpp)
+add_executable(soundintegration_tests soundintegration_tests.cpp ../win/include/win/sound/test/soundintegrationtests.hpp)
 
 target_link_libraries(pool_tests win)
 target_link_libraries(activesoundstore_tests win)

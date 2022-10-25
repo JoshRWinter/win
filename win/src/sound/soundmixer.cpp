@@ -2,7 +2,7 @@
 #include <cmath>
 #include <algorithm>
 
-#include <win/soundmixer.hpp>
+#include <win/sound/soundmixer.hpp>
 
 namespace win
 {
