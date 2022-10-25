@@ -178,7 +178,7 @@ private:
 
 	std::aligned_storage_t<sizeof(impl::PoolNode<T>), alignof(impl::PoolNode<T>)> *find_spot()
 	{
-		if (freelist.size() > 0)
+		if (!freelist.empty())
 		{
 			std::aligned_storage_t<sizeof(impl::PoolNode<T>), alignof(impl::PoolNode<T>)> *spot = freelist[freelist.size() - 1];
 			freelist.pop_back();
@@ -197,8 +197,6 @@ private:
 			partition = partition->next.get();
 		}
 
-		if (partition_inner_offset == 1 && false)
-			partition_inner_offset = 64;
 		return partition->storage + partition_inner_offset;
 	}
 
