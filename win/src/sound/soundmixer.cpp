@@ -44,6 +44,19 @@ void SoundMixer::config(std::uint32_t key, float left, float right)
 {
 }
 
+void SoundMixer::apply_effect(std::uint32_t key, int priority, win::SoundEffect *e)
+{
+	win::SoundMixerSound *sound = sounds[key];
+	if (sound == NULL)
+		return;
+
+	sound->effects.push_back(priority, e);
+}
+
+void SoundMixer::remove_effect(std::uint32_t, win::SoundEffect *)
+{
+}
+
 void SoundMixer::pause(std::uint32_t key)
 {
 }
@@ -320,8 +333,8 @@ void SoundMixer::calculate_stereo_limiters(const int count, const int len, const
 
 void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, const int buf_len)
 {
-	std::int16_t extractbuf[mix_samples]; // mix_samples will be >= buf_len
-	memset(extractbuf, 0, sizeof(extractbuf));
+	float extractbuf[mix_samples]; // mix_samples will be >= buf_len
+	zero_float(extractbuf, mix_samples);
 
 	const int channels = sound.sound.stream.channels();
 	const int read_samples = channels == 1 ? buf_len / 2 : buf_len;
@@ -330,7 +343,7 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, co
 		win::bug("SoundMixer: mono or stereo PCM required");
 
 	// extract the PCM data from the stream
-	const int got = sound.sound.stream.read_samples(extractbuf, read_samples);
+	const int got = extract_pcm(sound, extractbuf, read_samples);
 	if (got < read_samples) // we were shorted a little bit
 	{
 		if (sound.sound.stream.is_writing_completed() && sound.sound.stream.size() == 0) // the decoder is done and the stream is empty
@@ -341,43 +354,60 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, co
 				sound.sound.source.reset();
 
 				// now that it's been restarted, see if we can squeeze a bit more out of it
-				const int got2 = sound.sound.stream.read_samples(extractbuf + got, read_samples - got);
+				const int got2 = extract_pcm(sound, extractbuf + got, read_samples - got);
 
 				if (got + got2 < read_samples) // gol dangit we were shorted again
-					memset(extractbuf + got + got2, 0, (read_samples - (got + got2)) * sizeof(std::int16_t)); // blank out the rest, this will cause a small skip in the audio. oh well
+					zero_float(extractbuf + got + got2, read_samples - (got + got2)); // blank out the rest, this will cause a small skip in the audio. oh well
 			}
 			else
 			{
-				memset(extractbuf + got, 0, (read_samples - got) * sizeof(std::int16_t)); // blank out the rest
+				zero_float(extractbuf + got, read_samples - got); // blank out the rest
 				sound.done = true; // mark this sound as completed.
 			}
 		}
 		else
-			memset(extractbuf + got, 0, (read_samples - got) * sizeof(std::int16_t)); // blank out the rest, this will cause a small skip in the audio. oh well
+			zero_float(extractbuf + got, read_samples - got); // blank out the rest, this will cause a small skip in the audio. oh well
 	}
 
-	// convert s16 to f32
+	// apply volume config
 	if (channels == 1)
 	{
 		for (int frame = 0; frame < buf_len; frame += 2)
 		{
-			const std::int16_t sample = extractbuf[frame / 2];
+			const float sample = extractbuf[frame / 2];
 
-			buf[frame] = (sample / (sample < 0 ? 32768.0f : 32767.0f)) * sound.left;
-			buf[frame + 1] = (sample / (sample < 0 ? 32768.0f : 32767.0f)) * sound.right;
+			buf[frame] = sample * sound.left;
+			buf[frame + 1] = sample * sound.right;
 		}
 	}
 	else
 	{
 		for (int frame = 0; frame < buf_len; frame += 2)
 		{
-			const std::int16_t left = extractbuf[frame];
-			const std::int16_t right = extractbuf[frame + 1];
+			const float left = extractbuf[frame];
+			const float right = extractbuf[frame + 1];
 
-			buf[frame] = (left / (left < 0 ? 32768.0f : 32767.0f)) * sound.left;
-			buf[frame + 1] = (right / (right < 0 ? 32768.0f : 32767.0f)) * sound.right;
+			buf[frame] = left * sound.left;
+			buf[frame + 1] = right * sound.right;
 		}
 	}
+}
+
+int SoundMixer::extract_pcm(SoundMixerSound &sound, float *dest, int len)
+{
+	std::int16_t raw[mix_samples];
+	const int got = sound.sound.stream.read_samples(raw, len);
+
+	for (int i = 0; i < got; ++i)
+		dest[i] = raw[i] / (raw[i] < 0 ? 32768.0f : 32767.0f);
+
+	return len;
+}
+
+void SoundMixer::zero_float(float *f, int len)
+{
+	for (int i = 0; i < len; ++i)
+		f[i] = 0.0f;
 }
 
 }

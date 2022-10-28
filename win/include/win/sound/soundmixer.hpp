@@ -9,6 +9,7 @@
 #include <win/sound/activesoundstore.hpp>
 #include <win/sound/pcmstream.hpp>
 #include <win/sound/soundresidencypriority.hpp>
+#include <win/sound/effectcontainer.hpp>
 #include <win/sound/soundcache.hpp>
 #include <win/assetroll.hpp>
 
@@ -32,6 +33,7 @@ struct SoundMixerSound
 
 	Sound &sound;
 	SoundResidencyPriority residency_priority;
+	EffectContainer<5> effects;
 	float compression_priority;
 	float left;
 	float right;
@@ -56,6 +58,8 @@ public:
 
 	int add(const char*, win::SoundResidencyPriority, float, float, float, bool, int);
 	void config(std::uint32_t, float, float);
+	void apply_effect(std::uint32_t, int, SoundEffect*);
+	void remove_effect(std::uint32_t, SoundEffect*);
 	void pause(std::uint32_t);
 	void resume(std::uint32_t);
 	void stop(std::uint32_t);
@@ -65,6 +69,8 @@ public:
 private:
 	void calculate_stereo_limiters(int, int, const std::array<StereoLimiter, max_sounds>&, const std::array<float, max_sounds>&);
 	static void extract_stereo_f32(SoundMixerSound&, float*, int);
+	static int extract_pcm(SoundMixerSound&, float*, int);
+	static void zero_float(float*, int len);
 
 	std::unique_ptr<float[]> conversion_buffers_owner;
 	float *conversion_buffers;
