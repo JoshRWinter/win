@@ -43,9 +43,9 @@ add_library(win STATIC
 	include/win/targa.hpp
 	include/win/utility.hpp
 	include/win/event.hpp
+	include/win/sound/floatpcmprovider.hpp
 	include/win/sound/soundeffect.hpp
 	include/win/sound/pitchscaleeffect.hpp
-	include/win/sound/effectcontainer.hpp
 	include/win/sound/soundresidencypriority.hpp
 	include/win/sound/pcmstream.hpp
 	include/win/sound/pcmresource.hpp

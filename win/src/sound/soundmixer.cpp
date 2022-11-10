@@ -44,17 +44,92 @@ void SoundMixer::config(std::uint32_t key, float left, float right)
 {
 }
 
-void SoundMixer::apply_effect(std::uint32_t key, int priority, win::SoundEffect *e)
+void SoundMixer::apply_effect(std::uint32_t key, win::SoundEffect *effect)
 {
-	win::SoundMixerSound *sound = sounds[key];
+	SoundMixerSound *sound = sounds[key];
 	if (sound == NULL)
 		return;
 
-	sound->effects.push_back(priority, e);
+	SoundEffect *current = sound->effect_tail;
+	SoundEffect *next = NULL;
+
+	// iterate the linked list backwards
+	while (current != NULL)
+	{
+		if (effect->priority > current->priority)
+		{
+			effect->prev = current;
+			effect->inner = current;
+
+			if (next != NULL)
+			{
+				next->prev = effect;
+				next->inner = effect;
+			}
+			else
+				sound->effect_tail = effect;
+
+			return;
+		}
+
+		next = current;
+		current = current->prev;
+	}
+
+	// the list is either empty, or this item is the lowest priority. decide what to do
+
+	SoundEffect *const last = next;
+	if (last == NULL)
+	{
+		// the list is empty
+
+		effect->prev = NULL;
+		effect->inner = &sound->sound.stream;
+		sound->effect_tail = effect;
+		return;
+	}
+	else
+	{
+		// this item is the lowest priority
+
+		last->prev = effect;
+		last->inner = effect;
+		effect->prev = NULL;
+		effect->inner = &sound->sound.stream;
+		return;
+	}
 }
 
-void SoundMixer::remove_effect(std::uint32_t, win::SoundEffect *)
+void SoundMixer::remove_effect(std::uint32_t key, win::SoundEffect *effect)
 {
+	SoundMixerSound *sound = sounds[key];
+	if (sound == NULL)
+		return;
+
+	SoundEffect *current = sound->effect_tail;
+	SoundEffect *next = NULL;
+
+	// iterate the linked list backwards
+	while (current != NULL)
+	{
+		if (current == effect)
+		{
+			if (next != NULL)
+			{
+				next->prev = current->prev;
+				next->inner = current->inner;
+			}
+			else
+				sound->effect_tail = current->prev;
+
+			return;
+		}
+
+		next = current;
+		current = current->prev;
+	}
+
+	win::bug("SoundMixer: couldn't remove effect");
 }
 
 void SoundMixer::pause(std::uint32_t key)
@@ -73,6 +148,19 @@ void SoundMixer::cleanup(bool all)
 
 		if (kill)
 		{
+			// mark all the sound effects as "removed"
+			// so the user can notice eventually
+
+			SoundEffect *current = sound->effect_tail;
+			while (current != NULL)
+			{
+				if (current->removed)
+					win::bug("SoundMixer: effect already removed");
+
+				current->removed = true;
+				current = current->prev;
+			}
+
 			cache.unload(sound->sound);
 			sound = sounds.remove(sound);
 			continue;
@@ -395,13 +483,10 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, co
 
 int SoundMixer::extract_pcm(SoundMixerSound &sound, float *dest, int len)
 {
-	std::int16_t raw[mix_samples];
-	const int got = sound.sound.stream.read_samples(raw, len);
-
-	for (int i = 0; i < got; ++i)
-		dest[i] = raw[i] / (raw[i] < 0 ? 32768.0f : 32767.0f);
-
-	return len;
+	if (sound.effect_tail != NULL)
+		return sound.effect_tail->read_samples(dest, len);
+	else
+		return sound.sound.stream.read_samples(dest, len);
 }
 
 void SoundMixer::zero_float(float *f, int len)

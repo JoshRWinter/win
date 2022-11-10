@@ -8,14 +8,16 @@ namespace win
 
 class PitchScaleEffect : public SoundEffect
 {
-public:
-	PitchScaleEffect(int);
+	WIN_NO_COPY_MOVE(PitchScaleEffect);
 
-	int apply(int (*read)(int)) override;
-	void set_scale(int);
+public:
+	PitchScaleEffect(int, float);
+
+	int read_samples(float*, int) override;
+	void set_scale(float);
 
 private:
-	int scale;
+	float scale;
 };
 
 }

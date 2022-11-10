@@ -7,12 +7,13 @@
 #include <win/win.hpp>
 #include <win/stream.hpp>
 #include <win/ringbuffer.hpp>
+#include <win/sound/floatpcmprovider.hpp>
 #include <win/sound/pcmdecoder.hpp>
 
 namespace win
 {
 
-class PCMStream
+class PCMStream : public FloatPCMProvider
 {
 	static constexpr int ringbuf_size = (44100 * 5) + 1; // n - 1 needs to be divisible by both 1 and 2
 	WIN_NO_COPY_MOVE(PCMStream);
@@ -20,6 +21,7 @@ class PCMStream
 public:
 	PCMStream();
 
+	int read_samples(float*, int);
 	int read_samples(std::int16_t*, int);
 	int write_samples(const std::int16_t*, int);
 	int size() const;

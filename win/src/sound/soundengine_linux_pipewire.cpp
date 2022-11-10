@@ -130,6 +130,24 @@ std::uint32_t SoundEngineLinuxPipeWire::play(const char *path, win::SoundResiden
 	return key;
 }
 
+void SoundEngineLinuxPipeWire::apply_effect(std::uint32_t key, win::SoundEffect *effect)
+{
+	pw_thread_loop_lock(loop);
+
+	mixer.apply_effect(key, effect);
+
+	pw_thread_loop_unlock(loop);
+}
+
+void SoundEngineLinuxPipeWire::remove_effect(std::uint32_t key, win::SoundEffect *effect)
+{
+	pw_thread_loop_lock(loop);
+
+	mixer.remove_effect(key, effect);
+
+	pw_thread_loop_unlock(loop);
+}
+
 void SoundEngineLinuxPipeWire::pause(std::uint32_t id)
 {
 	pw_thread_loop_lock(loop);

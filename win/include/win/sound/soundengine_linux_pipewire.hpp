@@ -15,16 +15,18 @@ class SoundEngineLinuxPipeWire : public SoundEngineLinuxProxy
 {
 public:
 	SoundEngineLinuxPipeWire(AssetRoll&);
-	virtual ~SoundEngineLinuxPipeWire() override;
+	~SoundEngineLinuxPipeWire();
 
 	WIN_NO_COPY_MOVE(SoundEngineLinuxPipeWire);
 
-	virtual std::uint32_t play(const char*, win::SoundResidencyPriority, float, bool, int) override;
-	virtual std::uint32_t play(const char*, win::SoundResidencyPriority, float, float, float, bool, int) override;
-	virtual void pause(std::uint32_t) override;
-	virtual void resume(std::uint32_t) override;
-	virtual void stop(std::uint32_t) override;
-	virtual void config(std::uint32_t, float, float) override;
+	std::uint32_t play(const char*, win::SoundResidencyPriority, float, bool, int) override;
+	std::uint32_t play(const char*, win::SoundResidencyPriority, float, float, float, bool, int) override;
+	void apply_effect(std::uint32_t, SoundEffect*) override;
+	void remove_effect(std::uint32_t, SoundEffect*) override;
+	void pause(std::uint32_t) override;
+	void resume(std::uint32_t) override;
+	void stop(std::uint32_t) override;
+	void config(std::uint32_t, float, float) override;
 
 private:
 	static void stream_process(void*);
