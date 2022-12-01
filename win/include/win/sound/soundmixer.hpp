@@ -8,7 +8,6 @@
 #include <win/win.hpp>
 #include <win/sound/activesoundstore.hpp>
 #include <win/sound/pcmstream.hpp>
-#include <win/sound/soundresidencypriority.hpp>
 #include <win/sound/soundeffect.hpp>
 #include <win/sound/soundcache.hpp>
 #include <win/assetroll.hpp>
@@ -18,7 +17,7 @@ namespace win
 
 struct SoundMixerSound
 {
-	SoundMixerSound(Sound &sound, SoundResidencyPriority residency_priority, float compression_priority, float left, float right, bool looping)
+	SoundMixerSound(Sound &sound, int residency_priority, float compression_priority, float left, float right, bool looping)
 		: sound(sound)
 		, residency_priority(residency_priority)
 		, compression_priority(compression_priority)
@@ -33,7 +32,7 @@ struct SoundMixerSound
 	{}
 
 	Sound &sound;
-	SoundResidencyPriority residency_priority;
+	int residency_priority;
 	float compression_priority;
 	SoundEffect *effect_tail;
 	float left;
@@ -58,7 +57,7 @@ public:
 	explicit SoundMixer(win::AssetRoll&);
 	~SoundMixer();
 
-	std::uint32_t add(const char*, win::SoundResidencyPriority, float, float, float, bool, int);
+	std::uint32_t add(const char*, int, float, float, float, bool, int);
 	void config(std::uint32_t, float, float);
 	void apply_effect(std::uint32_t, SoundEffect*);
 	void remove_effect(std::uint32_t, SoundEffect*);

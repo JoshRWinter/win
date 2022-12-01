@@ -48,7 +48,6 @@ add_library(win STATIC
 	include/win/sound/floatpcmprovider.hpp
 	include/win/sound/soundeffect.hpp
 	include/win/sound/pitchscaleeffect.hpp
-	include/win/sound/soundresidencypriority.hpp
 	include/win/sound/pcmstream.hpp
 	include/win/sound/pcmresource.hpp
 	include/win/sound/pcmdecoder.hpp

@@ -22,7 +22,7 @@ SoundMixer::~SoundMixer()
 	cleanup(true);
 }
 
-std::uint32_t SoundMixer::add(const char *name, win::SoundResidencyPriority residency_priority, float compression_priority, float left, float right, bool looping, int seek)
+std::uint32_t SoundMixer::add(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, int seek)
 {
 	cleanup(false);
 
@@ -33,8 +33,30 @@ std::uint32_t SoundMixer::add(const char *name, win::SoundResidencyPriority resi
 	const auto key = sounds.add(sound, residency_priority, compression_priority, std::max(left, 0.0f), std::max(right, 0.0f), looping);
 	if (key == -1)
 	{
-		// nevermind, need to unload it
-		cache.unload(sound);
+		// search the active sound store for one with less priority
+		bool found = false;
+		for (auto it = sounds.begin(); it != sounds.end(); ++it)
+		{
+			if (it->residency_priority < residency_priority)
+			{
+				cache.unload(it->sound);
+				sounds.remove(it);
+				found = true;
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			// nevermind, need to unload it
+			cache.unload(sound);
+			return -1;
+		}
+
+		const auto new_key = sounds.add(sound, residency_priority, compression_priority, std::max(left, 0.0f), std::max(right, 0.0f), looping);
+
+		if (new_key == -1)
+			win::bug("SoundMixer: Couldn't add sound even after evicting one");
 	}
 
 	return key;

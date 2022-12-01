@@ -6,7 +6,6 @@
 #include <win/sound/soundengine_linux.hpp>
 #include <win/sound/soundcache.hpp>
 #include <win/sound/soundmixer.hpp>
-#include <win/sound/soundresidencypriority.hpp>
 
 namespace win
 {
@@ -19,8 +18,8 @@ public:
 
 	WIN_NO_COPY_MOVE(SoundEngineLinuxPipeWire);
 
-	std::uint32_t play(const char*, win::SoundResidencyPriority, float, bool, int) override;
-	std::uint32_t play(const char*, win::SoundResidencyPriority, float, float, float, bool, int) override;
+	std::uint32_t play(const char*, int, float, bool, int) override;
+	std::uint32_t play(const char*, int, float, float, float, bool, int) override;
 	void apply_effect(std::uint32_t, SoundEffect*) override;
 	void remove_effect(std::uint32_t, SoundEffect*) override;
 	void pause(std::uint32_t) override;

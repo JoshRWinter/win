@@ -148,7 +148,7 @@ void SoundEngineLinuxPulseAudio::process(pa_stream *stream, size_t request_bytes
 	}
 }
 
-std::uint32_t SoundEngineLinuxPulseAudio::play(const char *name, win::SoundResidencyPriority residency_priority, float compression_priority, bool looping, int seek)
+std::uint32_t SoundEngineLinuxPulseAudio::play(const char *name, int residency_priority, float compression_priority, bool looping, int seek)
 {
 	pa_threaded_mainloop_lock(loop);
 	const std::uint32_t key = mixer.add(name, residency_priority, compression_priority, 1.0f, 1.0f, looping, seek);
@@ -157,7 +157,7 @@ std::uint32_t SoundEngineLinuxPulseAudio::play(const char *name, win::SoundResid
 	return key;
 }
 
-std::uint32_t SoundEngineLinuxPulseAudio::play(const char *name, win::SoundResidencyPriority residency_priority, float compression_priority, float left, float right, bool looping, int seek)
+std::uint32_t SoundEngineLinuxPulseAudio::play(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, int seek)
 {
 	pa_threaded_mainloop_lock(loop);
 	const std::uint32_t key = mixer.add(name, residency_priority, compression_priority, left, right, looping, seek);

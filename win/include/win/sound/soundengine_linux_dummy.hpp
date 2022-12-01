@@ -14,8 +14,8 @@ class SoundEngineLinuxDummy : public SoundEngineLinuxProxy
 public:
 	SoundEngineLinuxDummy() {}
 
-	std::uint32_t play(const char*, win::SoundResidencyPriority, float, bool, int) override { return -1; }
-	std::uint32_t play(const char*, win::SoundResidencyPriority, float, float, float, bool, int) override { return -1; }
+	std::uint32_t play(const char*, int, float, bool, int) override { return -1; }
+	std::uint32_t play(const char*, int, float, float, float, bool, int) override { return -1; }
 	void apply_effect(std::uint32_t, SoundEffect*) override {}
 	void remove_effect(std::uint32_t, SoundEffect*) override {}
 	void pause(std::uint32_t) override {}
