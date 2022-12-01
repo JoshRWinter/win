@@ -42,6 +42,12 @@ std::uint32_t SoundMixer::add(const char *name, win::SoundResidencyPriority resi
 
 void SoundMixer::config(std::uint32_t key, float left, float right)
 {
+	SoundMixerSound *sound = sounds[key];
+	if (sound == NULL)
+		return;
+
+	sound->left = left;
+	sound->right = right;
 }
 
 void SoundMixer::apply_effect(std::uint32_t key, win::SoundEffect *effect)
@@ -134,10 +140,20 @@ void SoundMixer::remove_effect(std::uint32_t key, win::SoundEffect *effect)
 
 void SoundMixer::pause(std::uint32_t key)
 {
+	SoundMixerSound *sound = sounds[key];
+	if (sound == NULL)
+		return;
+
+	sound->playing = false;
 }
 
 void SoundMixer::resume(std::uint32_t key)
 {
+	SoundMixerSound *sound = sounds[key];
+	if (sound == NULL)
+		return;
+
+	sound->playing = true;
 }
 
 void SoundMixer::cleanup(bool all)

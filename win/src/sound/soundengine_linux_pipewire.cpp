@@ -68,10 +68,14 @@ SoundEngineLinuxPipeWire::SoundEngineLinuxPipeWire(AssetRoll &roll)
 
 SoundEngineLinuxPipeWire::~SoundEngineLinuxPipeWire()
 {
-	pw_thread_loop_stop(loop);
+	pw_thread_loop_lock(loop);
 
 	pw_stream_disconnect(stream);
+	fprintf(stderr, "%p\n", pw_stream_destroy);
 	pw_stream_destroy(stream);
+
+	pw_thread_loop_unlock(loop);
+	pw_thread_loop_stop(loop);
 	pw_thread_loop_destroy(loop);
 
 	pw_deinit();

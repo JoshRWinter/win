@@ -95,19 +95,32 @@ SoundEngineLinuxPulseAudio::SoundEngineLinuxPulseAudio(AssetRoll &asset_roll)
 
 SoundEngineLinuxPulseAudio::~SoundEngineLinuxPulseAudio()
 {
-	pa_threaded_mainloop_stop(loop);
+	pa_threaded_mainloop_lock(loop);
 
 	if (pa_stream_disconnect(stream))
 		win::bug("PulseAudio: Couldn't disconnect stream");
 
-	if (pa_stream_get_state(stream) != PA_STREAM_UNCONNECTED)
-		win::bug("still connected");
+	while (true)
+	{
+		const pa_stream_state_t state = pa_stream_get_state(stream);
+
+		if (state == PA_STREAM_TERMINATED)
+			break;
+
+		pa_threaded_mainloop_unlock(loop);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		pa_threaded_mainloop_lock(loop);
+	}
 
 	pa_stream_unref(stream);
 
+
 	pa_context_disconnect(context);
-	pa_threaded_mainloop_free(loop);
 	pa_context_unref(context);
+
+	pa_threaded_mainloop_unlock(loop);
+	pa_threaded_mainloop_stop(loop);
+	pa_threaded_mainloop_free(loop);
 }
 
 void SoundEngineLinuxPulseAudio::process(pa_stream *stream, size_t request_bytes, void *userdata)

@@ -45,7 +45,7 @@ int main()
 #endif
 {
 	win::DisplayOptions display_options;
-	display_options.caption = "window caption";
+	display_options.caption = "debug_window";
 	display_options.width = 800;
 	display_options.height = 600;
 	display_options.gl_major = 3;
