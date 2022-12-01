@@ -43,6 +43,7 @@ SoundEngine::SoundEngine(AssetRoll &asset_roll)
 
 SoundEngine::~SoundEngine()
 {
+	inner.reset();
 	dlclose(so);
 }
 
