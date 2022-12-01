@@ -34,11 +34,9 @@ private:
 
 	// pipewire nonsense
 	pw_thread_loop *loop;
-	/*
 	pw_context *context;
 	pw_core *core;
 	pw_registry *registry;
-	*/
 	pw_stream *stream;
 	pw_stream_events events;
 

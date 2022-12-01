@@ -51,13 +51,14 @@ class SoundMixer
 {
 	WIN_NO_COPY_MOVE(SoundMixer);
 
+public:
 	static constexpr int max_sounds = 32;
 	static constexpr int mix_samples = 360;
-public:
+
 	explicit SoundMixer(win::AssetRoll&);
 	~SoundMixer();
 
-	int add(const char*, win::SoundResidencyPriority, float, float, float, bool, int);
+	std::uint32_t add(const char*, win::SoundResidencyPriority, float, float, float, bool, int);
 	void config(std::uint32_t, float, float);
 	void apply_effect(std::uint32_t, SoundEffect*);
 	void remove_effect(std::uint32_t, SoundEffect*);

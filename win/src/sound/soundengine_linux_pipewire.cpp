@@ -2,10 +2,11 @@
 
 #ifdef WINPLAT_LINUX
 
+#include <win/sound/soundengine_linux_pipewire_functions.hpp>
+
 #include <pipewire/pipewire.h>
 #include <spa/param/audio/format-utils.h>
 #include <spa/param/props.h>
-
 #include <win/sound/soundengine_linux_pipewire.hpp>
 
 
@@ -15,15 +16,9 @@ namespace win
 SoundEngineLinuxPipeWire::SoundEngineLinuxPipeWire(AssetRoll &roll)
 	: mixer(roll)
 {
-	pw_init(0, NULL);
+	pw_init(NULL, NULL);
 
-	//loop = pw_main_loop_new(NULL);
 	loop = pw_thread_loop_new("threadloop_lol", NULL);
-/*
-	context = pw_context_new(pw_thread_loop_get_loop(loop), NULL, 0);
-	core = pw_context_connect(context, NULL, 0);
-	registry = pw_core_get_registry(core, PW_VERSION_REGISTRY, 0);
-*/
 
 	pw_thread_loop_start(loop);
 	pw_thread_loop_lock(loop);
@@ -57,7 +52,6 @@ SoundEngineLinuxPipeWire::SoundEngineLinuxPipeWire(AssetRoll &roll)
 	if (pw_stream_connect(stream, PW_DIRECTION_OUTPUT, PW_ID_ANY, (pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_RT_PROCESS), &params, 1) != 0)
 		win::bug("PipeWire: Couldn't connect stream");
 
-	pw_thread_loop_unlock(loop);
 	const char *errortext;
 	while (1)
 	{
@@ -75,11 +69,6 @@ SoundEngineLinuxPipeWire::SoundEngineLinuxPipeWire(AssetRoll &roll)
 SoundEngineLinuxPipeWire::~SoundEngineLinuxPipeWire()
 {
 	pw_thread_loop_stop(loop);
-
-	/*
-	pw_core_disconnect(core);
-	pw_context_destroy(context);
-	*/
 
 	pw_stream_disconnect(stream);
 	pw_stream_destroy(stream);

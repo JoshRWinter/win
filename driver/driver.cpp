@@ -11,7 +11,7 @@
 #include <win/display.hpp>
 #include <win/assetroll.hpp>
 #include <win/atlas.hpp>
-#include <win/soundengine.hpp>
+#include <win/sound/soundengine.hpp>
 #include <win/fontrenderer.hpp>
 #include <win/font.hpp>
 #include <win/gl.hpp>

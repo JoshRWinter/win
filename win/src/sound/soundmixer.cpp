@@ -22,7 +22,7 @@ SoundMixer::~SoundMixer()
 	cleanup(true);
 }
 
-int SoundMixer::add(const char *name, win::SoundResidencyPriority residency_priority, float compression_priority, float left, float right, bool looping, int seek)
+std::uint32_t SoundMixer::add(const char *name, win::SoundResidencyPriority residency_priority, float compression_priority, float left, float right, bool looping, int seek)
 {
 	cleanup(false);
 
