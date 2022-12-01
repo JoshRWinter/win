@@ -45,8 +45,9 @@ template <typename T> void run()
 	// make sure no read from empty buffer
 	{
 		reset();
-		int got = win::RingBufferBase::read(ringbuf, 4, (T*)NULL, 1, read, write);
+		int got = win::RingBufferBase::read(ringbuf, 4, dest, 1, read, write);
 		rbassert(read == 0);
+		memcheck();
 	}
 
 	// make sure no override / overread
@@ -78,7 +79,8 @@ template <typename T> void run()
 		reset();
 		T src[] = { 1, 2, 3, 4 };
 
-		const int wrote = win::RingBufferBase::write(ringbuf, 4, (T*)NULL, 0, read, write);
+		const int wrote = win::RingBufferBase::write(ringbuf, 4, src, 0, read, write);
+		memcheck();
 	}
 
 	// general comprehensive tests

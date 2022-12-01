@@ -4,9 +4,9 @@
 int main() { fprintf(stderr, "\033[31;1mSound integration tests not enabled.\033[0m\n"); return 0; }
 #else
 
-#include <win/soundengine.hpp>
+#include <win/sound/soundengine.hpp>
 
-#include <win/test/soundintegrationtests.hpp>
+#include <win/sound/test/soundintegrationtests.hpp>
 
 #if defined WINPLAT_WINDOWS
 #include <windows.h>
@@ -28,7 +28,7 @@ void smoke_reset_stream(win::AssetRoll &roll)
 {
 	{
 		win::SoundEngine se(roll);
-		se.play("6secstereo.ogg", win::SoundResidencyPriority::high, 1.0f, true);
+		se.play("6secstereo.ogg", 5, 1.0f, true);
 		platform_sleep(6500);
 	}
 
@@ -73,7 +73,7 @@ void smoke_reset_stream(win::AssetRoll &roll)
 
 	{
 		win::SoundEngine se(roll);
-		se.play("1secmono.ogg", win::SoundResidencyPriority::high, 1.0f, true);
+		se.play("1secmono.ogg", 5, 1.0f, true);
 		platform_sleep(1500);
 	}
 
@@ -120,9 +120,9 @@ void smoke_unloads(win::AssetRoll &roll)
 {
 	{
 		win::SoundEngine se(roll);
-		se.stop(se.play("3secstereo.ogg", win::SoundResidencyPriority::high, 1.0f, false));
-		se.play("3secstereo.ogg", win::SoundResidencyPriority::high, 1.0f, false);
-		se.play("3secstereo.ogg", win::SoundResidencyPriority::high, 1.0f, false);
+		se.stop(se.play("3secstereo.ogg", 5, 1.0f, false));
+		se.play("3secstereo.ogg", 5, 1.0f, false);
+		se.play("3secstereo.ogg", 5, 1.0f, false);
 
 		platform_sleep(3500);
 	}
@@ -233,9 +233,9 @@ void smoke_partial_cache(win::AssetRoll &roll)
 {
 	{
 	    win::SoundEngine se(roll);
-	    se.play("6secmono.ogg", win::SoundResidencyPriority::high, 1.0f, false, 0);
+	    se.play("6secmono.ogg", 5, 1.0f, false, 0);
 	    platform_sleep(6500);
-	    se.play("6secmono.ogg", win::SoundResidencyPriority::high, 1.0f, false, 0);
+	    se.play("6secmono.ogg", 5, 1.0f, false, 0);
 	    platform_sleep(6500);
 	}
 
@@ -310,11 +310,11 @@ void smoke_full_cache(win::AssetRoll &roll)
     {
 	    win::SoundEngine se(roll);
 
-		se.play("1secmono.ogg", win::SoundResidencyPriority::high, 1.0f, false, 2);
+		se.play("1secmono.ogg", 5, 1.0f, false, 2);
 		platform_sleep(1500);
-		se.play("1secmono.ogg", win::SoundResidencyPriority::high, 1.0f, false, 2);
+		se.play("1secmono.ogg", 5, 1.0f, false, 2);
 		platform_sleep(1500);
-		se.play("1secmono.ogg", win::SoundResidencyPriority::high, 1.0f, false, 0);
+		se.play("1secmono.ogg", 5, 1.0f, false, 0);
 		platform_sleep(1500);
 	}
 

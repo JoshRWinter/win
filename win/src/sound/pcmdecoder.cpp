@@ -6,7 +6,7 @@
 #include <win/sound/pcmdecoder.hpp>
 
 #ifdef WIN_USE_SOUND_INTEGRATION_TESTS
-#include <win/test/soundintegrationtests.hpp>
+#include <win/sound/test/soundintegrationtests.hpp>
 #endif
 
 namespace win
