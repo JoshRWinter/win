@@ -7,33 +7,28 @@
 
 #include <pulse/pulseaudio.h>
 
-#include <win/sound/soundengine_linux.hpp>
+#include <win/sound/soundengine.hpp>
 #include <win/sound/soundmixer.hpp>
 
 namespace win
 {
 
-class SoundEngineLinuxPulseAudio : public SoundEngineLinuxProxy
+class SoundEngineLinuxPulseAudio : public SoundEngineImplementation
 {
 	WIN_NO_COPY_MOVE(SoundEngineLinuxPulseAudio);
 
-protected:
+public:
+	SoundEngineLinuxPulseAudio(AssetRoll&, const char*);
 	~SoundEngineLinuxPulseAudio();
 
-public:
-	SoundEngineLinuxPulseAudio(AssetRoll&);
-
-	std::uint32_t play(const char*, int, float, bool, int) override;
-	std::uint32_t play(const char*, int, float, float, float, bool, int) override;
-	void apply_effect(std::uint32_t, SoundEffect*) override;
-	void remove_effect(std::uint32_t, SoundEffect*) override;
-	void pause(std::uint32_t) override;
-	void resume(std::uint32_t) override;
-	void stop(std::uint32_t) override;
-	void config(std::uint32_t, float, float) override;
+	std::uint32_t play(const SoundEnginePlayCommand&) override;
+	void save(const std::vector<SoundEnginePlaybackCommand>&, const std::vector<SoundEngineConfigCommand>&) override;
 
 private:
 	static void process(pa_stream*, size_t, void*);
+	void load_functions();
+
+	void *so;
 
 	pa_stream *stream;
 	pa_context *context;

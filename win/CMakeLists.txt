@@ -23,11 +23,9 @@ add_library(win STATIC
 	src/sound/pcmdecoder.cpp
 	src/sound/soundcache.cpp
 	src/sound/soundmixer.cpp
-	src/sound/soundengine_linux.cpp
+	src/sound/soundengine.cpp
 	src/sound/soundengine_linux_pulseaudio.cpp
-	src/sound/soundengine_linux_pulseaudio_functions.cpp
 	src/sound/soundengine_linux_pipewire.cpp
-	src/sound/soundengine_linux_pipewire_functions.cpp
 	src/sound/soundengine_windows.cpp
 
 	include/win/win.hpp
@@ -57,12 +55,9 @@ add_library(win STATIC
 	include/win/sound/activesoundstore.hpp
 	include/win/sound/soundengine.hpp
 	include/win/sound/soundengine_windows.hpp
-	include/win/sound/soundengine_linux.hpp
 	include/win/sound/soundengine_linux_dummy.hpp
 	include/win/sound/soundengine_linux_pulseaudio.hpp
-	include/win/sound/soundengine_linux_pulseaudio_functions.hpp
 	include/win/sound/soundengine_linux_pipewire.hpp
-	include/win/sound/soundengine_linux_pipewire_functions.hpp
 	include/win/sound/test/soundintegrationtests.hpp
 )
 
