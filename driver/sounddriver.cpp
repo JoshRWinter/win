@@ -14,7 +14,8 @@ static void sleep(int seconds)
 
 int main()
 {
-	win::AssetRoll roll("/home/josh/soundtesting/music.roll");
+	//win::AssetRoll roll("/home/josh/soundtesting/music.roll");
+	win::AssetRoll roll("c:\\users\\josh\\desktop\\music.roll");
 	win::SoundEngine se(roll);
 
 	//win::PitchScaleEffect effect(1, 2.0f);
@@ -23,7 +24,8 @@ int main()
 	//se.apply_effect(key, &effect);
 	//auto key2 = se.play("soft.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, 0);
 	//auto key3 = se.play("soft.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, 0);
-	usleep(1'000'000 * 1000);
+	//usleep(1'000'000 * 1000);
+	Sleep(1000 * 60);
 	//se.remove_effect(key, &effect);
 
 	return 0;

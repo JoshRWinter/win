@@ -1,6 +1,10 @@
 #ifndef WIN_SOUND_ENGINE_LINUX_PIPEWIRE_HPP
 #define WIN_SOUND_ENGINE_LINUX_PIPEWIRE_HPP
 
+#include <win/win.hpp>
+
+#ifdef WINPLAT_LINUX
+
 #include <pipewire/pipewire.h>
 
 #include <win/sound/soundengine.hpp>
@@ -35,5 +39,7 @@ private:
 };
 
 }
+
+#endif
 
 #endif

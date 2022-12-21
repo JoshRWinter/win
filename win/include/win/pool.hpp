@@ -172,7 +172,7 @@ private:
 #ifndef NDEBUG
 		node->next = NULL;
 #endif
-		node->~PoolNode<T>();
+		node->~PoolNode();
 		return Iterator(next);
 	}
 

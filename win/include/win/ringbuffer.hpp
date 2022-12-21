@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <atomic>
+#include <algorithm>
 
 #include <string.h>
 

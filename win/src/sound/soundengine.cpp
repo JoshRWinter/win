@@ -2,10 +2,12 @@
 
 #include <win/sound/soundengine.hpp>
 
-#ifdef WINPLAT_LINUX
+#if defined WINPLAT_LINUX
 #include <win/sound/soundengine_linux_pipewire.hpp>
 #include <win/sound/soundengine_linux_pulseaudio.hpp>
 #include <win/sound/soundengine_linux_dummy.hpp>
+#elif defined WINPLAT_WINDOWS
+#include <win/sound/soundengine_windows_directsound.hpp>
 #endif
 
 namespace win
@@ -13,7 +15,7 @@ namespace win
 
 SoundEngine::SoundEngine(AssetRoll &roll)
 {
-#ifdef WINPLAT_LINUX
+#if defined WINPLAT_LINUX
 	const char *libpipewire = "/usr/lib/libpipewire-0.3.so.0";
 	const char *libpulse = "/usr/lib/libpulse.so.0";
 
@@ -35,6 +37,8 @@ SoundEngine::SoundEngine(AssetRoll &roll)
 		fprintf(stderr, "Looking for PipeWire (%s) or PulseAudio (%s) and found neither.\n", libpipewire, libpulse);
 		inner.reset(new SoundEngineLinuxDummy());
 	}
+#elif defined WINPLAT_WINDOWS
+	inner.reset(new SoundEngineWindowsDirectSound(roll));
 #endif
 }
 

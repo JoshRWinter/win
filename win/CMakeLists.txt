@@ -26,7 +26,7 @@ add_library(win STATIC
 	src/sound/soundengine.cpp
 	src/sound/soundengine_linux_pulseaudio.cpp
 	src/sound/soundengine_linux_pipewire.cpp
-	src/sound/soundengine_windows.cpp
+	src/sound/soundengine_windows_directsound.cpp
 
 	include/win/win.hpp
 	include/win/pool.hpp
@@ -54,7 +54,7 @@ add_library(win STATIC
 	include/win/sound/soundmixer.hpp
 	include/win/sound/activesoundstore.hpp
 	include/win/sound/soundengine.hpp
-	include/win/sound/soundengine_windows.hpp
+	include/win/sound/soundengine_windows_directsound.hpp
 	include/win/sound/soundengine_linux_dummy.hpp
 	include/win/sound/soundengine_linux_pulseaudio.hpp
 	include/win/sound/soundengine_linux_pipewire.hpp
