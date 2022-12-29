@@ -308,7 +308,7 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 		if (*limiters[i].right > 1.0f)
 			*limiters[i].right = 1.0f;
 	}
-
+/*
 	// debugging schtuff
 	{
 		auto end = std::chrono::high_resolution_clock::now();
@@ -327,7 +327,7 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 			accum = 0;
 			cycles = 0;
 		}
-	}
+	}*/
 	return len;
 }
 

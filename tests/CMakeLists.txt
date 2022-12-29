@@ -18,20 +18,34 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(activesoundstore_tests PRIVATE -fno-exceptions)
 	target_compile_options(ringbuffer_tests PRIVATE -fno-exceptions)
 	target_compile_options(soundintegration_tests PRIVATE -fno-exceptions)
+endif()
 
-	if(USE_ASAN)
-		target_compile_options(pool_tests PRIVATE -fsanitize=address -fsanitize=undefined)
-		target_link_options(pool_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+if(USE_ASAN)
+	message("Enabling ASAN")
 
-		target_compile_options(activesoundstore_tests PRIVATE -fsanitize=address -fsanitize=undefined)
-		target_link_options(activesoundstore_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+	target_compile_options(pool_tests PRIVATE -fsanitize=address)
+	target_link_options(pool_tests PRIVATE -fsanitize=address)
 
-		target_compile_options(ringbuffer_tests PRIVATE -fsanitize=address -fsanitize=undefined)
-		target_link_options(ringbuffer_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+	target_compile_options(activesoundstore_tests PRIVATE -fsanitize=address)
+	target_link_options(activesoundstore_tests PRIVATE -fsanitize=address)
 
-		target_compile_options(soundintegration_tests PRIVATE -fsanitize=address -fsanitize=undefined)
-		target_link_options(soundintegration_tests PRIVATE -fsanitize=address -fsanitize=undefined)
+	target_compile_options(ringbuffer_tests PRIVATE -fsanitize=address)
+	target_link_options(ringbuffer_tests PRIVATE -fsanitize=address)
 
-		message("Enabling ASAN")
+	target_compile_options(soundintegration_tests PRIVATE -fsanitize=address)
+	target_link_options(soundintegration_tests PRIVATE -fsanitize=address)
+
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(pool_tests PRIVATE -fsanitize=undefined)
+		target_link_options(pool_tests PRIVATE -fsanitize=undefined)
+
+		target_compile_options(activesoundstore_tests PRIVATE -fsanitize=undefined)
+		target_link_options(activesoundstore_tests PRIVATE -fsanitize=undefined)
+
+		target_compile_options(ringbuffer_tests PRIVATE -fsanitize=undefined)
+		target_link_options(ringbuffer_tests PRIVATE -fsanitize=undefined)
+
+		target_compile_options(soundintegration_tests PRIVATE -fsanitize=undefined)
+		target_link_options(soundintegration_tests PRIVATE -fsanitize=undefined)
 	endif()
 endif()

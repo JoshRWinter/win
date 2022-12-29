@@ -61,13 +61,6 @@ add_library(win STATIC
 	include/win/sound/test/soundintegrationtests.hpp
 )
 
-if(USE_ASAN)
-	target_compile_options(win PRIVATE -fsanitize=address)
-	target_link_options(win PRIVATE -fsanitize=address)
-	target_compile_options(win PRIVATE -fsanitize=undefined)
-	target_link_options(win PRIVATE -fsanitize=undefined)
-endif()
-
 if(WIN32)
 	find_package(OpenGL REQUIRED)
 	find_package(DSound REQUIRED)
@@ -134,5 +127,17 @@ else()
 
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(win PRIVATE -fno-exceptions)
+	endif()
+endif()
+
+if (USE_ASAN)
+	message("Enabling ASAN")
+
+	target_compile_options(win PRIVATE -fsanitize=address)
+	target_link_options(win PRIVATE -fsanitize=address)
+
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(win PRIVATE -fsanitize=undefined)
+		target_link_options(win PRIVATE -fsanitize=undefined)
 	endif()
 endif()

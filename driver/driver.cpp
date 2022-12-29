@@ -63,7 +63,7 @@ int main()
 	auto music = "../../fishtank/assets_local/Motions.ogg";
 	auto effect = "../../fishtank/assets_local/platform_destroy.ogg";
 
-	win::SoundEngine audio_engine(roll);
+	win::SoundEngine audio_engine(display, roll);
 
 	win::FontRenderer font_renderer(win::Dimensions<int>(display.width(), display.height()), win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f));
 	win::Font font1(font_renderer, roll["../../fishtank/assets/arial.ttf"], 0.5f);

@@ -12,11 +12,20 @@ static void sleep(int seconds)
 #include <unistd.h>
 #endif
 
+#define private public
+#include <win/display.hpp>
+
 int main()
 {
 	//win::AssetRoll roll("/home/josh/soundtesting/music.roll");
+	win::DisplayOptions opts;
+	opts.width = 300;
+	opts.height = 100;
+	opts.gl_major = 3;
+	opts.gl_minor = 3;
+	win::Display d(opts);
 	win::AssetRoll roll("c:\\users\\josh\\desktop\\music.roll");
-	win::SoundEngine se(roll);
+	win::SoundEngine se(d, roll);
 
 	//win::PitchScaleEffect effect(1, 2.0f);
 	//auto key = se.play("gow.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, (24 + 0.85) * 60 * 44100 * 2);
@@ -25,7 +34,10 @@ int main()
 	//auto key2 = se.play("soft.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, 0);
 	//auto key3 = se.play("soft.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, 0);
 	//usleep(1'000'000 * 1000);
-	Sleep(1000 * 60);
+	bool quit = false;
+	d.register_window_handler([&quit](win::WindowEvent e){ quit = true; });
+	while (!quit) d.process();
+	//Sleep(1000 * 60);
 	//se.remove_effect(key, &effect);
 
 	return 0;

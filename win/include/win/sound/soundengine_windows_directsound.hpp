@@ -25,26 +25,27 @@ class SoundEngineWindowsDirectSound : public SoundEngineImplementation
 
 	constexpr static float write_freq_micro = 4000;
 	constexpr static int write_size_stereo_samples = 360;
+	constexpr static int buffer_len_bytes = (write_size_stereo_samples * 2 * sizeof(std::int16_t)) * 3;
 
 public:
-	SoundEngineWindowsDirectSound(AssetRoll &roll);
+	SoundEngineWindowsDirectSound(HWND, AssetRoll &roll);
 	~SoundEngineWindowsDirectSound();
 
 	std::uint32_t play(const SoundEnginePlayCommand&) override;
 	void save(const std::vector<SoundEnginePlaybackCommand>&, const std::vector<SoundEngineConfigCommand>&) override;
 
 private:
-	static void loop(SoundEngineWindowsDirectSound&);
-	void write();
+	static void loop(SoundEngineWindowsDirectSound&, std::atomic<bool>&);
+	bool write();
 
 	std::thread loop_thread;
+	std::atomic<bool> loop_cancel;
 	std::mutex loop_lock;
-
-	std::chrono::time_point<std::chrono::high_resolution_clock> loop_last_write;
 
 	IDirectSound8 *context;
 	IDirectSoundBuffer *primary;
 	IDirectSoundBuffer8 *secondary;
+	DWORD write_position;
 
 	SoundMixer mixer;
 };

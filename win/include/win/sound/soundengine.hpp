@@ -7,6 +7,7 @@
 #include <win/win.hpp>
 #include <win/assetroll.hpp>
 #include <win/sound/soundeffect.hpp>
+#include <win/display.hpp>
 
 namespace win
 {
@@ -71,11 +72,19 @@ public:
 	virtual ~SoundEngineImplementation() {}
 };
 
+#if defined WINPLAT_WINDOWS
+typedef HWND WindowHandle;
+#else if defined WINPLAT_LINUX
+typedef void* window_handle
+#endif
+
 class SoundEngine
 {
 	WIN_NO_COPY_MOVE(SoundEngine);
 
+	SoundEngine(Display*, AssetRoll&);
 public:
+	SoundEngine(Display&, AssetRoll&);
 	SoundEngine(AssetRoll&);
 
 	// name must live until the save() call returns

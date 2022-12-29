@@ -381,6 +381,11 @@ void Display::vsync(bool on)
 	wglSwapIntervalEXT(on);
 }
 
+NativeWindowHandle Display::native_handle()
+{
+	return window;
+}
+
 void Display::register_window_handler(WindowHandler fn)
 {
 	window_handler = std::move(fn);
