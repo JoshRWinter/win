@@ -21,7 +21,7 @@ class PCMStream : public FloatPCMProvider
 public:
 	PCMStream();
 
-	int read_samples(float*, int);
+	int read_samples(float*, int) override;
 	int read_samples(std::int16_t*, int);
 	int write_samples(const std::int16_t*, int);
 	int size() const;
@@ -29,7 +29,7 @@ public:
 	bool is_writing_completed() const;
 	void reset();
 	int channels() const { return channel_count.load(); }
-	void set_channels(int channel_count) { this->channel_count.store(channel_count); }
+	void set_channels(int c) { this->channel_count.store(c); }
 
 private:
 	std::atomic<int> channel_count;

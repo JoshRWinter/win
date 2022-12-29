@@ -16,7 +16,7 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, i
 	: target(target)
 	, pcmresource(resource)
 	, seek_start(seek_start)
-    , cancel(false)
+	, cancel(false)
 	, restart(false)
 	, seek_to(seek_start)
 {
@@ -42,8 +42,8 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, i
 	}
 
 	// figure out whether to start the decoder
-    if (!resource.is_completed() || resource.is_partial())
-    {
+	if (!resource.is_completed() || resource.is_partial())
+	{
 #ifdef WIN_USE_SOUND_INTEGRATION_TESTS
 			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_start, resource.name(), seek_start, "PCMDecoder: decoder start"));
 #endif
@@ -54,11 +54,11 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, i
 		// potentially tell the decoder to skip what has already been cached
 		seek_to.store(seek_start + fill);
 
-	    if (channels == -1)
-	    {
-		    impl::OneshotSignal channel_signal;
-	    	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), &channel_signal));
-	    	channel_signal.wait();
+		if (channels == -1)
+		{
+			impl::OneshotSignal channel_signal;
+			worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), &channel_signal));
+			channel_signal.wait();
 
 #ifdef WIN_USE_SOUND_INTEGRATION_TESTS
 			win::sit::send_event(win::sit::Event(win::sit::EventType::decoder_collect_channels, resource.name(), seek_start, "PCMDecoder: collecting channels"));
@@ -67,7 +67,7 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, i
 		else
 		{
 			target.set_channels(channels);
-	    	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), (impl::OneshotSignal*)NULL));
+			worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(*data), (impl::OneshotSignal*)NULL));
 		}
 	}
 	else
@@ -80,9 +80,8 @@ PCMDecoder::PCMDecoder(PCMStream &target, PCMResource &resource, Stream *data, i
 
 PCMDecoder::~PCMDecoder()
 {
-	cancel.store(true);
 	if (worker.joinable())
-		worker.join();
+		win::bug("PCMDecoder: worker is still running!");
 }
 
 void PCMDecoder::reset()
@@ -126,6 +125,13 @@ void PCMDecoder::reset()
 
 		target.complete_writing();
 	}
+}
+
+void PCMDecoder::stop()
+{
+	cancel.store(true);
+	if (worker.joinable())
+		worker.join();
 }
 
 PCMResource &PCMDecoder::resource()
@@ -175,7 +181,7 @@ static void platform_sleep(int millis) { usleep(millis * 1000); }
 
 void PCMDecoder::decodeogg_loop(win::PCMDecoder &parent, win::Stream datafile, impl::OneshotSignal *channel_signal)
 {
-    decodeogg(parent, datafile, parent.seek_to.load(), channel_signal);
+	decodeogg(parent, datafile, parent.seek_to.load(), channel_signal);
 
 	while (!parent.cancel.load())
 	{
@@ -354,7 +360,7 @@ void PCMDecoder::decodeogg(win::PCMDecoder &parent, win::Stream &datafile, int s
 					const unsigned long long want_to_write_samples = bout * info.channels;
 
 					// remember to eat the first <skip_samples> samples
-		    		if (skip_samples > 0)
+					if (skip_samples > 0)
 					{
 						const int eat = std::min((unsigned long long)skip_samples, want_to_write_samples);
 						samples_written += eat;

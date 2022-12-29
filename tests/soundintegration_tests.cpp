@@ -27,7 +27,7 @@ static void platform_sleep(int millis)
 void smoke_reset_stream(win::AssetRoll &roll)
 {
 	{
-		win::SoundEngine se(GetDesktopWindow(), roll);
+		win::SoundEngine se(roll);
 		se.play("6secstereo.ogg", 5, 1.0f, true);
 		platform_sleep(6500);
 	}
@@ -72,7 +72,7 @@ void smoke_reset_stream(win::AssetRoll &roll)
 	sit_assert(win::sit::pending_events() == 0);
 
 	{
-		win::SoundEngine se(GetDesktopWindow(), roll);
+		win::SoundEngine se(roll);
 		se.play("1secmono.ogg", 5, 1.0f, true);
 		platform_sleep(1500);
 	}
@@ -119,8 +119,9 @@ void smoke_reset_stream(win::AssetRoll &roll)
 void smoke_unloads(win::AssetRoll &roll)
 {
 	{
-		win::SoundEngine se(GetDesktopWindow(), roll);
+		win::SoundEngine se(roll);
 		se.stop(se.play("3secstereo.ogg", 5, 1.0f, false));
+		se.save();
 		se.play("3secstereo.ogg", 5, 1.0f, false);
 		se.play("3secstereo.ogg", 5, 1.0f, false);
 
@@ -232,7 +233,7 @@ void smoke_unloads(win::AssetRoll &roll)
 void smoke_partial_cache(win::AssetRoll &roll)
 {
 	{
-	    win::SoundEngine se(GetDesktopWindow(), roll);
+	    win::SoundEngine se(roll);
 	    se.play("6secmono.ogg", 5, 1.0f, false, 0);
 	    platform_sleep(6500);
 	    se.play("6secmono.ogg", 5, 1.0f, false, 0);
@@ -308,7 +309,7 @@ void smoke_partial_cache(win::AssetRoll &roll)
 void smoke_full_cache(win::AssetRoll &roll)
 {
     {
-	    win::SoundEngine se(GetDesktopWindow(), roll);
+	    win::SoundEngine se(roll);
 
 		se.play("1secmono.ogg", 5, 1.0f, false, 2);
 		platform_sleep(1500);
@@ -415,10 +416,10 @@ int main()
 	//win::AssetRoll roll("/home/josh/programming/win/tests/assets/sit.roll");
 	win::AssetRoll roll("c:/users/josh/desktop/win/tests/assets/sit.roll");
 
-	//smoke_full_cache(roll);
-	//smoke_partial_cache(roll);
+	smoke_full_cache(roll);
+	smoke_partial_cache(roll);
 	smoke_unloads(roll);
-	//smoke_reset_stream(roll);
+	smoke_reset_stream(roll);
 
 	fprintf(stderr, "\033[32;1mall tests passed\033[0m\n");
 }

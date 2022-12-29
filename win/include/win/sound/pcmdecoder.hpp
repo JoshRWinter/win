@@ -63,6 +63,7 @@ public:
 	~PCMDecoder();
 
 	void reset();
+	void stop();
 	PCMResource &resource();
 
 private:

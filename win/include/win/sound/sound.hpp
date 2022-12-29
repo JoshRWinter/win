@@ -18,6 +18,11 @@ public:
 		: source(stream, resource, datafile, seek_start)
 	{}
 
+	~Sound()
+	{
+		source.stop();
+	}
+
 	win::PCMStream stream;
 	win::PCMDecoder source;
 };

@@ -43,7 +43,7 @@ private:
 	std::mutex loop_lock;
 
 	IDirectSound8 *context;
-	IDirectSoundBuffer *primary;
+	//IDirectSoundBuffer *primary;
 	IDirectSoundBuffer8 *secondary;
 	DWORD write_position;
 

@@ -103,7 +103,7 @@ inline void reset_event_stream()
 inline int pending_events()
 {
 	std::lock_guard<std::mutex> lock(event_stream_mutex);
-	return event_stream.size();
+	return (int)event_stream.size();
 }
 
 inline std::optional<Event> pop_event(EventType type)

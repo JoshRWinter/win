@@ -54,6 +54,7 @@ SoundEngineWindowsDirectSound::SoundEngineWindowsDirectSound(HWND w, AssetRoll &
 
 	if ((r = context->SetCooperativeLevel(w, DSSCL_PRIORITY)) != DS_OK)
 		win::bug("DirectSound: Couldn't set cooperative level " + describe_dserr(r));
+	/*
 
 	DSBUFFERDESC primary_buffer;
 	primary_buffer.dwSize = sizeof(primary_buffer);
@@ -65,6 +66,7 @@ SoundEngineWindowsDirectSound::SoundEngineWindowsDirectSound(HWND w, AssetRoll &
 
 	if ((r = context->CreateSoundBuffer(&primary_buffer, &primary, NULL) != DS_OK))
 		win::bug("DirectSound: Couldn't create primary buffer " + describe_dserr(r));
+	 */
 
 	WAVEFORMATEX format;
 	format.wFormatTag = WAVE_FORMAT_PCM;
@@ -75,12 +77,14 @@ SoundEngineWindowsDirectSound::SoundEngineWindowsDirectSound(HWND w, AssetRoll &
 	format.wBitsPerSample = 16;
 	format.cbSize = 0;
 
+	/*
 	if ((r = primary->SetFormat(&format) != DS_OK))
 		win::bug("DirectSound: Couldn't set primary buffer format " + describe_dserr(r));
+	 */
 
 	DSBUFFERDESC secondary_buffer;
 	secondary_buffer.dwSize = sizeof(secondary_buffer);
-	secondary_buffer.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLVOLUME;
+	secondary_buffer.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | (w == GetDesktopWindow() ? DSBCAPS_GLOBALFOCUS : 0);
 	secondary_buffer.dwBufferBytes = buffer_len_bytes;
 	secondary_buffer.dwReserved = 0;
 	secondary_buffer.lpwfxFormat = &format;
@@ -123,8 +127,24 @@ std::uint32_t SoundEngineWindowsDirectSound::play(const SoundEnginePlayCommand &
 	return mixer.add(cmd.name, cmd.residency_priority, cmd.compression_priority, cmd.left, cmd.right, cmd.looping, cmd.seek);
 }
 
-void SoundEngineWindowsDirectSound::save(const std::vector<SoundEnginePlaybackCommand>&, const std::vector<SoundEngineConfigCommand>&)
+void SoundEngineWindowsDirectSound::save(const std::vector<SoundEnginePlaybackCommand> &playback, const std::vector<SoundEngineConfigCommand> &config)
 {
+	std::lock_guard<std::mutex> lock(loop_lock);
+
+	for (const auto &cmd : playback)
+	{
+		if (cmd.stop)
+			mixer.stop(cmd.key);
+		else if (cmd.playing)
+			mixer.resume(cmd.key);
+		else
+			mixer.pause(cmd.key);
+	}
+
+	for (const auto &cmd : config)
+	{
+		mixer.config(cmd.key, cmd.left, cmd.right);
+	}
 }
 
 void SoundEngineWindowsDirectSound::loop(SoundEngineWindowsDirectSound &engine, std::atomic<bool> &cancel)

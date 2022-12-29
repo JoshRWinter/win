@@ -39,9 +39,9 @@ SoundEngine::SoundEngine(Display *parent, AssetRoll &roll)
 	}
 #elif defined WINPLAT_WINDOWS
 	if (parent == NULL)
-		win::bug("SoundEngine: You must provide a win::Display reference on windows.");
-
-	inner.reset(new SoundEngineWindowsDirectSound(parent->native_handle(), roll));
+		inner.reset(new SoundEngineWindowsDirectSound(GetDesktopWindow(), roll));
+	else
+		inner.reset(new SoundEngineWindowsDirectSound(parent->native_handle(), roll));
 #endif
 }
 
