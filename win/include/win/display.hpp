@@ -15,6 +15,12 @@
 namespace win
 {
 
+#if defined WINPLAT_WINDOWS
+typedef HWND NativeWindowHandle;
+#elif defined WINPLAT_LINUX
+typedef Window* NativeWindowHandle;
+#endif
+
 struct DisplayOptions
 {
 	DisplayOptions()
@@ -23,10 +29,7 @@ struct DisplayOptions
 		, height(600)
 		, gl_major(0)
 		, gl_minor(0)
-
-#ifdef WINPLAT_WINDOWS
 		, parent(NULL)
-#endif
 	{}
 
     std::string caption;
@@ -35,10 +38,7 @@ struct DisplayOptions
 	int height;
 	int gl_major;
 	int gl_minor;
-
-#ifdef WINPLAT_WINDOWS
-	HWND parent;
-#endif
+	NativeWindowHandle parent;
 };
 
 class Display
@@ -67,6 +67,7 @@ public:
 	int height();
 	void cursor(bool);
 	void vsync(bool);
+	NativeWindowHandle native_handle();
 
 	void register_window_handler(WindowHandler);
 	void register_button_handler(ButtonHandler);

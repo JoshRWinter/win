@@ -6,8 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(WIN32)
 	if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 		add_executable(driver WIN32 driver.cpp)
+		add_executable(sounddriver WIN32 sounddriver.cpp)
 	else()
 		add_executable(driver driver.cpp)
+		add_executable(sounddriver sounddriver.cpp)
 	endif()
 
 	# /w3 is too aggressive
@@ -16,10 +18,31 @@ if(WIN32)
 	endif()
 else()
 	add_executable(driver driver.cpp)
+	add_executable(sounddriver sounddriver.cpp)
 endif()
 
 target_link_libraries(driver win)
+target_link_libraries(sounddriver win)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(driver PRIVATE -fno-exceptions)
+	target_compile_options(sounddriver PRIVATE -fno-exceptions)
+endif()
+
+if (USE_ASAN)
+	message("Enabling ASAN")
+
+	target_compile_options(driver PRIVATE -fsanitize=address)
+	target_link_options(driver PRIVATE -fsanitize=address)
+
+	target_compile_options(sounddriver PRIVATE -fsanitize=address)
+	target_link_options(sounddriver PRIVATE -fsanitize=address)
+
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(driver PRIVATE -fsanitize=undefined)
+		target_link_options(driver PRIVATE -fsanitize=undefined)
+
+		target_compile_options(sounddriver PRIVATE -fsanitize=undefined)
+		target_link_options(sounddriver PRIVATE -fsanitize=undefined)
+	endif()
 endif()

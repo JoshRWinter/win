@@ -4,3 +4,4 @@ project(win)
 
 add_subdirectory(win)
 add_subdirectory(driver)
+add_subdirectory(tests)

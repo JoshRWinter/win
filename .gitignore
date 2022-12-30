@@ -1,14 +1,4 @@
-# linux
-*.o
-*.a
 .*.swp
-vgcore.*
-driver/driver
 
-# windows
-*.obj
-*.exe
-
-build
-*.roll
 CMakeLists.txt.user
+.idea

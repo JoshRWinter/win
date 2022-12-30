@@ -24,7 +24,7 @@ find_library(DSOUND_LIBRARY dsound
 # Handle the QUIETLY and REQUIRED arguments and set DSOUND_FOUND to TRUE if
 # all listed variables are TRUE.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(DSOUND DEFAULT_MSG
+find_package_handle_standard_args(DSound DEFAULT_MSG
     DSOUND_INCLUDE_DIR DSOUND_LIBRARY)
 
 if(DSOUND_FOUND)

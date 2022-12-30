@@ -1,8 +1,5 @@
-#include <chrono>
 #include <iostream>
-#include <sstream>
 #include <cmath>
-#include <string>
 #include <thread>
 
 #include <glm/glm.hpp>
@@ -12,7 +9,7 @@
 #include <win/display.hpp>
 #include <win/assetroll.hpp>
 #include <win/atlas.hpp>
-#include <win/soundengine.hpp>
+#include <win/sound/soundengine.hpp>
 #include <win/fontrenderer.hpp>
 #include <win/font.hpp>
 #include <win/gl.hpp>
@@ -26,12 +23,10 @@ struct Block
 	float x, y, xv, yv;
 };
 
-/*
 static float distance(float x1, float y1, float x2, float y2)
 {
 	return std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));;
 }
-*/
 
 static void sound_config(float listenerx, float listenery, float sourcex, float sourcey, float *volume, float *balance)
 {
@@ -46,7 +41,7 @@ int main()
 #endif
 {
 	win::DisplayOptions display_options;
-	display_options.caption = "window caption";
+	display_options.caption = "debug_window";
 	display_options.width = 800;
 	display_options.height = 600;
 	display_options.gl_major = 3;
@@ -56,7 +51,7 @@ int main()
 	display.cursor(true);
 
 #if defined WINPLAT_LINUX
-	win::AssetRoll roll("/home/josh/programming/win/driver/assets.roll");
+	win::AssetRoll roll("roll");
 #elif defined WINPLAT_WINDOWS
 	win::AssetRoll roll("c:\\users\\josh\\desktop\\win\\driver\\assets.roll");
 #endif
@@ -66,7 +61,7 @@ int main()
 	auto music = "../../fishtank/assets_local/Motions.ogg";
 	auto effect = "../../fishtank/assets_local/platform_destroy.ogg";
 
-	win::SoundEngine audio_engine(display, roll, sound_config);
+	win::SoundEngine audio_engine(display, roll);
 
 	win::FontRenderer font_renderer(win::Dimensions<int>(display.width(), display.height()), win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f));
 	win::Font font1(font_renderer, roll["../../fishtank/assets/arial.ttf"], 0.5f);
@@ -142,14 +137,14 @@ int main()
 
 	bool quit = false;
 	bool paused = false;
-	display.register_button_handler([&effect, &quit, &paused, &audio_engine](win::Button button, bool press)
+	display.register_button_handler([&](win::Button button, bool press)
 	{
 		if(press)
 			std::cerr << "key: " << win::key_name(button) << std::endl;
 		if(press && button == win::Button::esc)
 			quit = true;
 		else if(press)
-			audio_engine.play(effect);
+			audio_engine.play(effect, 5, 0.1f);
 	});
 
 	float mousex = 0.0f, mousey = 0.0f;
@@ -170,13 +165,11 @@ int main()
 	// 	std::cerr << (char)key;
 	// });
 
-	const int block_sid = audio_engine.play(music, block.x, block.y, true);
+	const int block_sid = audio_engine.play(music, 5, 1.0f, 1.0f, 1.0f, true);
 	while(!quit)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
 		display.process();
-
-		audio_engine.process();
 
 		// process entities
 		{
@@ -204,7 +197,9 @@ int main()
 				block.yv = -block.yv;
 			}
 
-			audio_engine.source(block_sid, block.x, block.y);
+
+			audio_engine.config(block_sid, 1.0f - ((block.x + 4.0f) / 8.0f), (block.x + 4.0f) / 8.0f);
+			audio_engine.save();
 
 			block_position[0] = block.x;
 			block_position[1] = block.y;
