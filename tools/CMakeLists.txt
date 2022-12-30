@@ -7,8 +7,6 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(roll roll/roll.cpp roll/roll.hpp roll/recipe/recipe.cpp roll/recipe/recipe.hpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
 add_executable(roll-recipe-tests roll/recipe/tests/test.hpp roll/recipe/tests/parsertests.cpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
 
-add_executable(atlas atlas/main.cpp atlas/Targa.cpp atlas/Atlas.cpp)
-
 add_executable(atlasizer atlasizer/atlasizer.hpp atlasizer/main.cpp atlasizer/gui.cpp atlasizer/targa.cpp atlasizer/targa.hpp atlasizer/layoutexporter.cpp atlasizer/layoutexporter.hpp atlasizer/compileatlas.cpp)
 target_link_libraries(atlasizer win)
 
@@ -24,3 +22,26 @@ else()
 	target_link_libraries(roll ${ZLIB_LIBRARIES})
 endif()
 
+if (USE_ASAN)
+	message("Enabling ASAN")
+
+	target_compile_options(roll PRIVATE -fsanitize=address)
+	target_link_options(roll PRIVATE -fsanitize=address)
+
+	target_compile_options(roll-recipe-tests PRIVATE -fsanitize=address)
+	target_link_options(roll-recipe-tests PRIVATE -fsanitize=address)
+
+	target_compile_options(atlasizer PRIVATE -fsanitize=address)
+	target_link_options(atlasizer PRIVATE -fsanitize=address)
+
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(roll PRIVATE -fsanitize=undefined)
+		target_link_options(roll PRIVATE -fsanitize=undefined)
+
+		target_compile_options(roll-recipe-tests PRIVATE -fsanitize=undefined)
+		target_link_options(roll-recipe-tests PRIVATE -fsanitize=undefined)
+
+		target_compile_options(atlasizer PRIVATE -fsanitize=undefined)
+		target_link_options(atlasizer PRIVATE -fsanitize=undefined)
+	endif()
+endif()

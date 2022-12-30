@@ -1,6 +1,4 @@
-#include <string.h>
-
-#include <win.h>
+#include <cstring>
 
 #include "targa.hpp"
 

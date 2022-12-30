@@ -1,6 +1,9 @@
 // most of this code dirty nasty
 
-#include <win.h>
+#include <win/win.hpp>
+#include <win/display.hpp>
+#include <win/gl.hpp>
+#include <win/event.hpp>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -470,17 +473,17 @@ void gui()
 	{
 		switch (button)
 		{
-		case win::Button::F1:
+		case win::Button::f1:
 			if (press)
 				msg_box(helptext, false);
 			break;
-		case win::Button::MOUSE_LEFT:
+		case win::Button::mouse_left:
 			left_clicking = press;
 			break;
-		case win::Button::MOUSE_RIGHT:
+		case win::Button::mouse_right:
 			right_clicking = press;
 			break;
-		case win::Button::DELETE:
+		case win::Button::del:
 			if (selected_index >= 0)
 			{
 				int index = 0;
@@ -499,28 +502,28 @@ void gui()
 				selected_index = -1;
 			}
 			break;
-		case win::Button::ESC:
+		case win::Button::esc:
 			selected_index = -1;
 			break;
-		case win::Button::NUM_PLUS:
+		case win::Button::num_plus:
 			if (press)
 				zoom += zoom_inc;
 			break;
-		case win::Button::NUM_MINUS:
+		case win::Button::num_minus:
 			if (press)
 			{
 				if (zoom >= 0.1f)
 					zoom -= zoom_inc;
 			}
 			break;
-		case win::Button::LCTRL:
-		case win::Button::RCTRL:
+		case win::Button::lctrl:
+		case win::Button::rctrl:
 			snapmode = press;
 			break;
-		case win::Button::TAB:
+		case win::Button::tab:
 			solidmode = press;
 			break;
-		case win::Button::SPACE:
+		case win::Button::space:
 			if (press)
 			{
 				int height, width;
@@ -634,7 +637,7 @@ void gui()
 
 	display.register_window_handler([&quit](win::WindowEvent event)
 	{
-		if (event == win::WindowEvent::CLOSE)
+		if (event == win::WindowEvent::close)
 			quit = true;
 	});
 
@@ -667,7 +670,7 @@ void gui()
 	const float aspect_ratio = (float)display.height() / display.width();
 	const glm::mat4 projection = glm::ortho(-500.0f, 500.0f, -500.0f * aspect_ratio, 500.0f * aspect_ratio, -1.0f, 1.0f);
 
-	renderstate.atlasitems.program = win::load_shaders(vertexshader_atlasitem, fragmentshader_atlasitem);
+	renderstate.atlasitems.program = win::load_gl_shaders(vertexshader_atlasitem, fragmentshader_atlasitem);
 	glUseProgram(renderstate.atlasitems.program);
 	renderstate.atlasitems.uniform_projection = glGetUniformLocation(renderstate.atlasitems.program, "projection");
 	renderstate.atlasitems.uniform_view = glGetUniformLocation(renderstate.atlasitems.program, "view");
@@ -695,7 +698,7 @@ void gui()
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 4, NULL);
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(float) * 4, (void*)(sizeof(float) * 2));
 
-	renderstate.guides.program = win::load_shaders(vertexshader_guides, fragmentshader_guides);
+	renderstate.guides.program = win::load_gl_shaders(vertexshader_guides, fragmentshader_guides);
 	glUseProgram(renderstate.guides.program);
 	renderstate.guides.uniform_projection = glGetUniformLocation(renderstate.guides.program, "projection");
 	renderstate.guides.uniform_view = glGetUniformLocation(renderstate.guides.program, "view");
