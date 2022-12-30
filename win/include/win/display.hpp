@@ -17,8 +17,8 @@ namespace win
 
 #if defined WINPLAT_WINDOWS
 typedef HWND NativeWindowHandle;
-#else if defined WINPAT_LINUX
-typedef Window NativeWindowHandle;
+#elif defined WINPLAT_LINUX
+typedef Window* NativeWindowHandle;
 #endif
 
 struct DisplayOptions

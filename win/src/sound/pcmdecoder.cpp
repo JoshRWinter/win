@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 
 #include <vorbis/vorbisfile.h>
 
@@ -345,7 +346,7 @@ void PCMDecoder::decodeogg(win::PCMDecoder &parent, win::Stream &datafile, int s
 						float *mono = pcm[i];
 						for(j = 0; j < bout; ++j)
 						{
-							int val = floor(mono[j] * 32767.0f + 0.5f);
+							int val = std::floor(mono[j] * 32767.0f + 0.5f);
 							if(val > 32767)
 								val = 32767;
 							else if(val < -32768)

@@ -74,8 +74,8 @@ public:
 
 #if defined WINPLAT_WINDOWS
 typedef HWND WindowHandle;
-#else if defined WINPLAT_LINUX
-typedef void* window_handle
+#elif defined WINPLAT_LINUX
+typedef void* window_handle;
 #endif
 
 class SoundEngine
