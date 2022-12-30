@@ -308,26 +308,30 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 		if (*limiters[i].right > 1.0f)
 			*limiters[i].right = 1.0f;
 	}
-/*
+
 	// debugging schtuff
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 
-		static int cycles = 0;
 		static float accum = 0;
-		constexpr int period = 1000;
-		constexpr int budget = 4000;
-		std::chrono::duration<float, std::ratio<1, 1000000>> diff = end - start;
-		accum += diff.count();
+		static int cycles = 0;
 
-		if (++cycles > period)
+		constexpr int report_rate = 4000;
+		constexpr int budget_micros = 4000;
+
+		accum += std::chrono::duration<float, std::ratio<1, 1000000>>(end - start).count();
+		++cycles;
+
+		if (cycles == report_rate)
 		{
-			double micros = accum / (double)period;
-			fprintf(stderr, "Took %.2f micros (%.2f%% of budget)\n", micros, (micros / budget) * 100);
+			const double micros = accum / (double)report_rate;
+			fprintf(stderr, "Took %.2f micros (%.2f%% of budget)\n", micros, (micros / budget_micros) * 100);
+
 			accum = 0;
 			cycles = 0;
 		}
-	}*/
+	}
+
 	return len;
 }
 

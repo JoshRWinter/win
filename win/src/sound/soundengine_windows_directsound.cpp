@@ -194,7 +194,6 @@ bool SoundEngineWindowsDirectSound::write()
 	std::int16_t *buf1, *buf2;
 	DWORD buf1_len, buf2_len;
 	r = secondary->Lock(write_position, available_to_write_bytes_really, (void**)&buf1, &buf1_len, (void**)&buf2, &buf2_len, 0);
-	//fprintf(stderr, "Lock() called with write_position=%lu, available_to_write_bytes_really=%lu, play_position=%lu, write_position=%lu, safe_write_position=%lu\n", write_position, available_to_write_bytes_really, play_position, write_position, safe_write_position);
 
 	if (r == DS_OK)
 	{
@@ -217,18 +216,6 @@ bool SoundEngineWindowsDirectSound::write()
 			win::bug("DirectSound: Can't unlock " + describe_dserr(r));
 
 		write_position = (write_position + buf1_len + buf2_len) % buffer_len_bytes;
-
-		static auto last = std::chrono::high_resolution_clock::now();
-		static long accum = 0;
-		auto now = std::chrono::high_resolution_clock::now();
-
-		accum += buf1_len + buf2_len;
-		if (std::chrono::duration<float, std::milli>(now - last).count() > 1000)
-		{
-			fprintf(stderr, "wrote %ld samples\n", accum / 2);
-			accum = 0;
-			last = std::chrono::high_resolution_clock::now();
-		}
 	}
 	else if (r == DSERR_BUFFERLOST)
 		win::bug("DirectSound: buffer lost");
