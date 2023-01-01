@@ -23,7 +23,8 @@ private:
 
 	std::filesystem::path recipe_file;
 	std::filesystem::path roll_file;
-	bool needs_update;
+	bool recreate;
+	bool reconvert;
 	std::vector<RollItem> items;
 };
 

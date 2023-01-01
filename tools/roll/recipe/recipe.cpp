@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstdlib>
 
 #include "recipe.hpp"
 #include "recipeparser.hpp"
@@ -12,10 +11,21 @@
 #endif
 
 Recipe::Recipe(const std::filesystem::path &recipe_file, const std::filesystem::path &roll_file)
-	: needs_update(false)
+	: recreate(false)
+	, reconvert(false)
 	, recipe_file(recipe_file)
 	, roll_file(roll_file)
 {
+	if (!std::filesystem::exists(roll_file))
+	{
+		recreate = true;
+	}
+	else if (std::filesystem::last_write_time(recipe_file) > std::filesystem::last_write_time(roll_file))
+	{
+		reconvert = true;
+		recreate = true;
+	}
+
 	const std::vector<RecipeRootInput> inputs = RecipeParser::parse(recipe_file);
 
 	for (const RecipeRootInput &input : inputs)
@@ -30,7 +40,7 @@ Recipe::Recipe(const std::filesystem::path &recipe_file, const std::filesystem::
 				process_svg2tga_section(input.section);
 			else if (input.section.name == "atlas")
 				process_atlas_section(input.section);
-			else if (input.section.name == "")
+			else if (input.section.name.empty())
 				throw std::runtime_error(std::to_string(input.section.line_number) + ": Missing section name");
 			else
 				throw std::runtime_error(std::to_string(input.section.line_number) + ": Unrecognized section \"" + input.section.name + "\"");
@@ -38,15 +48,15 @@ Recipe::Recipe(const std::filesystem::path &recipe_file, const std::filesystem::
 	}
 }
 
-std::vector<RollItem> Recipe::get_items(bool &update) const
+std::vector<RollItem> Recipe::get_items(bool &out_recreate) const
 {
-	update = needs_update;
+	out_recreate = recreate;
 	return items;
 }
 
 void Recipe::process_root_line(const RecipeInputLine &line)
 {
-	if (line.tokens.size() < 1)
+	if (line.tokens.empty())
 		return;
 
 	const std::filesystem::path recorded_file = line.tokens.at(0);
@@ -63,12 +73,12 @@ void Recipe::process_root_line(const RecipeInputLine &line)
 	{
 		if (line.tokens.at(1) != "z")
 			throw std::runtime_error(std::to_string(line.line_number) + ": Unrecognized option \"" + line.tokens.at(1) + "\"");
-		else
-			compress = true;
+
+		compress = true;
 	}
 
-	if (!std::filesystem::exists(roll_file) || std::filesystem::last_write_time(real_file) > std::filesystem::last_write_time(roll_file))
-		needs_update = true;
+	if (recreate || std::filesystem::last_write_time(real_file) > std::filesystem::last_write_time(roll_file))
+		recreate = true;
 
 	items.emplace_back(real_file.string(), recorded_file.string(), compress);
 }
@@ -88,11 +98,6 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 
 		bool exclude = false;
 		int token_index = 0;
-		if (line.tokens.at(token_index) == "exclude")
-		{
-			++token_index;
-			exclude = true;
-		}
 
 		const std::filesystem::path recorded_file = line.tokens.at(token_index);
 		const std::filesystem::path real_file = get_real_file_path(recorded_file);
@@ -102,6 +107,15 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		++token_index;
 		const std::string height_string = line.tokens.at(token_index);
 		++token_index;
+
+		if (line.tokens.size() > 3)
+		{
+			if (line.tokens.at(token_index) != "exclude")
+				throw std::runtime_error(std::to_string(line.line_number) + ": svg2tga: unrecognized parameter \"" + line.tokens.at(token_index) + "\"");
+
+			++token_index;
+			exclude = true;
+		}
 
 		int test;
 		if (sscanf(width_string.c_str(), "%d", &test) != 1)
@@ -115,28 +129,25 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		if (!real_file.has_extension() || (real_file.extension() != ".svg" && real_file.extension() != ".SVG"))
 			throw std::runtime_error(std::to_string(line.line_number) + ": Expected .svg file \"" + real_file.string() + "\"");
 
-		const std::filesystem::path converted_png = (real_file.parent_path() / "recipe-generated.").string() + real_file.stem().string() + ".png";
-		const std::filesystem::path converted_tga = (real_file.parent_path() / "recipe-generated.").string() + real_file.stem().string() + ".tga";
+		const std::filesystem::path converted_png = (real_file.parent_path() / real_file.stem()).string() + ".png";
+		const std::filesystem::path converted_tga = (real_file.parent_path() / real_file.stem()).string() + ".tga";
 		const std::filesystem::path recorded_converted_tga = (recorded_file.parent_path() / recorded_file.stem()).string() + ".tga";
 		const bool converted_tga_exists = std::filesystem::exists(converted_tga);
 
 		const bool conversion_needed =
+			reconvert ||
 			!converted_tga_exists ||
-			std::filesystem::last_write_time(real_file) > std::filesystem::last_write_time(converted_tga) ||
-			std::filesystem::last_write_time(recipe_file) >  std::filesystem::last_write_time(converted_tga)
+			std::filesystem::last_write_time(real_file) > std::filesystem::last_write_time(converted_tga)
 		;
 
 		if (conversion_needed)
 		{
-			if (!exclude)
-				needs_update = true;
-
 			run_cmd("rsvg-convert --width " + width_string + " --height " + height_string + " " + real_file.string() + " > " + converted_png.string());
 			run_cmd("convert " + converted_png.string() + " " + converted_tga.string());
 		}
 
-		if (!std::filesystem::exists(roll_file) || (!exclude && std::filesystem::last_write_time(converted_tga) > std::filesystem::last_write_time(roll_file)))
-			needs_update = true;
+		if (recreate || (!exclude && std::filesystem::last_write_time(converted_tga) > std::filesystem::last_write_time(roll_file)))
+			recreate = true;
 
 		if (!exclude)
 			items.emplace_back(converted_tga.string(), recorded_converted_tga.string(), true);
@@ -168,10 +179,11 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 		if (!std::filesystem::exists(real_layout_file))
 			throw std::runtime_error(std::to_string(line.line_number) + ": Layout file \"" + real_layout_file.string() + "\" doesn't exist");
 
-		bool create = !real_atlas_file_exists;
-
-		if (real_atlas_file_exists && std::filesystem::last_write_time(real_layout_file) > std::filesystem::last_write_time(real_atlas_file))
-			create = true;
+		bool conversion_needed =
+			reconvert ||
+			!real_atlas_file_exists ||
+			std::filesystem::last_write_time(real_layout_file) > std::filesystem::last_write_time(real_atlas_file)
+		;
 
 		const std::vector<std::string> atlas_items = run_cmd("atlasizer --list " + real_layout_file.string(), false);
 		for (const std::string &item : atlas_items)
@@ -181,20 +193,14 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 				throw std::runtime_error(std::to_string(line.line_number) + ": Atlas item \"" + file.string() + "\" doesn't exist");
 
 			if (real_atlas_file_exists && std::filesystem::last_write_time(file) > std::filesystem::last_write_time(real_atlas_file))
-				create = true;
-
-			if (real_atlas_file_exists && std::filesystem::last_write_time(recipe_file) > std::filesystem::last_write_time(real_atlas_file))
-				create = true;
+				conversion_needed = true;
 		}
 
-		if (create)
+		if (conversion_needed)
 		{
-			needs_update = true;
+			recreate = true;
 			run_cmd("atlasizer " + real_layout_file.string() + " " + real_atlas_file.string());
 		}
-
-		if (!std::filesystem::exists(roll_file) || (real_atlas_file_exists && std::filesystem::last_write_time(real_atlas_file) > std::filesystem::last_write_time(roll_file)))
-			needs_update = true;
 
 		items.emplace_back(real_atlas_file.string(), recorded_atlas_file.string(), true);
 	}
