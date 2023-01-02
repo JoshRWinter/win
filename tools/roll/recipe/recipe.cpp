@@ -1,4 +1,5 @@
 #include <iostream>
+#include <random>
 
 #include "recipe.hpp"
 #include "recipeparser.hpp"
@@ -88,6 +89,7 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 	if (section.options.size() > 0)
 		throw std::runtime_error(std::to_string(section.line_number) + ": Unrecognized svg2tga section options");
 
+	std::string converted_png = "";
 	for (const RecipeInputLine &line : section.lines)
 	{
 		if (line.tokens.size() == 0)
@@ -129,7 +131,7 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		if (!real_file.has_extension() || (real_file.extension() != ".svg" && real_file.extension() != ".SVG"))
 			throw std::runtime_error(std::to_string(line.line_number) + ": Expected .svg file \"" + real_file.string() + "\"");
 
-		const std::filesystem::path converted_png = (real_file.parent_path() / real_file.stem()).string() + ".png";
+		if (converted_png.empty()) converted_png = get_random_temp_file().string() + ".png";
 		const std::filesystem::path converted_tga = (real_file.parent_path() / real_file.stem()).string() + ".tga";
 		const std::filesystem::path recorded_converted_tga = (recorded_file.parent_path() / recorded_file.stem()).string() + ".tga";
 		const bool converted_tga_exists = std::filesystem::exists(converted_tga);
@@ -142,9 +144,11 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 
 		if (conversion_needed)
 		{
-			run_cmd("rsvg-convert --width " + width_string + " --height " + height_string + " " + real_file.string() + " > " + converted_png.string());
-			run_cmd("convert " + converted_png.string() + " " + converted_tga.string());
+			run_cmd("rsvg-convert --width " + width_string + " --height " + height_string + " " + real_file.string() + " > " + converted_png);
+			run_cmd("convert " + converted_png + " " + converted_tga.string());
 		}
+
+		std::filesystem::remove(converted_png);
 
 		if (recreate || (!exclude && std::filesystem::last_write_time(converted_tga) > std::filesystem::last_write_time(roll_file)))
 			recreate = true;
@@ -171,8 +175,7 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 		const std::filesystem::path real_layout_file = get_real_file_path(layout_file);
 
 		const std::filesystem::path recorded_atlas_file = line.tokens.at(1);
-		const std::filesystem::path original_real_atlas_file = get_real_file_path(recorded_atlas_file);
-		const std::filesystem::path real_atlas_file = (original_real_atlas_file.parent_path() / "recipe-generated.").string() + original_real_atlas_file.filename().string();
+		const std::filesystem::path real_atlas_file = get_real_file_path(recorded_atlas_file);
 
 		const bool real_atlas_file_exists = std::filesystem::exists(real_atlas_file);
 
@@ -247,4 +250,18 @@ std::vector<std::string> Recipe::run_cmd(const std::string &cmd, bool echo)
 		throw std::runtime_error("Command failed with exit code " + std::to_string(exit_code));
 
 	return output;
+}
+
+std::filesystem::path Recipe::get_random_temp_file()
+{
+	std::random_device rd;
+
+	char r[11];
+
+	for (int i = 0; i < 10; ++i)
+		r[i] = std::uniform_int_distribution<char>('a', 'z')(rd);
+
+	r[10] = 0;
+
+	return std::filesystem::temp_directory_path() / r;
 }
