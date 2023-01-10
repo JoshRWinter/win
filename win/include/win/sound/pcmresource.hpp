@@ -1,5 +1,4 @@
-#ifndef WIN_PCM_RESOURCE_HPP
-#define WIN_PCM_RESOURCE_HPP
+#pragma once
 
 #include <atomic>
 #include <string>
@@ -46,5 +45,3 @@ private:
 };
 
 }
-
-#endif

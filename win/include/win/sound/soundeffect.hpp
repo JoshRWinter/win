@@ -1,5 +1,4 @@
-#ifndef WIN_SOUND_EFFECT_HPP
-#define WIN_SOUND_EFFECT_HPP
+#pragma once
 
 #include <win/sound/floatpcmprovider.hpp>
 
@@ -28,5 +27,3 @@ protected:
 };
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef WIN_SOUND_ENGINE_HPP
-#define WIN_SOUND_ENGINE_HPP
+#pragma once
 
 #include <vector>
 #include <memory>
@@ -110,5 +109,3 @@ private:
 };
 
 }
-
-#endif

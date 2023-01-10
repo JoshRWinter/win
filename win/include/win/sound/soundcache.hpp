@@ -1,5 +1,4 @@
-#ifndef WIN_SOUND_CACHE_HPP
-#define WIN_SOUND_CACHE_HPP
+#pragma once
 
 #include <win/win.hpp>
 #include <win/assetroll.hpp>
@@ -29,5 +28,3 @@ private:
 };
 
 }
-
-#endif

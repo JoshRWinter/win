@@ -1,5 +1,4 @@
-#ifndef WIN_ACTIVE_SOUND_STORE_HPP
-#define WIN_ACTIVE_SOUND_STORE_HPP
+#pragma once
 
 #include <vector>
 
@@ -181,5 +180,3 @@ private:
 };
 
 }
-
-#endif

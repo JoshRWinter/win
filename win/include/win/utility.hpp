@@ -1,5 +1,4 @@
-#ifndef WIN_UTILITY_HPP
-#define WIN_UTILITY_HPP
+#pragma once
 
 #include <type_traits>
 
@@ -59,5 +58,3 @@ float angle_diff(float, float);
 float zerof(float, float);
 
 }
-
-#endif

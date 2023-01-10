@@ -1,5 +1,4 @@
-#ifndef WIN_ROLL_HPP
-#define WIN_ROLL_HPP
+#pragma once
 
 #include <fstream>
 #include <string>
@@ -40,5 +39,3 @@ private:
 };
 
 }
-
-#endif

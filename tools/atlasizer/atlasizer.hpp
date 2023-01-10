@@ -1,5 +1,4 @@
-#ifndef ATLASIZER_HPP
-#define ATLASIZER_HPP
+#pragma once
 
 #include <list>
 #include <memory>
@@ -41,5 +40,3 @@ public:
 
 void gui();
 void compileatlas(const std::string&, const std::string&);
-
-#endif

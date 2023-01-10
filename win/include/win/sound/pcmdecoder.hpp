@@ -1,5 +1,4 @@
-#ifndef WIN_PCM_DECODER_HPP
-#define WIN_PCM_DECODER_HPP
+#pragma once
 
 #include <condition_variable>
 #include <thread>
@@ -84,5 +83,3 @@ private:
 };
 
 }
-
-#endif

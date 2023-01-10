@@ -1,5 +1,4 @@
-#ifndef TARGA_HPP
-#define TARGA_HPP
+#pragma once
 
 #include <fstream>
 #include <memory>
@@ -28,5 +27,3 @@ private:
 	unsigned char bits;
 	std::unique_ptr<unsigned char[]> bytes;
 };
-
-#endif

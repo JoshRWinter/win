@@ -1,5 +1,4 @@
-#ifndef WIN_DISPLAY_HPP
-#define WIN_DISPLAY_HPP
+#pragma once
 
 #include <functional>
 #include <string>
@@ -100,5 +99,3 @@ private:
 };
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef WIN_SOUND_STREAM_HPP
-#define WIN_SOUND_STREAM_HPP
+#pragma once
 
 #include <atomic>
 #include <thread>
@@ -38,5 +37,3 @@ private:
 };
 
 }
-
-#endif

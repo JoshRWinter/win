@@ -1,5 +1,4 @@
-#ifndef WIN_SOUNDENGINE_WINDOWS_DIRECTSOUND_HPP
-#define WIN_SOUNDENGINE_WINDOWS_DIRECTSOUND_HPP
+#pragma once
 
 #include <win/win.hpp>
 
@@ -51,7 +50,5 @@ private:
 };
 
 }
-
-#endif
 
 #endif

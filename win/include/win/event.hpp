@@ -1,5 +1,4 @@
-#ifndef WIN_EVENT_HPP
-#define WIN_EVENT_HPP
+#pragma once
 
 namespace win
 {
@@ -58,5 +57,3 @@ enum class WindowEvent
 };
 
 }
-
-#endif

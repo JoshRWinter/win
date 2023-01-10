@@ -1,5 +1,4 @@
-#ifndef LAYOUT_EXPORTER_HPP
-#define LAYOUT_EXPORTER_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -25,5 +24,3 @@ private:
 	int padding;
 	std::vector<AtlasItemDescriptor> items;
 };
-
-#endif

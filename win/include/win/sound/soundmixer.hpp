@@ -1,5 +1,4 @@
-#ifndef WIN_SOUND_MIXER_HPP
-#define WIN_SOUND_MIXER_HPP
+#pragma once
 
 #include <memory>
 #include <chrono>
@@ -81,5 +80,3 @@ private:
 };
 
 }
-
-#endif

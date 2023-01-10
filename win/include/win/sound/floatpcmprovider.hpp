@@ -1,5 +1,4 @@
-#ifndef WIN_FLOAT_PCM_PROVIDER_HPP
-#define WIN_FLOAT_PCM_PROVIDER_HPP
+#pragma once
 
 #include <win/win.hpp>
 
@@ -20,5 +19,3 @@ protected:
 };
 
 }
-
-#endif

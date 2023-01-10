@@ -1,6 +1,8 @@
 // my sicknasty testing framework
 // emphasis on the nasty
 
+#pragma once
+
 #include <vector>
 #include <iostream>
 

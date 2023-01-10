@@ -1,9 +1,8 @@
+#pragma once
+
 #include <win/win.hpp>
 
 #ifdef WINPLAT_LINUX
-
-#ifndef WIN_SOUNDENGINE_LINUX_DUMMY_HPP
-#define WIN_SOUNDENGINE_LINUX_DUMMY_HPP
 
 #include <win/sound/soundengine.hpp>
 
@@ -28,7 +27,5 @@ public:
 };
 
 }
-
-#endif
 
 #endif

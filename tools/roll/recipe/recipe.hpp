@@ -1,5 +1,4 @@
-#ifndef ROLLFILE_HPP
-#define ROLLFILE_HPP
+#pragma once
 
 #include <fstream>
 #include <memory>
@@ -28,5 +27,3 @@ private:
 	bool reconvert;
 	std::vector<RollItem> items;
 };
-
-#endif

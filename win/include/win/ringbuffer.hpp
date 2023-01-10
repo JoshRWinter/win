@@ -1,5 +1,4 @@
-#ifndef WIN_RINGBUFFER_H
-#define WIN_RINGBUFFER_H
+#pragma once
 
 #include <type_traits>
 #include <atomic>
@@ -129,5 +128,3 @@ private:
 };
 
 }
-
-#endif

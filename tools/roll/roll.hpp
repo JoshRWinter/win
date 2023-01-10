@@ -1,5 +1,4 @@
-#ifndef ROLL_HPP
-#define ROLL_HPP
+#pragma once
 
 #include <string>
 
@@ -24,5 +23,3 @@ struct Header
 
 	std::uint64_t length() const { return sizeof(compressed) + sizeof(uncompressed_size) + sizeof(begin) + sizeof(size) + sizeof(filename_length) + filename_length; }
 };
-
-#endif

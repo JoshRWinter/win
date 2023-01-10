@@ -1,5 +1,4 @@
-#ifndef WIN_TARGA_HPP
-#define WIN_TARGA_HPP
+#pragma once
 
 #include <win/stream.hpp>
 
@@ -31,5 +30,3 @@ private:
 };
 
 }
-
-#endif

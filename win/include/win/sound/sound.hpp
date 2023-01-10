@@ -1,5 +1,4 @@
-#ifndef WIN_SOUND_HPP
-#define WIN_SOUND_HPP
+#pragma once
 
 #include <win/win.hpp>
 #include <win/stream.hpp>
@@ -28,5 +27,3 @@ public:
 };
 
 }
-
-#endif

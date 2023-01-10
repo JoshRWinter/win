@@ -1,5 +1,4 @@
-#ifndef WIN_FONT_HPP
-#define WIN_FONT_HPP
+#pragma once
 
 #include <array>
 
@@ -43,5 +42,3 @@ private:
 };
 
 }
-
-#endif

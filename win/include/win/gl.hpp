@@ -1,5 +1,4 @@
-#ifndef WIN_GL_HPP
-#define WIN_GL_HPP
+#pragma once
 
 #include <win/win.hpp>
 
@@ -66,7 +65,5 @@ void load_gl_extensions();
 }
 
 
-
-#endif
 
 #endif

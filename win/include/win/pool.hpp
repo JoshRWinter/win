@@ -1,5 +1,4 @@
-#ifndef WIN_POOL_HPP
-#define WIN_POOL_HPP
+#pragma once
 
 #include <type_traits>
 #include <memory>
@@ -208,5 +207,3 @@ private:
 };
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef WIN_MAIN_HPP
-#define WIN_MAIN_HPP
+#pragma once
 
 //#define WIN_USE_SOUND_INTEGRATION_TESTS
 
@@ -42,5 +41,3 @@ namespace win
 }
 
 }
-
-#endif

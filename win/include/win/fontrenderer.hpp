@@ -1,5 +1,4 @@
-#ifndef WIN_FONT_RENDERER_HPP
-#define WIN_FONT_RENDERER_HPP
+#pragma once
 
 #include <vector>
 
@@ -47,5 +46,3 @@ private:
 };
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef WIN_ATLAS_HPP
-#define WIN_ATLAS_HPP
+#pragma once
 
 #include <memory>
 
@@ -48,5 +47,3 @@ private:
 };
 
 }
-
-#endif

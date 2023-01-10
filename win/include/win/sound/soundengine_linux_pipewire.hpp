@@ -1,5 +1,4 @@
-#ifndef WIN_SOUND_ENGINE_LINUX_PIPEWIRE_HPP
-#define WIN_SOUND_ENGINE_LINUX_PIPEWIRE_HPP
+#pragma once
 
 #include <win/win.hpp>
 
@@ -39,7 +38,5 @@ private:
 };
 
 }
-
-#endif
 
 #endif

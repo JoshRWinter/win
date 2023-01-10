@@ -1,5 +1,4 @@
-#ifndef ROLLFILEPARSER_HPP
-#define ROLLFILEPARSER_HPP
+#pragma once
 
 #include <vector>
 #include <filesystem>
@@ -79,5 +78,3 @@ private:
 	static std::string strip_escapes(const std::string&);
 	static bool is_token_char(int);
 };
-
-#endif

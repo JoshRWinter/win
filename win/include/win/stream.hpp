@@ -1,5 +1,4 @@
-#ifndef WIN_STREAM_HPP
-#define WIN_STREAM_HPP
+#pragma once
 
 #include <memory>
 #include <string>
@@ -49,5 +48,3 @@ private:
 };
 
 }
-
-#endif

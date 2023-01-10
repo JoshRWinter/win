@@ -1,5 +1,4 @@
-#ifndef WIN_ASSET_ROLL_STREAM_RAW_HPP
-#define WIN_ASSET_ROLL_STREAM_RAW_HPP
+#pragma once
 
 #include <fstream>
 
@@ -31,5 +30,3 @@ private:
 };
 
 }
-
-#endif

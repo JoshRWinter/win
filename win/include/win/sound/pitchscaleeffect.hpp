@@ -1,5 +1,4 @@
-#ifndef WIN_PITCH_SCALE_EFFECT_HPP
-#define WIN_PITCH_SCALE_EFFECT_HPP
+#pragma once
 
 #include <win/sound/soundeffect.hpp>
 
@@ -21,5 +20,3 @@ private:
 };
 
 }
-
-#endif

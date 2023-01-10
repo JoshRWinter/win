@@ -1,5 +1,4 @@
-#ifndef WIN_ASSET_ROLL_STREAM_COMPRESSED_HPP
-#define WIN_ASSET_ROLL_STREAM_COMPRESSED_HPP
+#pragma once
 
 #include <win/win.hpp>
 #include <win/stream.hpp>
@@ -29,5 +28,3 @@ private:
 };
 
 }
-
-#endif
