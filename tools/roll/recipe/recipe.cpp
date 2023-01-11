@@ -259,7 +259,7 @@ std::filesystem::path Recipe::get_random_temp_file()
 	char r[11];
 
 	for (int i = 0; i < 10; ++i)
-		r[i] = std::uniform_int_distribution<char>('a', 'z')(rd);
+		r[i] = (char)std::uniform_int_distribution<int>('a', 'z')(rd);
 
 	r[10] = 0;
 

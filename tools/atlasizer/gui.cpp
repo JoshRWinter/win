@@ -1,6 +1,11 @@
 // most of this code dirty nasty
 
 #include <win/win.hpp>
+
+#ifdef WINPLAT_WINDOWS
+#include <Commdlg.h>
+#endif
+
 #include <win/display.hpp>
 #include <win/gl.hpp>
 #include <win/event.hpp>
