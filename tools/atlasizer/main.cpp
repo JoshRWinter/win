@@ -11,8 +11,13 @@ int main(int argc, char **argv)
 {
 	if (argc < 2)
 	{
+#ifdef NOGUI
+		std::cerr << "This version of atlasizer does not include a GUI" << std::endl;
+		return 1;
+#else
 		gui();
 		return 0;
+#endif
 	}
 	else if (argc == 2 || argc > 3)
 	{

@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
 project(wintools)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../win ${CMAKE_CURRENT_BINARY_DIR}/win)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -8,7 +7,14 @@ add_executable(roll roll/roll.cpp roll/roll.hpp roll/recipe/recipe.cpp roll/reci
 add_executable(roll-recipe-tests roll/recipe/tests/test.hpp roll/recipe/tests/parsertests.cpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
 
 add_executable(atlasizer atlasizer/atlasizer.hpp atlasizer/main.cpp atlasizer/gui.cpp atlasizer/targa.cpp atlasizer/targa.hpp atlasizer/layoutexporter.cpp atlasizer/layoutexporter.hpp atlasizer/compileatlas.cpp)
-target_link_libraries(atlasizer win)
+
+if (NOGUI)
+	add_compile_definitions(NOGUI)
+else()
+	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../win ${CMAKE_CURRENT_BINARY_DIR}/win)
+	target_link_libraries(atlasizer win)
+endif()
+
 
 if(WIN32)
 	target_include_directories(roll PRIVATE ../win/include/zlib)
