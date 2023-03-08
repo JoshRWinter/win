@@ -1,0 +1,7 @@
+$padding 5
+assets/artillery.tga:5:110:100:20
+assets/beacon.tga:110:110:100:20
+assets/grass1.tga:215:5:100:60
+assets/tank.tga:215:70:100:50
+assets/mine.tga:110:5:100:100
+assets/skull.tga:5:5:100:100

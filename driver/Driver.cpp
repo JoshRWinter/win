@@ -69,7 +69,7 @@ int main()
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::Display::screen_width() << " and screen height is " << win::Display::screen_height() << std::endl;
 
-	const win::AtlasItem coords = atlas.item(3);
+	const win::AtlasItem coords = atlas.item(4);
 	const float verts[] =
 	{
 		-0.5f, 0.5f, coords.x1, coords.y2,
