@@ -1,14 +1,14 @@
 // most of this code dirty nasty
 
-#include <win/win.hpp>
+#include <win/Win.hpp>
 
 #ifdef WINPLAT_WINDOWS
 #include <Commdlg.h>
 #endif
 
-#include <win/display.hpp>
-#include <win/gl.hpp>
-#include <win/event.hpp>
+#include <win/Display.hpp>
+#include <win/GL.hpp>
+#include <win/Event.hpp>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
