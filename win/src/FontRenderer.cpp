@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <win/GL.hpp>
+#include <win/gl/GL.hpp>
 #include <win/Font.hpp>
 #include <win/FontRenderer.hpp>
 

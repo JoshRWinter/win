@@ -5,59 +5,111 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(win STATIC
-	src/Atlas.cpp
-	src/Stream.cpp
-	src/GL.cpp
-	src/DisplayLinux.cpp
-	src/DisplayWindows.cpp
-	src/Font.cpp
-	src/FontRenderer.cpp
-	src/AssetRoll.cpp
-	src/AssetRollStreamRaw.cpp
-	src/AssetRollStreamCompressed.cpp
-	src/Targa.cpp
-	src/Utility.cpp
-	src/sound/PitchScaleEffect.cpp
-	src/sound/PcmStream.cpp
-	src/sound/PcmResource.cpp
-	src/sound/PcmDecoder.cpp
-	src/sound/SoundCache.cpp
-	src/sound/SoundMixer.cpp
-	src/sound/SoundEngine.cpp
-	src/sound/SoundEngineLinuxPulseAudio.cpp
-	src/sound/SoundEngineLinuxPipeWire.cpp
-	src/sound/SoundEngineWindowsDirectSound.cpp
+	#
+	# top dog
+	#
 
 	include/win/Win.hpp
-	include/win/Pool.hpp
-	include/win/RingBuffer.hpp
-	include/win/GL.hpp
-	include/win/Display.hpp
-	include/win/Font.hpp
-	include/win/FontRenderer.hpp
-	include/win/Stream.hpp
-	include/win/AssetRoll.hpp
-	include/win/AssetRollStreamRaw.hpp
-	include/win/AssetRollStreamCompressed.hpp
-	include/win/Atlas.hpp
-	include/win/Targa.hpp
+
+	#
+	# utility
+	#
+
 	include/win/Utility.hpp
+	src/Utility.cpp
+
+	include/win/Pool.hpp
+
+	include/win/RingBuffer.hpp
+
+	include/win/Atlas.hpp
+	src/Atlas.cpp
+
+	include/win/Targa.hpp
+	src/Targa.cpp
+
+	#
+	# gl utility
+	#
+
+	include/win/gl/GL.hpp
+	src/gl/GL.cpp
+
+	include/win/gl/GLAtlas.hpp
+	src/gl/GLAtlas.cpp
+
+	#
+	# core
+	#
+
 	include/win/Event.hpp
-	include/win/sound/FloatPcmProvider.hpp
-	include/win/sound/SoundEffect.hpp
-	include/win/sound/PitchScaleEffect.hpp
-	include/win/sound/PcmStream.hpp
-	include/win/sound/PcmResource.hpp
-	include/win/sound/PcmDecoder.hpp
-	include/win/sound/Sound.hpp
-	include/win/sound/SoundCache.hpp
-	include/win/sound/SoundMixer.hpp
+
+	include/win/Stream.hpp
+	src/Stream.cpp
+
+	include/win/AssetRoll.hpp
+	src/AssetRoll.cpp
+
+	include/win/AssetRollStreamRaw.hpp
+	src/AssetRollStreamRaw.cpp
+
+	include/win/AssetRollStreamCompressed.hpp
+	src/AssetRollStreamCompressed.cpp
+
+	include/win/Display.hpp
+	src/DisplayLinux.cpp
+	src/DisplayWindows.cpp
+
+	include/win/Font.hpp
+	src/Font.cpp
+
+	include/win/FontRenderer.hpp
+	src/FontRenderer.cpp
+
+	#
+	# sound core
+	#
+
 	include/win/sound/ActiveSoundStore.hpp
+
+	include/win/sound/FloatPcmProvider.hpp
+
+	include/win/sound/PcmStream.hpp
+	src/sound/PcmStream.cpp
+
+	include/win/sound/SoundEffect.hpp
+
+	include/win/sound/PitchScaleEffect.hpp
+	src/sound/PitchScaleEffect.cpp
+
+	include/win/sound/PcmResource.hpp
+	src/sound/PcmResource.cpp
+
+	include/win/sound/PcmDecoder.hpp
+	src/sound/PcmDecoder.cpp
+
+	include/win/sound/Sound.hpp
+
+	include/win/sound/SoundCache.hpp
+	src/sound/SoundCache.cpp
+
+	include/win/sound/SoundMixer.hpp
+	src/sound/SoundMixer.cpp
+
 	include/win/sound/SoundEngine.hpp
+	src/sound/SoundEngine.cpp
+
 	include/win/sound/SoundEngineWindowsDirectSound.hpp
+	src/sound/SoundEngineWindowsDirectSound.cpp
+
 	include/win/sound/SoundEngineLinuxDummy.hpp
+
 	include/win/sound/SoundEngineLinuxPulseAudio.hpp
+	src/sound/SoundEngineLinuxPulseAudio.cpp
+
 	include/win/sound/SoundEngineLinuxPipeWire.hpp
+	src/sound/SoundEngineLinuxPipeWire.cpp
+
 	include/win/sound/test/SoundIntegrationTests.hpp
 )
 

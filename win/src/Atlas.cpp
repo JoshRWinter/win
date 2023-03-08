@@ -11,7 +11,7 @@
 namespace win
 {
 
-Atlas::Atlas(Stream raw, Mode fm)
+Atlas::Atlas(Stream raw)
 {
 	// check magic
 	char magic[6];
@@ -21,16 +21,14 @@ Atlas::Atlas(Stream raw, Mode fm)
 		Atlas::corrupt();
 
 	// how many images
-	raw.read(&count, sizeof(count));
+	raw.read(&num, sizeof(num));
 
-	int canvas_width = 0;
-	int canvas_height = 0;
 	raw.read(&canvas_width, sizeof(canvas_width));
 	raw.read(&canvas_height, sizeof(canvas_height));
 
-	textures = std::make_unique<AtlasItem[]>(count);
+	textures = std::make_unique<AtlasItem[]>(num);
 
-	for(int i = 0; i < count; ++i)
+	for(int i = 0; i < num; ++i)
 	{
 		std::uint16_t xpos, ypos, width, height;
 
@@ -51,47 +49,43 @@ Atlas::Atlas(Stream raw, Mode fm)
 	if(raw.size() - raw.tell() != canvas_width * canvas_height * 4)
 		Atlas::corrupt();
 
-#ifdef WIN_USE_OPENGL
-	glGenTextures(1, &object);
-	glBindTexture(GL_TEXTURE_2D, object);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, fm == Mode::linear ? GL_LINEAR : GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, fm == Mode::linear ? GL_LINEAR : GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	std::unique_ptr<unsigned char[]> pixels(new unsigned char[canvas_width * canvas_height * 4]);
-	raw.read(pixels.get(), canvas_width * canvas_height * 4);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas_width, canvas_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels.get());
-#endif
+	imgdata.reset(new unsigned char[canvas_width * canvas_height * 4]);
+	raw.read(imgdata.get(), canvas_width * canvas_height * 4);
 }
 
-Atlas::~Atlas()
+int Atlas::count() const
 {
-	glDeleteTextures(1, &object);
+	return num;
 }
 
-#ifdef WIN_USE_OPENGL
-GLuint Atlas::texture() const
-{
-	return object;
-}
-#endif
-
-const AtlasItem Atlas::item(int index) const
+const AtlasItem &Atlas::item(int index) const
 {
 #ifndef NDEBUG
-	if(index >= count || index < 0)
-		win::bug("Bad coords index");
+	if(index >= num || index < 0)
+		win::bug("Atlas: item out of bounds");
 #endif
 
 	return textures[index];
 }
 
+int Atlas::width() const
+{
+	return canvas_width;
+}
+
+int Atlas::height() const
+{
+	return canvas_height;
+}
+
+const unsigned char *Atlas::data() const
+{
+	return imgdata.get();
+}
+
 void Atlas::corrupt()
 {
-	win::bug("Corrupt atlas");
+	win::bug("Atlas: corrupt");
 }
 
 }

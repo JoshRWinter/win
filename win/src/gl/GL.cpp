@@ -1,4 +1,4 @@
-#include <win/GL.hpp>
+#include <win/gl/GL.hpp>
 
 #ifdef WIN_USE_OPENGL
 

@@ -11,7 +11,7 @@
 #include <win/Display.hpp>
 
 #ifdef WIN_USE_OPENGL
-#include <win/GL.hpp>
+#include <win/gl/GL.hpp>
 #endif
 
 typedef GLXContext (*glXCreateContextAttribsARBProc)(::Display*, GLXFBConfig, GLXContext, Bool, const int*);

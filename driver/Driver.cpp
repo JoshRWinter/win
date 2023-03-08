@@ -8,11 +8,11 @@
 
 #include <win/Display.hpp>
 #include <win/AssetRoll.hpp>
-#include <win/Atlas.hpp>
+#include <win/gl/GLAtlas.hpp>
 #include <win/sound/SoundEngine.hpp>
 #include <win/FontRenderer.hpp>
 #include <win/Font.hpp>
-#include <win/GL.hpp>
+#include <win/gl/GL.hpp>
 
 extern const char *vertexshader,*fragmentshader;
 
@@ -56,7 +56,7 @@ int main()
 	win::AssetRoll roll("c:\\users\\josh\\desktop\\win\\driver\\assets.roll");
 #endif
 
-	win::Atlas atlas(roll["main.atlas"]);
+	win::GLAtlas atlas(roll["main.atlas"], win::GLAtlas::Mode::linear);
 
 	auto music = "../../fishtank/assets_local/Motions.ogg";
 	auto effect = "../../fishtank/assets_local/platform_destroy.ogg";

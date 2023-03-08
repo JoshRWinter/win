@@ -5,10 +5,6 @@
 #include <win/Win.hpp>
 #include <win/Stream.hpp>
 
-#ifdef WIN_USE_OPENGL
-#include <GL/gl.h>
-#endif
-
 namespace win
 {
 
@@ -22,28 +18,28 @@ struct AtlasItem
 
 class Atlas
 {
+	WIN_NO_COPY_MOVE(Atlas);
+
 public:
-	enum class Mode { linear, nearest };
+	explicit Atlas(Stream);
 
-	explicit Atlas(Stream, Mode = Mode::linear);
-	Atlas(const Atlas&) = delete;
-	Atlas(Atlas&&) = delete;
-	~Atlas();
+	int count() const;
+	const AtlasItem &item(int) const;
 
-	void operator=(const Atlas&) = delete;
-	Atlas &operator=(Atlas&&) = delete;
+	int width() const;
+	int height() const;
+	const unsigned char *data() const;
 
-	unsigned texture() const;
-	const AtlasItem item(int) const;
-
-	static void corrupt();
 
 private:
-	int count;
+	static void corrupt();
+
+	int num;
 	std::unique_ptr<AtlasItem[]> textures;
-#ifdef WIN_USE_OPENGL
-	GLuint object;
-#endif
+
+	int canvas_width;
+	int canvas_height;
+	std::unique_ptr<unsigned char[]> imgdata;
 };
 
 }
