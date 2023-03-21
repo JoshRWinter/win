@@ -1,23 +1,24 @@
-#include <win/gl/GL.hpp>
+#include <win/Win.hpp>
 
 #ifdef WIN_USE_OPENGL
 
-#include <string.h>
+#define WIN_GL_EXTENSION_STORAGE
+#include <win/gl/GL.hpp>
+
+using namespace win::gl;
 
 namespace win
 {
 
 #if defined WINPLAT_LINUX
-static void *getproc(const char *name)
+static void *get_proc(const char *name)
 {
-	void *address = (void*)glXGetProcAddress((const unsigned char*)name);
-	if(address == NULL)
-		win::bug(std::string("Could not get extension \"") + name + "\"");
+	void *address = (void*)glXGetProcAddress((const unsigned char*) name);
 
 	return address;
 }
 #elif defined WINPLAT_WINDOWS
-static void *getproc(const char *name)
+static void *get_proc(const char *name)
 {
 	void *address = (void*)wglGetProcAddress(name);
 	if(address == NULL)
@@ -30,48 +31,94 @@ static void *getproc(const char *name)
 }
 #endif
 
-static void *getproc(const char*);
+void gl_check_error()
+{
+	const char *errname;
+	const auto err = glGetError();
+
+	switch (err)
+	{
+		case GL_NO_ERROR:
+			errname = "GL_NO_ERROR";
+			break;
+		case GL_INVALID_ENUM:
+			errname = "GL_INVALID_ENUM";
+			break;
+		case GL_INVALID_VALUE:
+			errname = "GL_INVALID_VALUE";
+			break;
+		case GL_INVALID_OPERATION:
+			errname = "GL_INVALID_OPERATION";
+			break;
+		case GL_STACK_OVERFLOW:
+			errname = "GL_STACK_OVERFLOW";
+			break;
+		case GL_STACK_UNDERFLOW:
+			errname = "GL_STACK_UNDERFLOW";
+			break;
+		case GL_OUT_OF_MEMORY:
+			errname = "GL_OUT_OF_MEMORY";
+			break;
+		default:
+			errname = "Unknown gl error";
+			break;
+	}
+	if (err != GL_NO_ERROR)
+		win::bug("GL error " + std::string(errname) + " (" + std::to_string(err) + ")");
+}
+
 void load_gl_extensions()
 {
-	glCreateShader = (decltype(glCreateShader))getproc("glCreateShader");
-	glShaderSource = (decltype(glShaderSource))getproc("glShaderSource");
-	glCompileShader = (decltype(glCompileShader))getproc("glCompileShader");
-	glGetShaderiv = (decltype(glGetShaderiv))getproc("glGetShaderiv");
-	glGetShaderInfoLog = (decltype(glGetShaderInfoLog))getproc("glGetShaderInfoLog");
-	glGetProgramiv = (decltype(glGetProgramiv))getproc("glGetProgramiv");
-	glGetProgramInfoLog = (decltype(glGetProgramInfoLog))getproc("glGetProgramInfoLog");
-	glAttachShader = (decltype(glAttachShader))getproc("glAttachShader");
-	glDetachShader = (decltype(glDetachShader))getproc("glDetachShader");
-	glLinkProgram = (decltype(glLinkProgram))getproc("glLinkProgram");
-	glDeleteShader = (decltype(glDeleteShader))getproc("glDeleteShader");
-	glCreateProgram = (decltype(glCreateProgram))getproc("glCreateProgram");
-	glUseProgram = (decltype(glUseProgram))getproc("glUseProgram");
-	glDeleteProgram = (decltype(glDeleteProgram))getproc("glDeleteProgram");
-	glGenVertexArrays = (decltype(glGenVertexArrays))getproc("glGenVertexArrays");
-	glGenBuffers = (decltype(glGenBuffers))getproc("glGenBuffers");
-	glBindVertexArray = (decltype(glBindVertexArray))getproc("glBindVertexArray");
-	glBindBuffer = (decltype(glBindBuffer))getproc("glBindBuffer");
-	glBufferData = (decltype(glBufferData))getproc("glBufferData");
-	glVertexAttribPointer = (decltype(glVertexAttribPointer))getproc("glVertexAttribPointer");
-	glEnableVertexAttribArray = (decltype(glEnableVertexAttribArray))getproc("glEnableVertexAttribArray");
-	glDeleteVertexArrays = (decltype(glDeleteVertexArrays))getproc("glDeleteVertexArrays");
-	glDeleteBuffers = (decltype(glDeleteBuffers))getproc("glDeleteBuffers");
-	glGetUniformLocation = (decltype(glGetUniformLocation))getproc("glGetUniformLocation");
-	glUniformMatrix4fv = (decltype(glUniformMatrix4fv))getproc("glUniformMatrix4fv");
-	glVertexAttribDivisor = (decltype(glVertexAttribDivisor))getproc("glVertexAttribDivisor");
-	glUniform1f = (decltype(glUniform1f))getproc("glUniform1f");
-	glUniform2f = (decltype(glUniform2f))getproc("glUniform2f");
-	glUniform4f = (decltype(glUniform4f))getproc("glUniform4f");
-	glUniform1i = (decltype(glUniform1i))getproc("glUniform1i");
-	glUniform2i = (decltype(glUniform2i))getproc("glUniform2i");
-	glDrawElementsInstanced = (decltype(glDrawElementsInstanced))getproc("glDrawElementsInstanced");
-	glBufferSubData = (decltype(glBufferSubData))getproc("glBufferSubData");
+	glCreateShader = (decltype(glCreateShader)) get_proc("glCreateShader");
+	glShaderSource = (decltype(glShaderSource)) get_proc("glShaderSource");
+	glCompileShader = (decltype(glCompileShader)) get_proc("glCompileShader");
+	glGetShaderiv = (decltype(glGetShaderiv)) get_proc("glGetShaderiv");
+	glGetShaderInfoLog = (decltype(glGetShaderInfoLog)) get_proc("glGetShaderInfoLog");
+	glGetProgramiv = (decltype(glGetProgramiv)) get_proc("glGetProgramiv");
+	glGetProgramInfoLog = (decltype(glGetProgramInfoLog)) get_proc("glGetProgramInfoLog");
+	glAttachShader = (decltype(glAttachShader)) get_proc("glAttachShader");
+	glDetachShader = (decltype(glDetachShader)) get_proc("glDetachShader");
+	glLinkProgram = (decltype(glLinkProgram)) get_proc("glLinkProgram");
+	glDeleteShader = (decltype(glDeleteShader)) get_proc("glDeleteShader");
+	glCreateProgram = (decltype(glCreateProgram)) get_proc("glCreateProgram");
+	glUseProgram = (decltype(glUseProgram)) get_proc("glUseProgram");
+	glDeleteProgram = (decltype(glDeleteProgram)) get_proc("glDeleteProgram");
+
+	glGenVertexArrays = (decltype(glGenVertexArrays)) get_proc("glGenVertexArrays");
+	glBindVertexArray = (decltype(glBindVertexArray)) get_proc("glBindVertexArray");
+	glDeleteVertexArrays = (decltype(glDeleteVertexArrays)) get_proc("glDeleteVertexArrays");
+
+	glGenBuffers = (decltype(glGenBuffers)) get_proc("glGenBuffers");
+	glBindBuffer = (decltype(glBindBuffer)) get_proc("glBindBuffer");
+	glDeleteBuffers = (decltype(glDeleteBuffers)) get_proc("glDeleteBuffers");
+
+	glBufferData = (decltype(glBufferData)) get_proc("glBufferData");
+	glBufferStorage = (decltype(glBufferStorage)) get_proc("glBufferStorage");
+	glMapBufferRange = (decltype(glMapBufferRange)) get_proc("glMapBufferRange");
+
+	glVertexAttribDivisor = (decltype(glVertexAttribDivisor)) get_proc("glVertexAttribDivisor");
+	glVertexAttribPointer = (decltype(glVertexAttribPointer)) get_proc("glVertexAttribPointer");
+	glEnableVertexAttribArray = (decltype(glEnableVertexAttribArray)) get_proc("glEnableVertexAttribArray");
+
+	glGetUniformBlockIndex = (decltype(glGetUniformBlockIndex)) get_proc("glGetUniformBlockIndex");
+	glUniformBlockBinding = (decltype(glUniformBlockBinding)) get_proc("glUniformBlockBinding");
+	glGetUniformLocation = (decltype(glGetUniformLocation)) get_proc("glGetUniformLocation");
+	glUniformMatrix4fv = (decltype(glUniformMatrix4fv)) get_proc("glUniformMatrix4fv");
+	glUniform1f = (decltype(glUniform1f)) get_proc("glUniform1f");
+	glUniform2f = (decltype(glUniform2f)) get_proc("glUniform2f");
+	glUniform4f = (decltype(glUniform4f)) get_proc("glUniform4f");
+	glUniform1i = (decltype(glUniform1i)) get_proc("glUniform1i");
+	glUniform2i = (decltype(glUniform2i)) get_proc("glUniform2i");
+
+	glDrawElementsInstanced = (decltype(glDrawElementsInstanced)) get_proc("glDrawElementsInstanced");
+	glDrawElementsBaseVertex = (decltype(glDrawElementsBaseVertex)) get_proc("glDrawElementsBaseVertex");
+	glMultiDrawElementsIndirect = (decltype(glMultiDrawElementsIndirect)) get_proc("glMultiDrawElementsIndirect");
 
 #if defined WINPLAT_LINUX
-	glXSwapIntervalEXT = (decltype(glXSwapIntervalEXT))getproc("glXSwapIntervalEXT");
+	glXSwapIntervalEXT = (decltype(glXSwapIntervalEXT)) get_proc("glXSwapIntervalEXT");
 #elif defined WINPLAT_WINDOWS
-	wglSwapIntervalEXT = (decltype(wglSwapIntervalEXT))getproc("wglSwapIntervalEXT");
-	glTexImage3D = (decltype(glTexImage3D))getproc("glTexImage3D");
+	wglSwapIntervalEXT = (decltype(wglSwapIntervalEXT))get_proc("wglSwapIntervalEXT");
+	glTexImage3D = (decltype(glTexImage3D))get_proc("glTexImage3D");
 #endif
 }
 

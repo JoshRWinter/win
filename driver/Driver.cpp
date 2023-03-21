@@ -14,6 +14,8 @@
 #include <win/Font.hpp>
 #include <win/gl/GL.hpp>
 
+using namespace win::gl;
+
 extern const char *vertexshader,*fragmentshader;
 
 struct Block

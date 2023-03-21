@@ -8,6 +8,8 @@
 #include <win/Font.hpp>
 #include <win/FontRenderer.hpp>
 
+using namespace win::gl;
+
 // font shaders
 static const char *vertexshader =
 "#version 330 core\n"

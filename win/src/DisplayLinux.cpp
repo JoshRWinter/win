@@ -14,6 +14,8 @@
 #include <win/gl/GL.hpp>
 #endif
 
+using namespace win::gl;
+
 typedef GLXContext (*glXCreateContextAttribsARBProc)(::Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
 static Atom atom_delete_window;
