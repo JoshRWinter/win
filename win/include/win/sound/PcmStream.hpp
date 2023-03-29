@@ -5,7 +5,7 @@
 
 #include <win/Win.hpp>
 #include <win/Stream.hpp>
-#include <win/RingBuffer.hpp>
+#include <win/ConcurrentRingBuffer.hpp>
 #include <win/sound/FloatPcmProvider.hpp>
 #include <win/sound/PcmDecoder.hpp>
 
