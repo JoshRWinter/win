@@ -22,6 +22,8 @@ add_library(win STATIC
 
 	include/win/ConcurrentRingBuffer.hpp
 
+	include/win/MappedBuffer.hpp
+
 	include/win/Atlas.hpp
 	src/Atlas.cpp
 
