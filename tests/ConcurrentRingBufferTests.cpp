@@ -4,7 +4,7 @@
 #include <win/ConcurrentRingBuffer.hpp>
 
 static int successfull = 0;
-#define assert(expression) if (!(expression)) { win::bug("Assert failed on line " + std::to_string(__LINE__)); } else { ++successfull; }
+#define assert(expression) do { if (!(expression)) { win::bug("Assert failed on line " + std::to_string(__LINE__)); } else { ++successfull; } } while (false)
 
 template <typename T> void test()
 {
