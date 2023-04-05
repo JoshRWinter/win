@@ -69,6 +69,9 @@ void gl_check_error()
 
 void load_gl_extensions()
 {
+	glDebugMessageCallback = (decltype(glDebugMessageCallback))get_proc("glDebugMessageCallback");
+	glDebugMessageControl = (decltype(glDebugMessageControl))get_proc("glDebugMessageControl");
+
 	glCreateShader = (decltype(glCreateShader)) get_proc("glCreateShader");
 	glShaderSource = (decltype(glShaderSource)) get_proc("glShaderSource");
 	glCompileShader = (decltype(glCompileShader)) get_proc("glCompileShader");
@@ -90,6 +93,8 @@ void load_gl_extensions()
 
 	glGenBuffers = (decltype(glGenBuffers)) get_proc("glGenBuffers");
 	glBindBuffer = (decltype(glBindBuffer)) get_proc("glBindBuffer");
+	glBindBufferBase = (decltype(glBindBufferBase)) get_proc("glBindBufferBase");
+	glBindBufferRange = (decltype(glBindBufferRange)) get_proc("glBindBufferRange");
 	glDeleteBuffers = (decltype(glDeleteBuffers)) get_proc("glDeleteBuffers");
 
 	glBufferData = (decltype(glBufferData)) get_proc("glBufferData");
@@ -98,6 +103,7 @@ void load_gl_extensions()
 
 	glVertexAttribDivisor = (decltype(glVertexAttribDivisor)) get_proc("glVertexAttribDivisor");
 	glVertexAttribPointer = (decltype(glVertexAttribPointer)) get_proc("glVertexAttribPointer");
+	glVertexAttribIPointer = (decltype(glVertexAttribIPointer)) get_proc("glVertexAttribIPointer");
 	glEnableVertexAttribArray = (decltype(glEnableVertexAttribArray)) get_proc("glEnableVertexAttribArray");
 
 	glGetUniformBlockIndex = (decltype(glGetUniformBlockIndex)) get_proc("glGetUniformBlockIndex");

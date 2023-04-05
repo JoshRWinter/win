@@ -28,6 +28,7 @@ struct DisplayOptions
 		, height(600)
 		, gl_major(0)
 		, gl_minor(0)
+		, debug(false)
 		, parent(NULL)
 	{}
 
@@ -37,6 +38,7 @@ struct DisplayOptions
 	int height;
 	int gl_major;
 	int gl_minor;
+	bool debug;
 	NativeWindowHandle parent;
 };
 
