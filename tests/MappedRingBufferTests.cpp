@@ -1,5 +1,5 @@
 #define private public
-#include <win/MappedBuffer.hpp>
+#include <win/MappedRingBuffer.hpp>
 
 int successfull = 0;
 #define assert(exp) do { if (!(exp)) { win::bug("Assert failed on line " + std::to_string(__LINE__)); } else { ++successfull; } } while (false)
@@ -7,7 +7,7 @@ int successfull = 0;
 template <typename T> void test_mapped_buffer()
 {
 	T mapped[5];
-	win::MappedBuffer<T> mbuf(mapped, 5);
+	win::MappedRingBuffer<T> mbuf(mapped, 5);
 
 	assert(mbuf.buffer == mapped);
 	assert(mbuf.buffer_length == 5);
@@ -66,7 +66,7 @@ template <typename T> void test_mapped_buffer()
 template <typename T> void test_mapped_buffer_range_write()
 {
 	T mapped[5] { 0, 0, 0, 0, 0 };
-	win::MappedBuffer<T> mbuf(mapped, 5);
+	win::MappedRingBuffer<T> mbuf(mapped, 5);
 
 	assert(mbuf.buffer == mapped);
 	assert(mbuf.buffer_length == 5);
@@ -175,7 +175,7 @@ template <typename T> void test_mapped_buffer_range_write()
 template <typename T> void test_iterator()
 {
 	T mapped[5] = { 0, 0, 0, 0, 0 };
-	win::MappedBuffer<T> mbuf(mapped, 5);
+	win::MappedRingBuffer<T> mbuf(mapped, 5);
 
 	assert(mbuf.buffer == mapped);
 	assert(mbuf.buffer_length == 5);
@@ -249,7 +249,7 @@ template <typename T> void test_iterator()
 template <typename T> void test_subscript_operator()
 {
 	T mapped[5] = { 0, 0, 0, 0, 0 };
-	win::MappedBuffer<T> mbuf(mapped, 5);
+	win::MappedRingBuffer<T> mbuf(mapped, 5);
 
 	assert(mbuf.buffer == mapped);
 	assert(mbuf.buffer_length == 5);
@@ -338,7 +338,7 @@ template <typename T> void test_subscript_operator()
 template <typename T> void test_mixed()
 {
 	T mapped[5] = { 0, 0, 0, 0, 0 };
-	win::MappedBuffer<T> mbuf(mapped, 5);
+	win::MappedRingBuffer<T> mbuf(mapped, 5);
 
 	assert(mbuf.buffer == mapped);
 	assert(mbuf.buffer_length == 5);

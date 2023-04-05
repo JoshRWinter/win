@@ -8,26 +8,26 @@
 namespace win
 {
 
-template <typename T> class MappedBufferRange;
-template <typename T> class MappedBufferRangeIterator
+template <typename T> class MappedRingBufferRange;
+template <typename T> class MappedRingBufferRangeIterator
 {
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 
 public:
-	explicit MappedBufferRangeIterator(MappedBufferRange<T> *parent)
+	explicit MappedRingBufferRangeIterator(MappedRingBufferRange<T> *parent)
 		: parent(parent)
 	{}
 
-	void operator=(const MappedBufferRangeIterator<T>&) = delete;
-	void operator=(MappedBufferRangeIterator<T>&&) = delete;
+	void operator=(const MappedRingBufferRangeIterator<T>&) = delete;
+	void operator=(MappedRingBufferRangeIterator<T>&&) = delete;
 
 	void operator++() { move_next(); }
 	void operator++(int) { move_next(); }
 
 	T &operator*() { return parent->parent.buffer[parent->head]; }
 
-	bool operator==(const MappedBufferRangeIterator<T> &rhs) const { return parent == rhs.parent; }
-	bool operator!=(const MappedBufferRangeIterator<T> &rhs) const { return parent != rhs.parent; }
+	bool operator==(const MappedRingBufferRangeIterator<T> &rhs) const { return parent == rhs.parent; }
+	bool operator!=(const MappedRingBufferRangeIterator<T> &rhs) const { return parent != rhs.parent; }
 
 private:
 	void move_next()
@@ -39,16 +39,16 @@ private:
 		parent = parent->remaining != 0 ? parent : NULL;
 	}
 
-	MappedBufferRange<T> *parent; // this being null signifies that this iterator is the "end" iterator
+	MappedRingBufferRange<T> *parent; // this being null signifies that this iterator is the "end" iterator
 };
 
-template <typename T> class MappedBuffer;
-template <typename T> class MappedBufferRange
+template <typename T> class MappedRingBuffer;
+template <typename T> class MappedRingBufferRange
 {
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 
 public:
-	MappedBufferRange(int head, int length, MappedBuffer<T> &parent)
+	MappedRingBufferRange(int head, int length, MappedRingBuffer<T> &parent)
 		: original_head(head)
 		, original_length(length)
 		, head(head)
@@ -56,8 +56,8 @@ public:
 		, parent(parent)
 	{}
 
-	MappedBufferRangeIterator<T> begin() { return MappedBufferRangeIterator<T>(remaining != 0 ? this : NULL); }
-	MappedBufferRangeIterator<T> end() { return MappedBufferRangeIterator<T>(NULL); }
+	MappedRingBufferRangeIterator<T> begin() { return MappedRingBufferRangeIterator<T>(remaining != 0 ? this : NULL); }
+	MappedRingBufferRangeIterator<T> end() { return MappedRingBufferRangeIterator<T>(NULL); }
 
 	T &operator[](int index)
 	{
@@ -100,18 +100,18 @@ private:
 	int head;
 	int remaining;
 
-	MappedBuffer<T> &parent;
+	MappedRingBuffer<T> &parent;
 };
 
-template <typename T> class MappedBuffer
+template <typename T> class MappedRingBuffer
 {
-	WIN_NO_COPY_MOVE(MappedBuffer);
+	WIN_NO_COPY_MOVE(MappedRingBuffer);
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
-	friend class MappedBufferRange<T>;
-	friend class MappedBufferRangeIterator<T>;
+	friend class MappedRingBufferRange<T>;
+	friend class MappedRingBufferRangeIterator<T>;
 
 public:
-	MappedBuffer(void *mapbuf, int len_elelements)
+	MappedRingBuffer(void *mapbuf, int len_elelements)
 		: head(0)
 		, buffer(reinterpret_cast<T*>(mapbuf))
 		, buffer_length(len_elelements)
@@ -119,12 +119,12 @@ public:
 
 	int length() const { return buffer_length; }
 
-	MappedBufferRange<T> reserve(int len)
+	MappedRingBufferRange<T> reserve(int len)
 	{
 		if (len > buffer_length)
 			win::bug("MappedBuffer: reservation too long. Requested length was " + std::to_string(len) + " while the total buffer length is only " + std::to_string(buffer_length) + ".");
 
-		MappedBufferRange<T> range(head, len, *this);
+		MappedRingBufferRange<T> range(head, len, *this);
 
 		head = (head + len) % buffer_length;
 
