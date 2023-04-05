@@ -117,6 +117,8 @@ public:
 		, buffer_length(len_elelements)
 	{}
 
+	int length() const { return buffer_length; }
+
 	MappedBufferRange<T> reserve(int len)
 	{
 		if (len > buffer_length)
