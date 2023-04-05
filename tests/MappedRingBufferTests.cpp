@@ -15,7 +15,7 @@ template <typename T> void test_mapped_buffer()
 	{
 		auto range = mbuf.reserve(5);
 
-		assert(mbuf.head == 0);
+		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 0);
 		assert(range.original_length == 5);
 		assert(range.head == 0);
@@ -25,7 +25,7 @@ template <typename T> void test_mapped_buffer()
 	{
 		auto range = mbuf.reserve(3);
 
-		assert(mbuf.head == 3);
+		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 0);
 		assert(range.original_length == 3);
 		assert(range.head == 0);
@@ -35,7 +35,7 @@ template <typename T> void test_mapped_buffer()
 	{
 		auto range = mbuf.reserve(4);
 
-		assert(mbuf.head == 2);
+		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 3);
 		assert(range.original_length == 4);
 		assert(range.head == 3);
@@ -45,7 +45,7 @@ template <typename T> void test_mapped_buffer()
 	{
 		auto range = mbuf.reserve(2);
 
-		assert(mbuf.head == 4);
+		assert(mbuf.buffer_head == 4);
 		assert(range.original_head == 2);
 		assert(range.original_length == 2);
 		assert(range.head == 2);
@@ -55,7 +55,7 @@ template <typename T> void test_mapped_buffer()
 	{
 		auto range = mbuf.reserve(5);
 
-		assert(mbuf.head == 4);
+		assert(mbuf.buffer_head == 4);
 		assert(range.original_head == 4);
 		assert(range.original_length == 5);
 		assert(range.head == 4);
@@ -74,7 +74,7 @@ template <typename T> void test_mapped_buffer_range_write()
 	{
 		auto range = mbuf.reserve(3);
 
-		assert(mbuf.head == 3);
+		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 0);
 		assert(range.original_length == 3);
 		assert(range.head == 0);
@@ -84,7 +84,7 @@ template <typename T> void test_mapped_buffer_range_write()
 	{
 		auto range = mbuf.reserve(4);
 
-		assert(mbuf.head == 2);
+		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 3);
 		assert(range.original_length == 4);
 		assert(range.head == 3);
@@ -124,7 +124,7 @@ template <typename T> void test_mapped_buffer_range_write()
 	{
 		auto range = mbuf.reserve(5);
 
-		assert(mbuf.head == 2);
+		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 2);
 		assert(range.original_length == 5);
 		assert(range.head == 2);
@@ -164,7 +164,7 @@ template <typename T> void test_mapped_buffer_range_write()
 	{
 		auto range = mbuf.reserve(0);
 
-		assert(mbuf.head == 2);
+		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 2);
 		assert(range.original_length == 0);
 		assert(range.head == 2);
@@ -179,12 +179,12 @@ template <typename T> void test_iterator()
 
 	assert(mbuf.buffer == mapped);
 	assert(mbuf.buffer_length == 5);
-	assert(mbuf.head == 0);
+	assert(mbuf.buffer_head == 0);
 
 	{
 		auto range = mbuf.reserve(2);
 
-		assert(mbuf.head == 2);
+		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 0);
 		assert(range.original_length == 2);
 		assert(range.head == 0);
@@ -217,7 +217,7 @@ template <typename T> void test_iterator()
 	{
 		auto range = mbuf.reserve(1);
 
-		assert(mbuf.head == 3);
+		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 2);
 		assert(range.original_length == 1);
 		assert(range.head == 2);
@@ -227,7 +227,7 @@ template <typename T> void test_iterator()
 	{
 		auto range = mbuf.reserve(4);
 
-		assert(mbuf.head == 2);
+		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 3);
 		assert(range.original_length == 4);
 		assert(range.head == 3);
@@ -253,12 +253,12 @@ template <typename T> void test_subscript_operator()
 
 	assert(mbuf.buffer == mapped);
 	assert(mbuf.buffer_length == 5);
-	assert(mbuf.head == 0);
+	assert(mbuf.buffer_head == 0);
 
 	{
 		auto range = mbuf.reserve(5);
 
-		assert(mbuf.head == 0);
+		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 0);
 		assert(range.original_length == 5);
 		assert(range.head == 0);
@@ -276,7 +276,7 @@ template <typename T> void test_subscript_operator()
 	{
 		auto range = mbuf.reserve(3);
 
-		assert(mbuf.head == 3);
+		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 0);
 		assert(range.original_length == 3);
 		assert(range.head == 0);
@@ -292,7 +292,7 @@ template <typename T> void test_subscript_operator()
 	{
 		auto range = mbuf.reserve(3);
 
-		assert(mbuf.head == 1);
+		assert(mbuf.buffer_head == 1);
 		assert(range.original_head == 3);
 		assert(range.original_length == 3);
 		assert(range.head == 3);
@@ -308,7 +308,7 @@ template <typename T> void test_subscript_operator()
 	{
 		auto range = mbuf.reserve(4);
 
-		assert(mbuf.head == 0);
+		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 1);
 		assert(range.original_length == 4);
 		assert(range.head == 1);
@@ -325,7 +325,7 @@ template <typename T> void test_subscript_operator()
 	{
 		auto range = mbuf.reserve(0);
 
-		assert(mbuf.head == 0);
+		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 0);
 		assert(range.original_length == 0);
 		assert(range.head == 0);
@@ -342,12 +342,12 @@ template <typename T> void test_mixed()
 
 	assert(mbuf.buffer == mapped);
 	assert(mbuf.buffer_length == 5);
-	assert(mbuf.head == 0);
+	assert(mbuf.buffer_head == 0);
 
 	{
 		auto range = mbuf.reserve(5);
 
-		assert(mbuf.head == 0);
+		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 0);
 		assert(range.original_length == 5);
 		assert(range.head == 0);
@@ -403,7 +403,7 @@ template <typename T> void test_mixed()
 	{
 		auto range = mbuf.reserve(3);
 
-		assert(mbuf.head == 3);
+		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 0);
 		assert(range.original_length == 3);
 		assert(range.head == 0);
@@ -413,7 +413,7 @@ template <typename T> void test_mixed()
 	{
 		auto range = mbuf.reserve(5);
 
-		assert(mbuf.head == 3);
+		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 3);
 		assert(range.original_length == 5);
 		assert(range.head == 3);
@@ -452,7 +452,7 @@ template <typename T> void test_mixed()
 	{
 		auto range = mbuf.reserve(5);
 
-		assert(mbuf.head == 3);
+		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 3);
 		assert(range.original_length == 5);
 		assert(range.head == 3);

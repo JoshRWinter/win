@@ -112,11 +112,12 @@ template <typename T> class MappedRingBuffer
 
 public:
 	MappedRingBuffer(void *mapbuf, int len_elelements)
-		: head(0)
+		: buffer_head(0)
 		, buffer(reinterpret_cast<T*>(mapbuf))
 		, buffer_length(len_elelements)
 	{}
 
+	int head() const { return buffer_head; }
 	int length() const { return buffer_length; }
 
 	MappedRingBufferRange<T> reserve(int len)
@@ -124,15 +125,15 @@ public:
 		if (len > buffer_length)
 			win::bug("MappedBuffer: reservation too long. Requested length was " + std::to_string(len) + " while the total buffer length is only " + std::to_string(buffer_length) + ".");
 
-		MappedRingBufferRange<T> range(head, len, *this);
+		MappedRingBufferRange<T> range(buffer_head, len, *this);
 
-		head = (head + len) % buffer_length;
+		buffer_head = (buffer_head + len) % buffer_length;
 
 		return range;
 	}
 
 private:
-	int head;
+	int buffer_head;
 	T *const buffer;
 	const int buffer_length;
 };
