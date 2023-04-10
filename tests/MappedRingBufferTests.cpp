@@ -18,8 +18,8 @@ template <typename T> void test_mapped_buffer()
 		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 0);
 		assert(range.original_length == 5);
-		assert(range.head == 0);
-		assert(range.remaining == 5);
+		assert(range.current_head == 0);
+		assert(range.current_remaining == 5);
 	}
 
 	{
@@ -28,8 +28,8 @@ template <typename T> void test_mapped_buffer()
 		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 0);
 		assert(range.original_length == 3);
-		assert(range.head == 0);
-		assert(range.remaining == 3);
+		assert(range.current_head == 0);
+		assert(range.current_remaining == 3);
 	}
 
 	{
@@ -38,8 +38,8 @@ template <typename T> void test_mapped_buffer()
 		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 3);
 		assert(range.original_length == 4);
-		assert(range.head == 3);
-		assert(range.remaining == 4);
+		assert(range.current_head == 3);
+		assert(range.current_remaining == 4);
 	}
 
 	{
@@ -48,8 +48,8 @@ template <typename T> void test_mapped_buffer()
 		assert(mbuf.buffer_head == 4);
 		assert(range.original_head == 2);
 		assert(range.original_length == 2);
-		assert(range.head == 2);
-		assert(range.remaining == 2);
+		assert(range.current_head == 2);
+		assert(range.current_remaining == 2);
 	}
 
 	{
@@ -58,8 +58,8 @@ template <typename T> void test_mapped_buffer()
 		assert(mbuf.buffer_head == 4);
 		assert(range.original_head == 4);
 		assert(range.original_length == 5);
-		assert(range.head == 4);
-		assert(range.remaining == 5);
+		assert(range.current_head == 4);
+		assert(range.current_remaining == 5);
 	}
 }
 
@@ -77,8 +77,8 @@ template <typename T> void test_mapped_buffer_range_write()
 		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 0);
 		assert(range.original_length == 3);
-		assert(range.head == 0);
-		assert(range.remaining == 3);
+		assert(range.current_head == 0);
+		assert(range.current_remaining == 3);
 	}
 
 	{
@@ -87,16 +87,16 @@ template <typename T> void test_mapped_buffer_range_write()
 		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 3);
 		assert(range.original_length == 4);
-		assert(range.head == 3);
-		assert(range.remaining == 4);
+		assert(range.current_head == 3);
+		assert(range.current_remaining == 4);
 
 		{
 			const T src[2] { 2, 66 };
 			const int wrote = range.write(src, 2);
 
 			assert(wrote == 2);
-			assert(range.head == 0);
-			assert(range.remaining == 2);
+			assert(range.current_head == 0);
+			assert(range.current_remaining == 2);
 			assert(mapped[0] == 0 && mapped[1] == 0 && mapped[2] == 0 && mapped[3] == 2 && mapped[4] == 66);
 		}
 
@@ -105,8 +105,8 @@ template <typename T> void test_mapped_buffer_range_write()
 			const int wrote = range.write(src, 1);
 
 			assert(wrote == 1);
-			assert(range.head == 1);
-			assert(range.remaining == 1);
+			assert(range.current_head == 1);
+			assert(range.current_remaining == 1);
 			assert(mapped[0] == 48 && mapped[1] == 0 && mapped[2] == 0 && mapped[3] == 2 && mapped[4] == 66);
 		}
 
@@ -115,8 +115,8 @@ template <typename T> void test_mapped_buffer_range_write()
 			const int wrote = range.write(src, 1);
 
 			assert(wrote == 1);
-			assert(range.head == 2);
-			assert(range.remaining == 0);
+			assert(range.current_head == 2);
+			assert(range.current_remaining == 0);
 			assert(mapped[0] == 48 && mapped[1] == 65 && mapped[2] == 0 && mapped[3] == 2 && mapped[4] == 66);
 		}
 	}
@@ -127,16 +127,16 @@ template <typename T> void test_mapped_buffer_range_write()
 		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 2);
 		assert(range.original_length == 5);
-		assert(range.head == 2);
-		assert(range.remaining == 5);
+		assert(range.current_head == 2);
+		assert(range.current_remaining == 5);
 
 		{
 			T src[0];
 			const int wrote = range.write(src, 0);
 
 			assert(wrote == 0);
-			assert(range.head == 2);
-			assert(range.remaining == 5);
+			assert(range.current_head == 2);
+			assert(range.current_remaining == 5);
 			assert(mapped[0] == 48 && mapped[1] == 65 && mapped[2] == 0 && mapped[3] == 2 && mapped[4] == 66);
 		}
 
@@ -145,8 +145,8 @@ template <typename T> void test_mapped_buffer_range_write()
 			const int wrote = range.write(src, 4);
 
 			assert(wrote == 4);
-			assert(range.head == 1);
-			assert(range.remaining == 1);
+			assert(range.current_head == 1);
+			assert(range.current_remaining == 1);
 			assert(mapped[0] == 41 && mapped[1] == 65 && mapped[2] == 4 && mapped[3] == 96 && mapped[4] == 54);
 		}
 
@@ -155,8 +155,8 @@ template <typename T> void test_mapped_buffer_range_write()
 			const int wrote = range.write(src, 1);
 
 			assert(wrote == 1);
-			assert(range.head == 2);
-			assert(range.remaining == 0);
+			assert(range.current_head == 2);
+			assert(range.current_remaining == 0);
 			assert(mapped[0] == 41 && mapped[1] == 101 && mapped[2] == 4 && mapped[3] == 96 && mapped[4] == 54);
 		}
 	}
@@ -167,8 +167,8 @@ template <typename T> void test_mapped_buffer_range_write()
 		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 2);
 		assert(range.original_length == 0);
-		assert(range.head == 2);
-		assert(range.remaining == 0);
+		assert(range.current_head == 2);
+		assert(range.current_remaining == 0);
 	}
 }
 
@@ -187,29 +187,29 @@ template <typename T> void test_iterator()
 		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 0);
 		assert(range.original_length == 2);
-		assert(range.head == 0);
-		assert(range.remaining == 2);
+		assert(range.current_head == 0);
+		assert(range.current_remaining == 2);
 
 		{
 			auto it = range.begin();
 
-			assert(range.head == 0);
-			assert(range.remaining == 2);
+			assert(range.current_head == 0);
+			assert(range.current_remaining == 2);
 
 			*it = 67;
 			++it;
 
 			assert(it != range.end());
-			assert(range.head == 1);
-			assert(range.remaining == 1);
+			assert(range.current_head == 1);
+			assert(range.current_remaining == 1);
 			assert(mapped[0] == 67 && mapped[1] == 0 && mapped[2] == 0 && mapped[3] == 0 && mapped[4] == 0);
 
 			*it = 12;
 			++it;
 
 			assert(it == range.end());
-			assert(range.head == 2);
-			assert(range.remaining == 0);
+			assert(range.current_head == 2);
+			assert(range.current_remaining == 0);
 			assert(mapped[0] == 67 && mapped[1] == 12 && mapped[2] == 0 && mapped[3] == 0 && mapped[4] == 0);
 		}
 	}
@@ -220,8 +220,8 @@ template <typename T> void test_iterator()
 		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 2);
 		assert(range.original_length == 1);
-		assert(range.head == 2);
-		assert(range.remaining == 1);
+		assert(range.current_head == 2);
+		assert(range.current_remaining == 1);
 	}
 
 	{
@@ -230,14 +230,14 @@ template <typename T> void test_iterator()
 		assert(mbuf.buffer_head == 2);
 		assert(range.original_head == 3);
 		assert(range.original_length == 4);
-		assert(range.head == 3);
-		assert(range.remaining == 4);
+		assert(range.current_head == 3);
+		assert(range.current_remaining == 4);
 
 		int index = 0;
 		for (T &item : range)
 		{
-			assert(range.head == (3 + index) % 5);
-			assert(range.remaining == 4 - index);
+			assert(range.current_head == (3 + index) % 5);
+			assert(range.current_remaining == 4 - index);
 			item = index * 2;
 			++index;
 		}
@@ -261,8 +261,8 @@ template <typename T> void test_subscript_operator()
 		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 0);
 		assert(range.original_length == 5);
-		assert(range.head == 0);
-		assert(range.remaining == 5);
+		assert(range.current_head == 0);
+		assert(range.current_remaining == 5);
 
 		range[4] = 91;
 
@@ -279,8 +279,8 @@ template <typename T> void test_subscript_operator()
 		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 0);
 		assert(range.original_length == 3);
-		assert(range.head == 0);
-		assert(range.remaining == 3);
+		assert(range.current_head == 0);
+		assert(range.current_remaining == 3);
 
 		range[0] = 5;
 		range[1] = 93;
@@ -295,8 +295,8 @@ template <typename T> void test_subscript_operator()
 		assert(mbuf.buffer_head == 1);
 		assert(range.original_head == 3);
 		assert(range.original_length == 3);
-		assert(range.head == 3);
-		assert(range.remaining == 3);
+		assert(range.current_head == 3);
+		assert(range.current_remaining == 3);
 
 		range[0] = 56;
 		range[1] = 1;
@@ -311,8 +311,8 @@ template <typename T> void test_subscript_operator()
 		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 1);
 		assert(range.original_length == 4);
-		assert(range.head == 1);
-		assert(range.remaining == 4);
+		assert(range.current_head == 1);
+		assert(range.current_remaining == 4);
 
 		range[0] = 7;
 		range[1] = 81;
@@ -328,8 +328,8 @@ template <typename T> void test_subscript_operator()
 		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 0);
 		assert(range.original_length == 0);
-		assert(range.head == 0);
-		assert(range.remaining == 0);
+		assert(range.current_head == 0);
+		assert(range.current_remaining == 0);
 
 		// range[0] = 3; // would abort
 	}
@@ -350,8 +350,8 @@ template <typename T> void test_mixed()
 		assert(mbuf.buffer_head == 0);
 		assert(range.original_head == 0);
 		assert(range.original_length == 5);
-		assert(range.head == 0);
-		assert(range.remaining == 5);
+		assert(range.current_head == 0);
+		assert(range.current_remaining == 5);
 
 		{
 			auto it = range.begin();
@@ -361,8 +361,8 @@ template <typename T> void test_mixed()
 			*it = 48;
 			++it;
 
-			assert(range.head == 1);
-			assert(range.remaining == 4);
+			assert(range.current_head == 1);
+			assert(range.current_remaining == 4);
 			assert(mapped[0] == 48 && mapped[1] == 0 && mapped[2] == 0 && mapped[3] == 0 && mapped[4] == 0);
 		}
 
@@ -371,8 +371,8 @@ template <typename T> void test_mixed()
 			const int wrote = range.write(src, 3);
 
 			assert(wrote == 3);
-			assert(range.head == 4);
-			assert(range.remaining == 1);
+			assert(range.current_head == 4);
+			assert(range.current_remaining == 1);
 			assert(mapped[0] == 48 && mapped[1] == 88 && mapped[2] == 120 && mapped[3] == 47 && mapped[4] == 0);
 		}
 
@@ -385,8 +385,8 @@ template <typename T> void test_mixed()
 			}
 
 			assert(iteration == 1);
-			assert(range.head == 0);
-			assert(range.remaining == 0);
+			assert(range.current_head == 0);
+			assert(range.current_remaining == 0);
 			assert(mapped[0] == 48 && mapped[1] == 88 && mapped[2] == 120 && mapped[3] == 47 && mapped[4] == 3);
 		}
 
@@ -406,8 +406,8 @@ template <typename T> void test_mixed()
 		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 0);
 		assert(range.original_length == 3);
-		assert(range.head == 0);
-		assert(range.remaining == 3);
+		assert(range.current_head == 0);
+		assert(range.current_remaining == 3);
 	}
 
 	{
@@ -416,16 +416,16 @@ template <typename T> void test_mixed()
 		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 3);
 		assert(range.original_length == 5);
-		assert(range.head == 3);
-		assert(range.remaining == 5);
+		assert(range.current_head == 3);
+		assert(range.current_remaining == 5);
 
 		{
 			const T src[] = { 65, 27, 88 };
 			const int wrote = range.write(src, 3);
 
 			assert(wrote == 3);
-			assert(range.head == 1);
-			assert(range.remaining == 2);
+			assert(range.current_head == 1);
+			assert(range.current_remaining == 2);
 			assert(mapped[0] == 88 && mapped[1] == 88 && mapped[2] == 58 && mapped[3] == 65 && mapped[4] == 27);
 		}
 
@@ -437,14 +437,14 @@ template <typename T> void test_mixed()
 			{
 				item = (iteration + 1) * 4;
 
-				assert(range.head == (1 + iteration) % 5);
-				assert(range.remaining == 2 - iteration);
+				assert(range.current_head == (1 + iteration) % 5);
+				assert(range.current_remaining == 2 - iteration);
 
 				++iteration;
 			}
 
-			assert(range.head == 3);
-			assert(range.remaining == 0);
+			assert(range.current_head == 3);
+			assert(range.current_remaining == 0);
 			assert(mapped[0] == 88 && mapped[1] == 4 && mapped[2] == 8 && mapped[3] == 65 && mapped[4] == 102);
 		}
 	}
@@ -455,8 +455,8 @@ template <typename T> void test_mixed()
 		assert(mbuf.buffer_head == 3);
 		assert(range.original_head == 3);
 		assert(range.original_length == 5);
-		assert(range.head == 3);
-		assert(range.remaining == 5);
+		assert(range.current_head == 3);
+		assert(range.current_remaining == 5);
 
 		{
 			auto it = range.begin();
@@ -467,24 +467,24 @@ template <typename T> void test_mixed()
 			it++;
 
 			assert(it != range.end());
-			assert(range.head == 4);
-			assert(range.remaining == 4);
+			assert(range.current_head == 4);
+			assert(range.current_remaining == 4);
 			assert(mapped[0] == 88 && mapped[1] == 4 && mapped[2] == 8 && mapped[3] == 99 && mapped[4] == 102);
 
 			*it = 41;
 			++it;
 
 			assert(it != range.end());
-			assert(range.head == 0);
-			assert(range.remaining == 3);
+			assert(range.current_head == 0);
+			assert(range.current_remaining == 3);
 			assert(mapped[0] == 88 && mapped[1] == 4 && mapped[2] == 8 && mapped[3] == 99 && mapped[4] == 41);
 
 			*it = 125;
 			++it;
 
 			assert(it != range.end());
-			assert(range.head == 1);
-			assert(range.remaining == 2);
+			assert(range.current_head == 1);
+			assert(range.current_remaining == 2);
 			assert(mapped[0] == 125 && mapped[1] == 4 && mapped[2] == 8 && mapped[3] == 99 && mapped[4] == 41);
 		}
 
@@ -493,8 +493,8 @@ template <typename T> void test_mixed()
 
 			range.write(src, 2);
 
-			assert(range.head == 3);
-			assert(range.remaining == 0);
+			assert(range.current_head == 3);
+			assert(range.current_remaining == 0);
 			assert(mapped[0] == 125 && mapped[1] == 64 && mapped[2] == 32 && mapped[3] == 99 && mapped[4] == 41);
 		}
 

@@ -24,7 +24,7 @@ public:
 	void operator++() { move_next(); }
 	void operator++(int) { move_next(); }
 
-	T &operator*() { return parent->parent.buffer[parent->head]; }
+	T &operator*() { return parent->parent.buffer[parent->current_head]; }
 
 	bool operator==(const MappedRingBufferRangeIterator<T> &rhs) const { return parent == rhs.parent; }
 	bool operator!=(const MappedRingBufferRangeIterator<T> &rhs) const { return parent != rhs.parent; }
@@ -32,11 +32,11 @@ public:
 private:
 	void move_next()
 	{
-		parent->head = (parent->head + 1) % parent->parent.buffer_length;
-		--parent->remaining;
+		parent->current_head = (parent->current_head + 1) % parent->parent.buffer_length;
+		--parent->current_remaining;
 
 		// set parent to null if out of items.
-		parent = parent->remaining != 0 ? parent : NULL;
+		parent = parent->current_remaining != 0 ? parent : NULL;
 	}
 
 	MappedRingBufferRange<T> *parent; // this being null signifies that this iterator is the "end" iterator
@@ -51,13 +51,16 @@ public:
 	MappedRingBufferRange(int head, int length, MappedRingBuffer<T> &parent)
 		: original_head(head)
 		, original_length(length)
-		, head(head)
-		, remaining(length)
+		, current_head(head)
+		, current_remaining(length)
 		, parent(parent)
 	{}
 
-	MappedRingBufferRangeIterator<T> begin() { return MappedRingBufferRangeIterator<T>(remaining != 0 ? this : NULL); }
+	MappedRingBufferRangeIterator<T> begin() { return MappedRingBufferRangeIterator<T>(current_remaining != 0 ? this : NULL); }
 	MappedRingBufferRangeIterator<T> end() { return MappedRingBufferRangeIterator<T>(NULL); }
+
+	int head() const { return current_head; }
+	int remaining() const { return current_remaining; }
 
 	T &operator[](int index)
 	{
@@ -72,24 +75,24 @@ public:
 
 	int write(const T *const src, const int len)
 	{
-		if (len > remaining)
-			win::bug("MappedBufferRange: write too long. Requested write length was " + std::to_string(len) + " while the range has only " + std::to_string(remaining) + " remaining.");
+		if (len > current_remaining)
+			win::bug("MappedBufferRange: write too long. Requested write length was " + std::to_string(len) + " while the range has only " + std::to_string(current_remaining) + " remaining.");
 
-		const int available = parent.buffer_length - head;
+		const int available = parent.buffer_length - current_head;
 		const int put = std::min(available, len);
 
-		const int available2 = remaining - put;
+		const int available2 = current_remaining - put;
 		const int put2 = std::min(available2, len - put);
 
 		const int put_bytes = put * sizeof(T);
 		const int put2_bytes = put2 * sizeof(T);
 
-		memcpy(parent.buffer + head, src, put_bytes);
+		memcpy(parent.buffer + current_head, src, put_bytes);
 		memcpy(parent.buffer, src + put, put2_bytes);
 
 		const int advancement = (put + put2);
-		head = (head + advancement) % parent.buffer_length;
-		remaining -= advancement;
+		current_head = (current_head + advancement) % parent.buffer_length;
+		current_remaining -= advancement;
 
 		return advancement;
 	}
@@ -97,8 +100,8 @@ public:
 private:
 	const int original_head;
 	const int original_length;
-	int head;
-	int remaining;
+	int current_head;
+	int current_remaining;
 
 	MappedRingBuffer<T> &parent;
 };
