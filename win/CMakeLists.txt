@@ -40,6 +40,8 @@ add_library(win STATIC
 	include/win/gl/GLAtlas.hpp
 	src/gl/GLAtlas.cpp
 
+	include/win/gl/GLMappedRingBuffer.hpp
+
 	#
 	# core
 	#
