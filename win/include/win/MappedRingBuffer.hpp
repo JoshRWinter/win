@@ -8,7 +8,57 @@
 namespace win
 {
 
+template <typename T> class MappedRingBuffer;
 template <typename T> class MappedRingBufferRange;
+template <typename T> class MappedRingBufferRangeSliceIterable;
+
+struct MappedRingBufferRangeSlice
+{
+	int start;
+	int length;
+};
+
+template <typename T> class MappedRingBufferRangeSliceIterator
+{
+public:
+	MappedRingBufferRangeSliceIterator(const MappedRingBufferRangeSliceIterable<T> &parent, int position)
+		: parent(parent)
+		, position(position)
+	{}
+
+	void operator++() { ++position; }
+	void operator++(int) { ++position; }
+
+	const MappedRingBufferRangeSlice &operator*() const { return parent.slices[position]; }
+
+	bool operator==(const MappedRingBufferRangeSliceIterator<T> &rhs) const { return &parent == &rhs.parent && position == rhs.position; }
+	bool operator!=(const MappedRingBufferRangeSliceIterator<T> &rhs) const { return &parent != &rhs.parent || position != rhs.position; }
+
+private:
+	const MappedRingBufferRangeSliceIterable<T> &parent;
+	int position;
+};
+
+template <typename T> class MappedRingBufferRangeSliceIterable
+{
+	friend class MappedRingBufferRangeSliceIterator<T>;
+
+public:
+	explicit MappedRingBufferRangeSliceIterable(const MappedRingBufferRange<T> &parent)
+	{
+		slices[0].start = parent.original_head;
+		slices[0].length = std::min(parent.parent.buffer_length - parent.original_head, parent.original_length);
+		slices[1].start = 0;
+		slices[1].length = parent.original_length - slices[0].length;
+	}
+
+	MappedRingBufferRangeSliceIterator<T> begin() const { return MappedRingBufferRangeSliceIterator<T>(*this, 0); }
+	MappedRingBufferRangeSliceIterator<T> end() const { return MappedRingBufferRangeSliceIterator<T>(*this, 1 + (slices[1].length != 0)); }
+
+private:
+	MappedRingBufferRangeSlice slices[2];
+};
+
 template <typename T> class MappedRingBufferRangeIterator
 {
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
@@ -17,9 +67,6 @@ public:
 	explicit MappedRingBufferRangeIterator(MappedRingBufferRange<T> *parent)
 		: parent(parent)
 	{}
-
-	void operator=(const MappedRingBufferRangeIterator<T>&) = delete;
-	void operator=(MappedRingBufferRangeIterator<T>&&) = delete;
 
 	void operator++() { move_next(); }
 	void operator++(int) { move_next(); }
@@ -42,10 +89,11 @@ private:
 	MappedRingBufferRange<T> *parent; // this being null signifies that this iterator is the "end" iterator
 };
 
-template <typename T> class MappedRingBuffer;
 template <typename T> class MappedRingBufferRange
 {
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
+	friend class MappedRingBufferRangeIterator<T>;
+	friend class MappedRingBufferRangeSliceIterable<T>;
 
 public:
 	MappedRingBufferRange(int head, int length, MappedRingBuffer<T> &parent)
@@ -58,6 +106,8 @@ public:
 
 	MappedRingBufferRangeIterator<T> begin() { return MappedRingBufferRangeIterator<T>(current_remaining != 0 ? this : NULL); }
 	MappedRingBufferRangeIterator<T> end() { return MappedRingBufferRangeIterator<T>(NULL); }
+
+	MappedRingBufferRangeSliceIterable<T> slices() const { return MappedRingBufferRangeSliceIterable<T>(*this); }
 
 	int head() const { return current_head; }
 	int remaining() const { return current_remaining; }
