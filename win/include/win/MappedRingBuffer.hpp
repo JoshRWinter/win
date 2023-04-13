@@ -46,10 +46,10 @@ template <typename T> class MappedRingBufferRangeSliceIterable
 public:
 	explicit MappedRingBufferRangeSliceIterable(const MappedRingBufferRange<T> &parent)
 	{
-		slices[0].start = parent.original_head;
-		slices[0].length = std::min(parent.parent.buffer_length - parent.original_head, parent.original_length);
+		slices[0].start = parent.range_head;
+		slices[0].length = std::min(parent.parent.buffer_length - parent.range_head, parent.range_length);
 		slices[1].start = 0;
-		slices[1].length = parent.original_length - slices[0].length;
+		slices[1].length = parent.range_length - slices[0].length;
 	}
 
 	MappedRingBufferRangeSliceIterator<T> begin() const { return MappedRingBufferRangeSliceIterator<T>(*this, 0); }
@@ -64,29 +64,36 @@ template <typename T> class MappedRingBufferRangeIterator
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 
 public:
-	explicit MappedRingBufferRangeIterator(MappedRingBufferRange<T> *parent)
+	MappedRingBufferRangeIterator(MappedRingBufferRange<T> *parent, int position)
 		: parent(parent)
+		, position(position)
 	{}
 
-	void operator++() { move_next(); }
-	void operator++(int) { move_next(); }
+	MappedRingBufferRangeIterator<T> operator+(int i) const { return MappedRingBufferRangeIterator<T>(parent, position + i); }
+	MappedRingBufferRangeIterator<T> operator-(int i) const { return MappedRingBufferRangeIterator<T>(parent, position - i); }
 
-	T &operator*() { return parent->parent.buffer[parent->current_head]; }
+	MappedRingBufferRangeIterator<T> operator++() { ++position; return MappedRingBufferRangeIterator<T>(parent, position); }
+	MappedRingBufferRangeIterator<T> operator++(int) { ++position; return MappedRingBufferRangeIterator<T>(parent, position - 1); }
 
-	bool operator==(const MappedRingBufferRangeIterator<T> &rhs) const { return parent == rhs.parent; }
-	bool operator!=(const MappedRingBufferRangeIterator<T> &rhs) const { return parent != rhs.parent; }
+	MappedRingBufferRangeIterator<T> operator--() { --position; return MappedRingBufferRangeIterator<T>(parent, position); }
+	MappedRingBufferRangeIterator<T> operator--(int) { --position; return MappedRingBufferRangeIterator<T>(parent, position + 1); }
 
-private:
-	void move_next()
+	bool operator==(const MappedRingBufferRangeIterator<T> &rhs) const { return parent == rhs.parent && position == rhs.position; }
+	bool operator!=(const MappedRingBufferRangeIterator<T> &rhs) const { return parent != rhs.parent || position != rhs.position; }
+
+	T &operator*()
 	{
-		parent->current_head = (parent->current_head + 1) % parent->parent.buffer_length;
-		--parent->current_remaining;
+#ifndef NDEBUG
+		if (position < 0 || position >= parent->range_length)
+			win::bug("MappedRingBufferRangeIterator: Attempt to access invalid range index " + std::to_string(position) + " when range length is " + std::to_string(parent->range_length) + ".");
+#endif
 
-		// set parent to null if out of items.
-		parent = parent->current_remaining != 0 ? parent : NULL;
+		return parent->parent.buffer[(parent->range_head + position) % parent->parent.buffer_length];
 	}
 
-	MappedRingBufferRange<T> *parent; // this being null signifies that this iterator is the "end" iterator
+private:
+	int position;
+	MappedRingBufferRange<T> *parent;
 };
 
 template <typename T> class MappedRingBufferRange
@@ -97,61 +104,62 @@ template <typename T> class MappedRingBufferRange
 
 public:
 	MappedRingBufferRange(int head, int length, MappedRingBuffer<T> &parent)
-		: original_head(head)
-		, original_length(length)
-		, current_head(head)
-		, current_remaining(length)
+		: range_head(head)
+		, range_length(length)
 		, parent(parent)
 	{}
 
-	MappedRingBufferRangeIterator<T> begin() { return MappedRingBufferRangeIterator<T>(current_remaining != 0 ? this : NULL); }
-	MappedRingBufferRangeIterator<T> end() { return MappedRingBufferRangeIterator<T>(NULL); }
+	MappedRingBufferRangeIterator<T> begin() { return MappedRingBufferRangeIterator<T>(this, 0); }
+	MappedRingBufferRangeIterator<T> end() { return MappedRingBufferRangeIterator<T>(this, range_length); }
 
 	MappedRingBufferRangeSliceIterable<T> slices() const { return MappedRingBufferRangeSliceIterable<T>(*this); }
 
-	int head() const { return original_head; }
-	int length() const { return original_length; }
+	int head() const { return range_head; }
+	int length() const { return range_length; }
 
 	T &operator[](int index)
 	{
 #ifndef NDEBUG
-		if (index < 0 || index >= original_length)
-			win::bug("MappedBufferRange: index is out of bounds. Range length is " + std::to_string(original_length));
+		if (index < 0 || index >= range_length)
+			win::bug("MappedBufferRange: index is out of bounds. Range length is " + std::to_string(range_length));
 #endif
 
-		const int real_index = (original_head + index) % parent.buffer_length;
+		const int real_index = (range_head + index) % parent.buffer_length;
 		return parent.buffer[real_index];
 	}
 
 	int write(const T *const src, const int len)
 	{
-		if (len > current_remaining)
-			win::bug("MappedBufferRange: write too long. Requested write length was " + std::to_string(len) + " while the range has only " + std::to_string(current_remaining) + " remaining.");
+		return write(0, src, len);
+	}
 
-		const int available = parent.buffer_length - current_head;
+	int write(const int offset, const T *const src, const int len)
+	{
+#ifndef NDEBUG
+		if (len > range_length)
+			win::bug("MappedBufferRange: write too long. Requested write length was " + std::to_string(len) + " while the range length is only " + std::to_string(range_length) + ".");
+#endif
+
+		const int adjusted_head = (range_head + offset) % parent.buffer_length;
+
+		const int available = parent.buffer_length - adjusted_head;
 		const int put = std::min(available, len);
 
-		const int available2 = current_remaining - put;
+		const int available2 = parent.buffer_length - put;
 		const int put2 = std::min(available2, len - put);
 
 		const int put_bytes = put * sizeof(T);
 		const int put2_bytes = put2 * sizeof(T);
 
-		memcpy(parent.buffer + current_head, src, put_bytes);
+		memcpy(parent.buffer + adjusted_head, src, put_bytes);
 		memcpy(parent.buffer, src + put, put2_bytes);
 
-		const int advancement = (put + put2);
-		current_head = (current_head + advancement) % parent.buffer_length;
-		current_remaining -= advancement;
-
-		return advancement;
+		return put + put2;
 	}
 
 private:
-	const int original_head;
-	const int original_length;
-	int current_head;
-	int current_remaining;
+	const int range_head;
+	const int range_length;
 
 	MappedRingBuffer<T> &parent;
 };
@@ -175,8 +183,10 @@ public:
 
 	MappedRingBufferRange<T> reserve(int len)
 	{
+#ifndef NDEBUG
 		if (len > buffer_length)
-			win::bug("MappedBuffer: reservation too long. Requested length was " + std::to_string(len) + " while the total buffer length is only " + std::to_string(buffer_length) + ".");
+			win::bug("MappedRingBuffer: reservation too long. Requested length was " + std::to_string(len) + " while the total buffer length is only " + std::to_string(buffer_length) + ".");
+#endif
 
 		MappedRingBufferRange<T> range(buffer_head, len, *this);
 
