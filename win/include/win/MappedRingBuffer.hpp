@@ -109,8 +109,8 @@ public:
 
 	MappedRingBufferRangeSliceIterable<T> slices() const { return MappedRingBufferRangeSliceIterable<T>(*this); }
 
-	int head() const { return current_head; }
-	int remaining() const { return current_remaining; }
+	int head() const { return original_head; }
+	int length() const { return original_length; }
 
 	T &operator[](int index)
 	{
