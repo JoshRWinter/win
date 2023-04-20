@@ -9,7 +9,7 @@ namespace win
 {
 
 template <typename T> class MappedRingBuffer;
-template <typename T> class MappedRingBufferRange;
+template <typename T, bool contiguous = false> class MappedRingBufferRange;
 template <typename T> class MappedRingBufferRangeSliceIterable;
 
 struct MappedRingBufferRangeSlice
@@ -44,7 +44,7 @@ template <typename T> class MappedRingBufferRangeSliceIterable
 	friend class MappedRingBufferRangeSliceIterator<T>;
 
 public:
-	explicit MappedRingBufferRangeSliceIterable(const MappedRingBufferRange<T> &parent)
+	explicit MappedRingBufferRangeSliceIterable(const MappedRingBufferRange<T, false> &parent)
 	{
 		slices[0].start = parent.range_head;
 		slices[0].length = std::min(parent.parent.buffer_length - parent.range_head, parent.range_length);
@@ -59,26 +59,12 @@ private:
 	MappedRingBufferRangeSlice slices[2];
 };
 
-template <typename T> class MappedRingBufferRangeBase
-{
-public:
-	MappedRingBufferRangeBase(int head, int length, MappedRingBuffer<T> &parent)
-		: range_head(head)
-		, range_length(length)
-		, parent(parent)
-	{}
-
-	const int range_head;
-	const int range_length;
-	MappedRingBuffer<T> &parent;
-};
-
 template <typename T, bool contiguous = false> class MappedRingBufferRangeIterator
 {
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 
 public:
-	MappedRingBufferRangeIterator(MappedRingBufferRangeBase<T> *parent, int position)
+	MappedRingBufferRangeIterator(MappedRingBufferRange<T, contiguous> *parent, int position)
 		: parent(parent)
 		, position(position)
 	{}
@@ -110,86 +96,43 @@ public:
 
 private:
 	int position;
-	MappedRingBufferRangeBase<T> *parent;
+	MappedRingBufferRange<T, contiguous> *parent;
 };
 
-template <typename T> class MappedRingBufferContiguousRange : protected MappedRingBufferRangeBase<T>
+template <typename T, bool contiguous> class MappedRingBufferRange
 {
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
-	friend class MappedRingBufferRangeIterator<T>;
-	friend class MappedRingBufferRangeSliceIterable<T>;
-
-public:
-	MappedRingBufferContiguousRange(int head, int length, MappedRingBuffer<T> &parent)
-		: MappedRingBufferRangeBase<T>(head, length, parent)
-	{}
-
-	MappedRingBufferRangeIterator<T, true> begin() { return MappedRingBufferRangeIterator<T, true>(this, 0); }
-	MappedRingBufferRangeIterator<T, true> end() { return MappedRingBufferRangeIterator<T, true>(this, this->range_length); }
-
-	int head() const { return this->range_head; }
-	int length() const { return this->range_length; }
-
-	T &operator[](int index)
-	{
-#ifndef NDEBUG
-		if (index < 0 || index >= this->range_length)
-			win::bug("MappedBufferRange: index is out of bounds. Range length is " + std::to_string(this->range_length));
-#endif
-
-		const int real_index = this->range_head + index;
-		return this->parent.buffer[real_index];
-	}
-
-	int write(const T *const src, const int len) { return write(0, src, len); }
-
-	int write(const int offset, const T *const src, const int len)
-	{
-#ifndef NDEBUG
-		if (len + offset > this->range_length)
-			win::bug("MappedRingBufferContiguousRange: write too long. Requested write length was " + std::to_string(len) + " (from offset " + std::to_string(offset) + ") while the range length is only " + std::to_string(this->range_length) + ".");
-#endif
-
-		const int adjusted_head = this->range_head + offset;
-
-		const int available = this->parent.buffer_length - adjusted_head;
-		const int put = std::min(available, len);
-		const int put_bytes = put * sizeof(T);
-
-		memcpy(this->parent.buffer + adjusted_head, src, put_bytes);
-
-		return put;
-	}
-};
-
-template <typename T> class MappedRingBufferRange : protected MappedRingBufferRangeBase<T>
-{
-	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
-	friend class MappedRingBufferRangeIterator<T>;
+	friend class MappedRingBufferRangeIterator<T, contiguous>;
 	friend class MappedRingBufferRangeSliceIterable<T>;
 
 public:
 	MappedRingBufferRange(int head, int length, MappedRingBuffer<T> &parent)
-		: MappedRingBufferRangeBase<T>(head, length, parent)
+		: range_head(head)
+		, range_length(length)
+		, parent(parent)
 	{}
 
-	MappedRingBufferRangeIterator<T> begin() { return MappedRingBufferRangeIterator<T>(this, 0); }
-	MappedRingBufferRangeIterator<T> end() { return MappedRingBufferRangeIterator<T>(this, this->range_length); }
+	MappedRingBufferRangeIterator<T, contiguous> begin() { return MappedRingBufferRangeIterator<T, contiguous>(this, 0); }
+	MappedRingBufferRangeIterator<T, contiguous> end() { return MappedRingBufferRangeIterator<T, contiguous>(this, range_length); }
 
-	MappedRingBufferRangeSliceIterable<T> slices() const { return MappedRingBufferRangeSliceIterable<T>(*this); }
+	MappedRingBufferRangeSliceIterable<T> slices() const
+	{
+		static_assert(!contiguous, "slices() not supported (or necessary) on contiguous ranges");
+		return MappedRingBufferRangeSliceIterable<T>(*this);
+	}
 
-	int head() const { return this->range_head; }
-	int length() const { return this->range_length; }
+	int head() const { return range_head; }
+	int length() const { return range_length; }
 
 	T &operator[](int index)
 	{
 #ifndef NDEBUG
-		if (index < 0 || index >= this->range_length)
-			win::bug("MappedRingBufferRange: index is out of bounds. Range length is " + std::to_string(this->range_length));
+		if (index < 0 || index >= range_length)
+			win::bug("MappedRingBufferRange: index is out of bounds. Range length is " + std::to_string(range_length));
 #endif
 
-		const int real_index = (this->range_head + index) % this->parent.buffer_length;
-		return this->parent.buffer[real_index];
+		const int real_index = contiguous ? range_head + index : ((range_head + index) % parent.buffer_length);
+		return parent.buffer[real_index];
 	}
 
 	int write(const T *const src, const int len) { return write(0, src, len); }
@@ -197,26 +140,36 @@ public:
 	int write(const int offset, const T *const src, const int len)
 	{
 #ifndef NDEBUG
-		if (len + offset > this->range_length)
-			win::bug("MappedRingBufferRange: write too long. Requested write length was " + std::to_string(len) + " (from offset " + std::to_string(offset) + ") while the range length is only " + std::to_string(this->range_length) + ".");
+		if (len + offset > range_length)
+			win::bug("MappedRingBufferRange: write too long. Requested write length was " + std::to_string(len) + " (from offset " + std::to_string(offset) + ") while the range length is only " + std::to_string(range_length) + ".");
 #endif
 
-		const int adjusted_head = (this->range_head + offset) % this->parent.buffer_length;
+		const int adjusted_head = (range_head + offset) % parent.buffer_length;
 
-		const int available = this->parent.buffer_length - adjusted_head;
+		const int available = parent.buffer_length - adjusted_head;
 		const int put = std::min(available, len);
-
-		const int available2 = this->parent.buffer_length - put;
-		const int put2 = std::min(available2, len - put);
-
 		const int put_bytes = put * sizeof(T);
-		const int put2_bytes = put2 * sizeof(T);
 
-		memcpy(this->parent.buffer + adjusted_head, src, put_bytes);
-		memcpy(this->parent.buffer, src + put, put2_bytes);
+		memcpy(parent.buffer + adjusted_head, src, put_bytes);
 
-		return put + put2;
+		if constexpr (!contiguous)
+		{
+			const int available2 = parent.buffer_length - put;
+			const int put2 = std::min(available2, len - put);
+			const int put2_bytes = put2 * sizeof(T);
+
+			memcpy(parent.buffer, src + put, put2_bytes);
+
+			return put + put2;
+		}
+
+		return put;
 	}
+
+private:
+	const int range_head;
+	const int range_length;
+	MappedRingBuffer<T> &parent;
 };
 
 template <typename T> class MappedRingBuffer
@@ -225,8 +178,8 @@ template <typename T> class MappedRingBuffer
 
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 	friend class MappedRingBufferRange<T>;
-	friend class MappedRingBufferContiguousRange<T>;
 	friend class MappedRingBufferRangeIterator<T>;
+	friend class MappedRingBufferRangeIterator<T, true>;
 
 public:
 	MappedRingBuffer(void *mapbuf, int len_elelements)
@@ -252,7 +205,7 @@ public:
 		return range;
 	}
 
-	MappedRingBufferContiguousRange<T> reserve_contiguous(int len)
+	MappedRingBufferRange<T, true> reserve_contiguous(int len)
 	{
 #ifndef NDEBUG
 		if (len > buffer_length)
@@ -265,7 +218,7 @@ public:
 		else
 			start = buffer_head;
 
-		MappedRingBufferContiguousRange range(start, len, *this);
+		MappedRingBufferRange<T, true> range(start, len, *this);
 		buffer_head = (start + len) % buffer_length;
 
 		return range;
