@@ -135,9 +135,9 @@ public:
 		return parent.buffer[real_index];
 	}
 
-	int write(const T *const src, const int len) { return write(0, src, len); }
+	void write(const T *const src, const int len) { write(0, src, len); }
 
-	int write(const int offset, const T *const src, const int len)
+	void write(const int offset, const T *const src, const int len)
 	{
 #ifndef NDEBUG
 		if (len + offset > range_length)
@@ -159,11 +159,7 @@ public:
 			const int put2_bytes = put2 * sizeof(T);
 
 			memcpy(parent.buffer, src + put, put2_bytes);
-
-			return put + put2;
 		}
-
-		return put;
 	}
 
 private:

@@ -123,25 +123,22 @@ template <typename T> void test_mapped_buffer_range_write()
 
 		{
 			const T src[2] { 2, 66 };
-			const int wrote = range.write(src, 2);
+			range.write(src, 2);
 
-			assert(wrote == 2);
 			assert(mapped[0] == 0 && mapped[1] == 0 && mapped[2] == 0 && mapped[3] == 2 && mapped[4] == 66);
 		}
 
 		{
 			const T src[1] { 48 };
-			const int wrote = range.write(2, src, 1);
+			range.write(2, src, 1);
 
-			assert(wrote == 1);
 			assert(mapped[0] == 48 && mapped[1] == 0 && mapped[2] == 0 && mapped[3] == 2 && mapped[4] == 66);
 		}
 
 		{
 			const T src[1] { 65 };
-			const int wrote = range.write(3, src, 1);
+			range.write(3, src, 1);
 
-			assert(wrote == 1);
 			assert(mapped[0] == 48 && mapped[1] == 65 && mapped[2] == 0 && mapped[3] == 2 && mapped[4] == 66);
 		}
 	}
@@ -161,25 +158,22 @@ template <typename T> void test_mapped_buffer_range_write()
 
 		{
 			T src[0];
-			const int wrote = range.write(src, 0);
+			range.write(src, 0);
 
-			assert(wrote == 0);
 			assert(mapped[0] == 48 && mapped[1] == 65 && mapped[2] == 0 && mapped[3] == 2 && mapped[4] == 66);
 		}
 
 		{
 			const T src[4] = { 4, 96, 54, 41 };
-			const int wrote = range.write(src, 4);
+			range.write(src, 4);
 
-			assert(wrote == 4);
 			assert(mapped[0] == 41 && mapped[1] == 65 && mapped[2] == 4 && mapped[3] == 96 && mapped[4] == 54);
 		}
 
 		{
 			const T src[1] = { 101 };
-			const int wrote = range.write(4, src, 1);
+			range.write(4, src, 1);
 
-			assert(wrote == 1);
 			assert(mapped[0] == 41 && mapped[1] == 101 && mapped[2] == 4 && mapped[3] == 96 && mapped[4] == 54);
 		}
 	}
@@ -534,17 +528,15 @@ template <typename T> void test_mapped_buffer_range_contiguous_write()
 
 		{
 			const T src[] = { 39, 45 };
-			const int wrote = range.write(src, 2);
+			range.write(src, 2);
 
-			assert(wrote == 2);
 			assert(mapped[0] == 39 && mapped[1] == 45 && mapped[2] == 0 && mapped[3] == 0 && mapped[4] == 0);
 		}
 
 		{
 			const T src[] = { 99, 77 };
-			const int wrote = range.write(1, src, 2);
+			range.write(1, src, 2);
 
-			assert(wrote == 2);
 			assert(mapped[0] == 39 && mapped[1] == 99 && mapped[2] == 77 && mapped[3] == 0 && mapped[4] == 0);
 		}
 	}
@@ -558,17 +550,15 @@ template <typename T> void test_mapped_buffer_range_contiguous_write()
 
 		{
 			const T src[] = { 69, 5 };
-			const int wrote = range.write(src, 2);
+			range.write(src, 2);
 
-			assert(wrote == 2);
 			assert(mapped[0] == 69 && mapped[1] == 5 && mapped[2] == 77 && mapped[3] == 0 && mapped[4] == 0);
 		}
 
 		{
 			const T src[] = { 40 };
-			const int wrote = range.write(2, src, 1);
+			range.write(2, src, 1);
 
-			assert(wrote == 1);
 			assert(mapped[0] == 69 && mapped[1] == 5 && mapped[2] == 40 && mapped[3] == 0 && mapped[4] == 0);
 		}
 	}
@@ -582,9 +572,8 @@ template <typename T> void test_mapped_buffer_range_contiguous_write()
 
 		{
 			const T src[] = { 3 };
-			const int wrote = range.write(src, 1);
+			range.write(src, 1);
 
-			assert(wrote == 1);
 			assert(mapped[0] == 69 && mapped[1] == 5 && mapped[2] == 40 && mapped[3] == 3 && mapped[4] == 0);
 		}
 	}
@@ -598,9 +587,8 @@ template <typename T> void test_mapped_buffer_range_contiguous_write()
 
 		{
 			const T src[] = { 55, 39  };
-			const int wrote = range.write(src, 2);
+			range.write(src, 2);
 
-			assert(wrote == 2);
 			assert(mapped[0] == 55 && mapped[1] == 39 && mapped[2] == 40 && mapped[3] == 3 && mapped[4] == 0);
 		}
 	}
