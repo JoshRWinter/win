@@ -72,6 +72,10 @@ void load_gl_extensions()
 	glDebugMessageCallback = (decltype(glDebugMessageCallback))get_proc("glDebugMessageCallback");
 	glDebugMessageControl = (decltype(glDebugMessageControl))get_proc("glDebugMessageControl");
 
+	glFenceSync = (decltype(glFenceSync))get_proc("glFenceSync");
+	glDeleteSync = (decltype(glDeleteSync))get_proc("glDeleteSync");
+	glClientWaitSync = (decltype(glClientWaitSync))get_proc("glClientWaitSync");
+
 	glCreateShader = (decltype(glCreateShader)) get_proc("glCreateShader");
 	glShaderSource = (decltype(glShaderSource)) get_proc("glShaderSource");
 	glCompileShader = (decltype(glCompileShader)) get_proc("glCompileShader");
