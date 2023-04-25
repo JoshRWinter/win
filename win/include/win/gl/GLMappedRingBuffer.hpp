@@ -60,9 +60,7 @@ public:
 		: MappedRingBufferRange<T, contiguous>(head, length, parent)
 		, parent(parent)
 		, locked(false)
-	{
-
-	}
+	{}
 
 	~GLMappedRingBufferRange()
 	{
@@ -90,7 +88,7 @@ public:
 		: inner(mem, length_elements)
 	{}
 
-	MappedRingBufferRange<T> reserve(int len)
+	GLMappedRingBufferRange<T> reserve(int len)
 	{
 		GLMappedRingBufferReservation reservation(inner.length(), inner.head(), len);
 		wait_for_locked_range(reservation);
@@ -98,7 +96,7 @@ public:
 		return inner.reserve(len);
 	}
 
-	MappedRingBufferRange<T, true> reserve_contiguous(int len)
+	GLMappedRingBufferRange<T, true> reserve_contiguous(int len)
 	{
 		GLMappedRingBufferReservation reservation(inner.length(), inner.head(), len);
 		wait_for_locked_range(reservation);
