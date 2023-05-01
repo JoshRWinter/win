@@ -30,6 +30,8 @@ add_library(win STATIC
 	include/win/Targa.hpp
 	src/Targa.cpp
 
+	include/win/Math.hpp
+
 	#
 	# gl utility
 	#
