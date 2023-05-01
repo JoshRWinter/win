@@ -174,6 +174,7 @@ template <typename T> class MappedRingBuffer
 
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 	friend class MappedRingBufferRange<T>;
+	friend class MappedRingBufferRange<T, true>;
 	friend class MappedRingBufferRangeIterator<T>;
 	friend class MappedRingBufferRangeIterator<T, true>;
 

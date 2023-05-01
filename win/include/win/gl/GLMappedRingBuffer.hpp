@@ -28,7 +28,7 @@ struct GLMappedRingBufferReservation
 			(start < rhs.start + buffer_length + rhs.length && start + length > rhs.start + buffer_length);
 	}
 
-	const int buffer_length;
+	int buffer_length;
 	int start;
 	int length;
 };
@@ -43,9 +43,29 @@ struct GLMappedRingBufferLockedRange
 			win::bug("glFenceSync() return NULL");
 	}
 
+	GLMappedRingBufferLockedRange(const GLMappedRingBufferLockedRange&) = delete;
+
+	GLMappedRingBufferLockedRange(GLMappedRingBufferLockedRange&& rhs) noexcept
+		: reservation(rhs.reservation.buffer_length, rhs.reservation.start, rhs.reservation.length)
+		, sync(rhs.sync)
+	{
+		rhs.sync = NULL;
+	}
+
 	~GLMappedRingBufferLockedRange()
 	{
-		glDeleteSync(sync);
+		if (sync != NULL)
+			glDeleteSync(sync);
+	}
+
+	void operator=(const GLMappedRingBufferLockedRange&) = delete;
+
+	GLMappedRingBufferLockedRange &operator=(GLMappedRingBufferLockedRange&& rhs) noexcept
+	{
+		reservation = rhs.reservation;
+		sync = rhs.sync;
+		rhs.sync = NULL;
+		return *this;
 	}
 
 	GLMappedRingBufferReservation reservation;
@@ -56,8 +76,8 @@ template <typename T> class GLMappedRingBuffer;
 template <typename T, bool contiguous = false> class GLMappedRingBufferRange : public MappedRingBufferRange<T, contiguous>
 {
 public:
-	GLMappedRingBufferRange(int head, int length, GLMappedRingBuffer<T> &parent)
-		: MappedRingBufferRange<T, contiguous>(head, length, parent)
+	GLMappedRingBufferRange(const MappedRingBufferRange<T, contiguous> &inner, GLMappedRingBuffer<T> &parent)
+		: MappedRingBufferRange<T, contiguous>(inner)
 		, parent(parent)
 		, locked(false)
 	{}
@@ -90,32 +110,31 @@ public:
 
 	GLMappedRingBufferRange<T> reserve(int len)
 	{
-		GLMappedRingBufferReservation reservation(inner.length(), inner.head(), len);
-		wait_for_locked_range(reservation);
+		wait_for_locked_range(inner.head(), len);
 
-		return inner.reserve(len);
+		return GLMappedRingBufferRange<T>(inner.reserve(len), *this);
 	}
 
 	GLMappedRingBufferRange<T, true> reserve_contiguous(int len)
 	{
-		GLMappedRingBufferReservation reservation(inner.length(), inner.head(), len);
-		wait_for_locked_range(reservation);
+		wait_for_locked_range(inner.head(), len);
 
-		return inner.reserve_contiguous(len);
+		return GLMappedRingBufferRange<T, true>(inner.reserve_contiguous(len), *this);
 	}
 
 	void lock(GLMappedRingBufferRange<T> &range) { lock(range.head(), range.length()); }
 	void lock(GLMappedRingBufferRange<T, true> &range) { lock(range.head(), range.length()); }
 
 private:
-
 	void lock(int start, int len)
 	{
 		locks.emplace_back(inner.length(), start, len);
 	}
 
-	void wait_for_locked_range(const GLMappedRingBufferReservation &reservation)
+	void wait_for_locked_range(const int start, const int length)
 	{
+		GLMappedRingBufferReservation reservation(inner.length(), start, length);
+
 		for (auto it = locks.begin(); it != locks.end();)
 		{
 			if (reservation.conflicts(it->reservation))
@@ -146,7 +165,7 @@ private:
 				case GL_TIMEOUT_EXPIRED:
 					if (++loops > 10)
 					{
-						fprintf(stderr, "glClientWaitSync() has looped %u times!\n", result);
+						fprintf(stderr, "glClientWaitSync() has looped %u times!\n", loops);
 					}
 					break;
 				default:
