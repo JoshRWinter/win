@@ -67,7 +67,7 @@ void gl_check_error()
 		win::bug("GL error " + std::string(errname) + " (" + std::to_string(err) + ")");
 }
 
-void load_gl_extensions()
+void load_gl_functions()
 {
 	glDebugMessageCallback = (decltype(glDebugMessageCallback))get_proc("glDebugMessageCallback");
 	glDebugMessageControl = (decltype(glDebugMessageControl))get_proc("glDebugMessageControl");
@@ -123,13 +123,6 @@ void load_gl_extensions()
 	glDrawElementsInstanced = (decltype(glDrawElementsInstanced)) get_proc("glDrawElementsInstanced");
 	glDrawElementsBaseVertex = (decltype(glDrawElementsBaseVertex)) get_proc("glDrawElementsBaseVertex");
 	glMultiDrawElementsIndirect = (decltype(glMultiDrawElementsIndirect)) get_proc("glMultiDrawElementsIndirect");
-
-#if defined WINPLAT_LINUX
-	glXSwapIntervalEXT = (decltype(glXSwapIntervalEXT)) get_proc("glXSwapIntervalEXT");
-#elif defined WINPLAT_WINDOWS
-	wglSwapIntervalEXT = (decltype(wglSwapIntervalEXT))get_proc("wglSwapIntervalEXT");
-	glTexImage3D = (decltype(glTexImage3D))get_proc("glTexImage3D");
-#endif
 }
 
 GLuint load_gl_shaders(const std::string &vertex, const std::string &fragment)

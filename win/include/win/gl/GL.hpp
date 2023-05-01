@@ -88,13 +88,6 @@ struct DrawElementsIndirectCommand
 	unsigned base_instance;
 };
 
-#if defined WINPLAT_LINUX
-inline PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
-#elif defined WINPLAT_WINDOWS
-inline PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
-inline PFNGLTEXIMAGE3DPROC glTexImage3D;
-#endif
-
 }
 
 namespace win
@@ -103,7 +96,7 @@ namespace win
 void gl_check_error();
 GLuint load_gl_shaders(const std::string&, const std::string&);
 GLuint load_gl_shaders(Stream, Stream);
-void load_gl_extensions();
+void load_gl_functions();
 
 }
 

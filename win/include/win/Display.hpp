@@ -57,7 +57,7 @@ class Display
 	typedef std::function<void(int x, int y)> MouseHandler;
 
 public:
-	Display(const DisplayOptions&);
+	explicit Display(const DisplayOptions&);
 	~Display();
 
 	WIN_NO_COPY_MOVE(Display);
@@ -87,6 +87,7 @@ private:
 #if defined WINPLAT_LINUX
 	Window window;
 	GLXContext context;
+	PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
 #elif defined WINPLAT_WINDOWS
 	HWND window;
 	HDC hdc;

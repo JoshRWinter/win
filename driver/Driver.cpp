@@ -52,6 +52,8 @@ int main()
 	win::Display display(display_options);
 	display.cursor(true);
 
+	win::load_gl_functions();
+
 #if defined WINPLAT_LINUX
 	win::AssetRoll roll("roll");
 #elif defined WINPLAT_WINDOWS
