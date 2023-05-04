@@ -8,14 +8,28 @@
 namespace win
 {
 
-struct Color
+template <typename T> struct Color
 {
-	constexpr Color()
-		: red(0.5f), green(0.5f), blue(0.5f), alpha(1.0f) {}
-	constexpr Color(float r, float g, float b, float a = 1.0f)
+	static_assert(std::is_integral<T>::value || std::is_floating_point<T>::value, "Color - must be an integer or real type");
+
+	Color()
+	{
+		const T v = (T)(std::is_integral<T>::value ? 255 : 1.0);
+
+		red = v;
+		green = v;
+		blue = v;
+		alpha = v;
+	}
+
+	Color(float r, float g, float b)
+		: red(r), green(g), blue(b)
+	{
+		alpha = (T)(std::is_integral<T>::value ? 255 : 1.0);
+	}
+
+	Color(float r, float g, float b, float a)
 		: red(r), green(g), blue(b), alpha(a) {}
-	constexpr Color(int r, int g, int b, int a = 255.0f)
-		: red(r / 255.0f), green(g / 255.0f), blue(b / 255.0f), alpha(a / 255.0f) {}
 
 	float red, green, blue, alpha;
 };
