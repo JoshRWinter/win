@@ -51,7 +51,6 @@ add_library(win STATIC
 	include/win/Event.hpp
 
 	include/win/Stream.hpp
-	src/Stream.cpp
 
 	include/win/AssetRoll.hpp
 	src/AssetRoll.cpp
