@@ -8,16 +8,33 @@
 namespace win
 {
 
-struct Color
+template <typename T> struct Color
 {
-	constexpr Color()
-		: red(0.5f), green(0.5f), blue(0.5f), alpha(1.0f) {}
-	constexpr Color(float r, float g, float b, float a = 1.0f)
-		: red(r), green(g), blue(b), alpha(a) {}
-	constexpr Color(int r, int g, int b, int a = 255.0f)
-		: red(r / 255.0f), green(g / 255.0f), blue(b / 255.0f), alpha(a / 255.0f) {}
+	static_assert(std::is_integral<T>::value || std::is_floating_point<T>::value, "Color - must be an integer or real type");
 
-	float red, green, blue, alpha;
+	Color()
+	{
+		const T v = (T)(std::is_integral<T>::value ? 255 : 1.0);
+
+		red = v;
+		green = v;
+		blue = v;
+		alpha = v;
+	}
+
+	Color(T r, T g, T b)
+		: red(r), green(g), blue(b)
+	{
+		alpha = (T)(std::is_integral<T>::value ? 255 : 1.0);
+	}
+
+	Color(T r, T g, T b, T a)
+		: red(r), green(g), blue(b), alpha(a) {}
+
+	bool operator==(const Color<T> &rhs) const { return red == rhs.red && green == rhs.green && blue == rhs.blue; }
+	bool operator!=(const Color<T> &rhs) const { return red != rhs.red || green != rhs.green || blue != rhs.blue; }
+
+	T red, green, blue, alpha;
 };
 
 template <typename T> struct Area

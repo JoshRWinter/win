@@ -1,44 +1,69 @@
 #pragma once
 
 #include <array>
+#include <memory>
+#include <vector>
 
 #include <win/Win.hpp>
+#include <win/Utility.hpp>
 #include <win/Stream.hpp>
 
 namespace win
 {
 
-class FontRenderer;
-
-struct metric
+struct FontKern
 {
+	FontKern(char right_char, float kern) : right_char(right_char), kern(kern) {}
+
+	char right_char;
+	float kern;
+};
+
+struct FontCharacterMetric
+{
+	float width;
+	float height;
+	int width_pixels;
+	int height_pixels;
 	float advance;
 	float bearing_y;
-	float bitmap_left;
+	float bearing_x;
+	std::vector<FontKern> kerns;
+};
+
+struct FontMetric
+{
+	int max_width_pixels;
+	int max_height_pixels;
+	float max_width;
+	float max_height;
+	float vertical_advance;
 };
 
 class Font
 {
-	friend class FontRenderer;
+	WIN_NO_COPY(Font);
+
 public:
-	static constexpr int rows = 6;
-	static constexpr int cols = 16;
+	static constexpr int char_count = ('~' - ' ') + 1;
+	static constexpr char char_low = ' ';
+	static constexpr char char_high = '~';
 
-	Font(const FontRenderer &parent, Stream, float);
-	~Font();
+	Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, float point_size, Stream font_file);
+	Font(Font &&rhs) = default;
 
-	WIN_NO_COPY_MOVE(Font);
+	Font &operator=(Font &&rhs) = default;
 
-	float size() const;
+	const FontCharacterMetric &character_metric(char c) const;
+	const FontMetric &font_metric() const;
+
+protected:
+	FontMetric metric;
+	std::array<FontCharacterMetric, char_count> character_metrics;
+	std::unique_ptr<unsigned char[]> bitmaps[char_count];
 
 private:
-	unsigned atlas;
-	std::array<metric, 95> metrics;
-	float box_width; // width of each tile in the atlas
-	float box_height; // height of each tile in the atlas
-	float max_bearing_y; // greatest y bearing
-	float vertical; // vertical advance
-	float fontsize;
+	static void bitmap_copy(unsigned char *source, int source_width, int source_height, unsigned char *dest, int dest_width, int dest_height);
 };
 
 }

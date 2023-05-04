@@ -1,10 +1,12 @@
 # comment
 # more comment
 
-../../fishtank/assets_local/Motions.ogg # end comment
-../../fishtank/assets/arial.ttf
-../../fishtank/assets_local/platform_destroy.ogg
-../../fishtank/assets_local/beacon_1.tga z
+assets/Motions.ogg # end comment
+assets/arial.ttf
+assets/CHE-THIS.TTF
+assets/NotoSansMono-Regular.ttf
+assets/platform_destroy.ogg
+assets/beacon_1.tga z
 
 vertex.vert z
 fragment.frag z
