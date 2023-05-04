@@ -7,6 +7,7 @@
 #include <win/Stream.hpp>
 
 #if defined WINPLAT_LINUX
+#include <GL/gl.h>
 #include <GL/glx.h>
 #include <GL/glext.h>
 #elif defined WINPLAT_WINDOWS
@@ -93,6 +94,166 @@ struct DrawElementsIndirectCommand
 
 namespace win
 {
+
+class GLVertexArray
+{
+	WIN_NO_COPY(GLVertexArray);
+
+public:
+	GLVertexArray() { gl::glGenVertexArrays(1, &vao); }
+
+	GLVertexArray(GLVertexArray &&rhs) noexcept
+	{
+		vao = rhs.vao;
+		rhs.vao = -1;
+	}
+
+	~GLVertexArray()
+	{
+		if (vao != -1)
+			gl::glDeleteVertexArrays(1, &vao);
+	}
+
+	GLVertexArray &operator=(GLVertexArray &&rhs) noexcept
+	{
+		if (this == &rhs)
+			return *this;
+
+		if (vao != -1)
+			gl::glDeleteVertexArrays(1, &vao);
+
+		vao = rhs.vao;
+		rhs.vao = -1;
+
+		return *this;
+	}
+
+	GLuint get() const { return vao; }
+
+private:
+	GLuint vao;
+};
+
+class GLBuffer
+{
+	WIN_NO_COPY(GLBuffer);
+
+public:
+	GLBuffer() { gl::glGenBuffers(1, &buffer); }
+
+	GLBuffer(GLBuffer &&rhs) noexcept
+	{
+		buffer = rhs.buffer;
+		rhs.buffer = -1;
+	}
+
+	~GLBuffer()
+	{
+		if (buffer != -1)
+			gl::glDeleteBuffers(1, &buffer);
+	}
+
+	GLBuffer &operator=(GLBuffer &&rhs) noexcept
+	{
+		if (this == &rhs)
+			return *this;
+
+		if (buffer != -1)
+			gl::glDeleteBuffers(1, &buffer);
+
+		buffer = rhs.buffer;
+		rhs.buffer = -1;
+
+		return *this;
+	}
+
+	GLuint get() const { return buffer; }
+
+private:
+	GLuint buffer;
+};
+
+class GLTexture
+{
+	WIN_NO_COPY(GLTexture);
+
+public:
+	GLTexture() { glGenTextures(1, &texture); }
+
+	GLTexture(GLTexture &&rhs) noexcept
+	{
+		texture = rhs.texture;
+		rhs.texture = -1;
+	}
+
+	~GLTexture()
+	{
+		if (texture != -1)
+			glDeleteTextures(1, &texture);
+	}
+
+	GLTexture &operator=(GLTexture &&rhs) noexcept
+	{
+		if (this == &rhs)
+			return *this;
+
+		if (texture != -1)
+			glDeleteTextures(1, &texture);
+
+		texture = rhs.texture;
+		rhs.texture = -1;
+
+		return *this;
+	}
+
+	GLuint get() const { return texture; }
+
+private:
+	GLuint texture;
+};
+
+class GLProgram
+{
+	WIN_NO_COPY(GLProgram);
+
+public:
+	explicit GLProgram(GLuint program)
+		: program(program)
+	{}
+
+	GLProgram() : program(-1) {}
+
+	GLProgram(GLProgram &&rhs) noexcept
+	{
+		program = rhs.program;
+		rhs.program = -1;
+	}
+
+	~GLProgram()
+	{
+		if (program != -1)
+			gl::glDeleteProgram(program);
+	}
+
+	GLProgram &operator=(GLProgram &&rhs) noexcept
+	{
+		if (this == &rhs)
+			return *this;
+
+		if (program != -1)
+			gl::glDeleteProgram(program);
+
+		program = rhs.program;
+		rhs.program = -1;
+
+		return *this;
+	}
+
+	GLuint get() const { return program; }
+
+private:
+	GLuint program;
+};
 
 void gl_check_error();
 GLuint load_gl_shaders(const std::string&, const std::string&);
