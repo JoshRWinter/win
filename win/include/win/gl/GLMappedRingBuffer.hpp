@@ -62,6 +62,9 @@ struct GLMappedRingBufferLockedRange
 
 	GLMappedRingBufferLockedRange &operator=(GLMappedRingBufferLockedRange&& rhs) noexcept
 	{
+		if (sync != NULL)
+			glDeleteSync(sync);
+
 		reservation = rhs.reservation;
 		sync = rhs.sync;
 		rhs.sync = NULL;
@@ -101,12 +104,21 @@ private:
 
 template <typename T> class GLMappedRingBuffer
 {
-	WIN_NO_COPY_MOVE(GLMappedRingBuffer);
+	WIN_NO_COPY(GLMappedRingBuffer);
 
 public:
+	GLMappedRingBuffer()
+		: inner(NULL, -1)
+	{}
+
 	GLMappedRingBuffer(void *mem, int length_elements)
 		: inner(mem, length_elements)
 	{}
+
+	GLMappedRingBuffer(GLMappedRingBuffer<T> &&rhs) noexcept = default;
+
+	int head() const { return inner.head(); }
+	int length() const { return inner.length(); }
 
 	GLMappedRingBufferRange<T> reserve(int len)
 	{
@@ -121,6 +133,8 @@ public:
 
 		return GLMappedRingBufferRange<T, true>(inner.reserve_contiguous(len), *this);
 	}
+
+	GLMappedRingBuffer<T> &operator=(GLMappedRingBuffer<T> &&rhs) noexcept = default;
 
 	void lock(GLMappedRingBufferRange<T> &range) { lock(range.head(), range.length()); }
 	void lock(GLMappedRingBufferRange<T, true> &range) { lock(range.head(), range.length()); }

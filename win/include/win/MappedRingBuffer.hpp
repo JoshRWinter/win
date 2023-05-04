@@ -170,7 +170,7 @@ private:
 
 template <typename T> class MappedRingBuffer
 {
-	WIN_NO_COPY_MOVE(MappedRingBuffer);
+	WIN_NO_COPY(MappedRingBuffer);
 
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 	friend class MappedRingBufferRange<T>;
@@ -181,12 +181,16 @@ template <typename T> class MappedRingBuffer
 public:
 	MappedRingBuffer(void *mapbuf, int len_elelements)
 		: buffer_head(0)
-		, buffer(reinterpret_cast<T *>(mapbuf))
+		, buffer(reinterpret_cast<T*>(mapbuf))
 		, buffer_length(len_elelements)
 	{}
 
+	MappedRingBuffer(MappedRingBuffer &&rhs) noexcept = default;
+
 	int head() const { return buffer_head; }
 	int length() const { return buffer_length; }
+
+	MappedRingBuffer &operator=(MappedRingBuffer &&rhs) noexcept = default;
 
 	MappedRingBufferRange<T> reserve(int len)
 	{
@@ -223,8 +227,8 @@ public:
 
 private:
 	int buffer_head;
-	T *const buffer;
-	const int buffer_length;
+	T *buffer;
+	int buffer_length;
 };
 
 }
