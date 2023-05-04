@@ -27,6 +27,10 @@
 	void operator=(const classname&) = delete; \
 	void operator=(classname&&) = delete
 
+#define WIN_NO_COPY(classname) \
+	classname(const classname&) = delete; \
+	void operator=(const classname&) = delete
+
 namespace win
 {
 
