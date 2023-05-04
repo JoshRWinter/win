@@ -12,7 +12,7 @@ public:
 	StreamImpl() = default;
 	StreamImpl(const StreamImpl&) = delete;
 	StreamImpl(StreamImpl&&) = delete;
-	virtual ~StreamImpl() = 0;
+	virtual ~StreamImpl() = default;
 
 	void operator=(const StreamImpl&) = delete;
 	void operator=(StreamImpl&&) = delete;
@@ -29,10 +29,9 @@ class Stream
 {
 	friend class AssetRoll;
 public:
-	Stream(StreamImpl *inner) : inner(inner) {}
+	explicit Stream(StreamImpl *inner) : inner(inner) {}
 	Stream(const Stream&) = delete;
 	Stream(Stream&&) = default;
-	~Stream() {}
 
 	Stream &operator=(const Stream&) = delete;
 
