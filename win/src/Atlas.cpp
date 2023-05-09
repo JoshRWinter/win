@@ -1,4 +1,5 @@
-#include <string.h>
+#include <cstdint>
+#include <cstring>
 
 #include <win/Win.hpp>
 #include <win/Atlas.hpp>
