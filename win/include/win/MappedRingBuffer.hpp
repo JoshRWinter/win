@@ -47,7 +47,7 @@ public:
 	explicit MappedRingBufferRangeSliceIterable(const MappedRingBufferRange<T, false> &parent)
 	{
 		slices[0].start = parent.range_head;
-		slices[0].length = std::min(parent.parent.buffer_length - parent.range_head, parent.range_length);
+		slices[0].length = std::min(parent.buffer_length - parent.range_head, parent.range_length);
 		slices[1].start = 0;
 		slices[1].length = parent.range_length - slices[0].length;
 	}
@@ -89,9 +89,9 @@ public:
 #endif
 
 		if constexpr (contiguous)
-			return parent->parent.buffer[(parent->range_head + position)];
+			return parent->buffer[(parent->range_head + position)];
 		else
-			return parent->parent.buffer[(parent->range_head + position) % parent->parent.buffer_length];
+			return parent->buffer[(parent->range_head + position) % parent->buffer_length];
 	}
 
 private:
@@ -101,16 +101,20 @@ private:
 
 template <typename T, bool contiguous> class MappedRingBufferRange
 {
+	WIN_NO_COPY(MappedRingBufferRange);
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 	friend class MappedRingBufferRangeIterator<T, contiguous>;
 	friend class MappedRingBufferRangeSliceIterable<T>;
 
 public:
-	MappedRingBufferRange(int head, int length, MappedRingBuffer<T> &parent)
-		: range_head(head)
+	MappedRingBufferRange(T *buffer, int buffer_length, int head, int length)
+		: buffer(buffer)
+		, buffer_length(buffer_length)
+		, range_head(head)
 		, range_length(length)
-		, parent(parent)
 	{}
+
+	MappedRingBufferRange(MappedRingBufferRange<T, contiguous> &&rhs) noexcept = default;
 
 	MappedRingBufferRangeIterator<T, contiguous> begin() { return MappedRingBufferRangeIterator<T, contiguous>(this, 0); }
 	MappedRingBufferRangeIterator<T, contiguous> end() { return MappedRingBufferRangeIterator<T, contiguous>(this, range_length); }
@@ -124,6 +128,8 @@ public:
 	int head() const { return range_head; }
 	int length() const { return range_length; }
 
+	MappedRingBufferRange<T, contiguous> &operator=(MappedRingBufferRange<T, contiguous> &&rhs) noexcept = default;
+
 	T &operator[](int index)
 	{
 #ifndef NDEBUG
@@ -131,8 +137,8 @@ public:
 			win::bug("MappedRingBufferRange: index is out of bounds. Range length is " + std::to_string(range_length));
 #endif
 
-		const int real_index = contiguous ? range_head + index : ((range_head + index) % parent.buffer_length);
-		return parent.buffer[real_index];
+		const int real_index = contiguous ? range_head + index : ((range_head + index) % buffer_length);
+		return buffer[real_index];
 	}
 
 	void write(const T *const src, const int len) { write(0, src, len); }
@@ -144,28 +150,30 @@ public:
 			win::bug("MappedRingBufferRange: write too long. Requested write length was " + std::to_string(len) + " (from offset " + std::to_string(offset) + ") while the range length is only " + std::to_string(range_length) + ".");
 #endif
 
-		const int adjusted_head = (range_head + offset) % parent.buffer_length;
+		const int adjusted_head = (range_head + offset) % buffer_length;
 
-		const int available = parent.buffer_length - adjusted_head;
+		const int available = buffer_length - adjusted_head;
 		const int put = std::min(available, len);
 		const int put_bytes = put * sizeof(T);
 
-		memcpy(parent.buffer + adjusted_head, src, put_bytes);
+		memcpy(buffer + adjusted_head, src, put_bytes);
 
 		if constexpr (!contiguous)
 		{
-			const int available2 = parent.buffer_length - put;
+			const int available2 = buffer_length - put;
 			const int put2 = std::min(available2, len - put);
 			const int put2_bytes = put2 * sizeof(T);
 
-			memcpy(parent.buffer, src + put, put2_bytes);
+			memcpy(buffer, src + put, put2_bytes);
 		}
 	}
 
 private:
-	const int range_head;
-	const int range_length;
-	MappedRingBuffer<T> &parent;
+	T *buffer;
+	int buffer_length;
+
+	int range_head;
+	int range_length;
 };
 
 template <typename T> class MappedRingBuffer
@@ -199,7 +207,7 @@ public:
 			win::bug("MappedRingBuffer: reservation too long. Requested length was " + std::to_string(len) + " while the total buffer length is only " + std::to_string(buffer_length) + ".");
 #endif
 
-		MappedRingBufferRange<T> range(buffer_head, len, *this);
+		MappedRingBufferRange<T> range(buffer, buffer_length, buffer_head, len);
 
 		buffer_head = (buffer_head + len) % buffer_length;
 
@@ -219,7 +227,7 @@ public:
 		else
 			start = buffer_head;
 
-		MappedRingBufferRange<T, true> range(start, len, *this);
+		MappedRingBufferRange<T, true> range(buffer, buffer_length, start, len);
 		buffer_head = (start + len) % buffer_length;
 
 		return range;
