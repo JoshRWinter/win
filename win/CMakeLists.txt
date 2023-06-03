@@ -42,6 +42,12 @@ add_library(win STATIC
 	include/win/gl/GLAtlas.hpp
 	src/gl/GLAtlas.cpp
 
+	include/win/gl/GLFont.hpp
+	src/gl/GLFont.cpp
+
+	include/win/gl/GLTextRenderer.hpp
+	src/gl/GLTextRenderer.cpp
+
 	include/win/gl/GLMappedRingBuffer.hpp
 
 	#
@@ -68,8 +74,8 @@ add_library(win STATIC
 	include/win/Font.hpp
 	src/Font.cpp
 
-	include/win/FontRenderer.hpp
-	src/FontRenderer.cpp
+	include/win/TextRenderer.hpp
+	src/TextRenderer.cpp
 
 	#
 	# sound core

@@ -1,29 +1,18 @@
 #include <string>
-#include <iostream>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include <win/Win.hpp>
 #include <win/Font.hpp>
-#include <win/FontRenderer.hpp>
-
-#ifdef WIN_USE_OPENGL
-#include <GL/gl.h>
-#include <GL/glext.h>
-#endif
 
 namespace win
 {
 
-Font::Font(const FontRenderer &parent, Stream file, float size)
+Font::Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, const float font_size, Stream font_file)
 {
-	fontsize = size;
+	auto data = font_file.read_all();
 
-	std::vector<unsigned char> chunk(file.size());
-	file.read(chunk.data(), file.size());
-
-	const int pixelsize = (fontsize / (parent.area.right - parent.area.left)) * parent.dims.width;
+	const int pixelsize = ((font_size / (screen_area.right - screen_area.left)) * screen_pixel_dimensions.width);
 
 	int error;
 	FT_Library library;
@@ -32,115 +21,98 @@ Font::Font(const FontRenderer &parent, Stream file, float size)
 		win::bug("Error initializing freetype");
 
 	FT_Face face;
-	error=FT_New_Memory_Face(library,chunk.data(),chunk.size(),0,&face);
+	error = FT_New_Memory_Face(library, data.get(), font_file.size(), 0, &face);
 	if(error)
-		win::bug("Error creating face");
+		win::bug("Font: Error creating face");
 
-	error=FT_Set_Pixel_Sizes(face,0,pixelsize);
+	error = FT_Set_Pixel_Sizes(face, 0, pixelsize);
 	if(error)
 		win::bug("Error setting pixel size");
 
-	vertical = (((float)(face->size->metrics.height >> 6)) / parent.dims.width) * (parent.area.right - parent.area.left);
+	//metric.font_size = 0;
+	metric.vertical_advance = (((float)(face->size->metrics.height >> 6)) / screen_pixel_dimensions.width) * (screen_area.right - screen_area.left);
 
 	// get largest width and height
-	int bitmap_width = 0;
-	int bitmap_height = 0;
-	max_bearing_y = 0.0f;
-	for(char x = ' '; x <= '~'; ++x)
+	metric.max_width_pixels = 0;
+	metric.max_height_pixels = 0;
+	for(char x = char_low; x <= char_high; ++x) // loop over the printing ascii characters
 	{
 		error = FT_Load_Char(face, x, FT_LOAD_BITMAP_METRICS_ONLY);
 		if(error)
 			win::bug("Could not render glyph " + std::to_string(x));
 
-		// fill in the metrics
-		const int metric_index = x - ' ';
-		metrics.at(metric_index).advance = ((float)(face->glyph->metrics.horiAdvance >> 6) / parent.dims.width) * (parent.area.right - parent.area.left);
-		metrics[metric_index].bearing_y = (((float)((face->bbox.yMax / 2048.0f) * face->size->metrics.y_ppem) - (face->glyph->metrics.horiBearingY >> 6)) / parent.dims.height) * (parent.area.bottom - parent.area.top);
-		metrics[metric_index].bitmap_left = ((float)face->glyph->bitmap_left / parent.dims.width) * (parent.area.right - parent.area.left);
-
-		if(metrics[metric_index].bearing_y < max_bearing_y)
-			max_bearing_y = metrics[metric_index].bearing_y;
-
-		if((int)face->glyph->bitmap.width > bitmap_width)
-			bitmap_width = (int)face->glyph->bitmap.width;
-		if((int)face->glyph->bitmap.rows > bitmap_height)
-			bitmap_height = (int)face->glyph->bitmap.rows;
+		if((int)face->glyph->bitmap.width > metric.max_width_pixels)
+			metric.max_width_pixels = (int)face->glyph->bitmap.width;
+		if((int)face->glyph->bitmap.rows > metric.max_height_pixels)
+			metric.max_height_pixels = (int)face->glyph->bitmap.rows;
 	}
 
-	box_width = ((float)bitmap_width / parent.dims.width) * (parent.area.right - parent.area.left);
-	box_height = ((float)bitmap_height / parent.dims.height) * (parent.area.bottom - parent.area.top);
-
-	std::vector<unsigned char> bitmap(bitmap_width * bitmap_height * rows * cols * 4);
-	memset(bitmap.data(), 0, bitmap.size());
-	for(unsigned char character = ' '; character <= '~'; character++)
+	for (char character = char_low; character <= char_high; character++)
 	{
-		error = FT_Load_Char(face,character,FT_LOAD_RENDER);
+		bitmaps[character - char_low].reset(new unsigned char[metric.max_width_pixels * metric.max_height_pixels]);
+		unsigned char *const bitmap = bitmaps[character - char_low].get();
+		memset(bitmap, 0, metric.max_width_pixels * metric.max_height_pixels);
+
+		error = FT_Load_Char(face, character, FT_LOAD_RENDER);
 		if(error)
 			win::bug(std::string("Error rendering char ") + std::to_string((int)character) + " (" + std::to_string(character) + ")");
 
-		const unsigned char *buffer = face->glyph->bitmap.buffer;
+		const int width_pixels = face->glyph->bitmap.width;//(face->glyph->metrics.width / (float)face->units_per_EM) * face->size->metrics.x_ppem;
+		const int height_pixels = face->glyph->bitmap.rows;//(face->glyph->metrics.height / (float)face->units_per_EM) * face->size->metrics.y_ppem;
 
-		const int glyphwidth = face->glyph->bitmap.width;
-		const int glyphheight = face->glyph->bitmap.rows;
-
-		// where to render in the atlas bitmap
-		const int xpos = ((character - 32) % cols) * bitmap_width;
-		const int ypos = ((character - 32) / cols) * bitmap_height;
-		const int index = ((bitmap_width * bitmap_height * rows * cols * 4) - (bitmap_width * cols * 4)) - (ypos * bitmap_width * cols * 4) + (xpos * 4);
-
-		for(int i = index,j = 0;j < glyphwidth * glyphheight;)
+		if (width_pixels != face->glyph->bitmap.width || height_pixels != face->glyph->bitmap.rows)
 		{
-			if(i + 3 >= (int)bitmap.size() || i < 0)
-			{
-				char str[2] = {(char)character, 0};
-				std::cerr << "char " << (char)character << " is " << glyphheight << " rows tall, max " << (((face->bbox.yMax - face->bbox.yMin) / 2048.0f) * face->size->metrics.y_ppem) << std::endl;
-				win::bug("char " + std::to_string(character) + " (" + std::string(str) + ") out of bounds " + (i < 0 ? "negative" : "positive") + " by " + std::to_string(i < 0 ? -i : i - (bitmap_width * bitmap_height * rows * cols * 4)));
-			}
-
-			int level = buffer[j];
-			if(level < 255 && level >= 0)
-			{
-				bitmap[i] = 255;
-				bitmap[i + 1] = 255;
-				bitmap[i + 2] = 255;
-				bitmap[i + 3] = level;
-			}
-			else
-			{
-				bitmap[i] = 255;
-				bitmap[i + 1] = 255;
-				bitmap[i + 2] = 255;
-				bitmap[i + 3] = 255;
-			}
-
-			j++;
-			i += 4;
-
-			if(j % glyphwidth == 0)
-				i -= (bitmap_width * cols * 4) + (glyphwidth * 4);
+			win::bug("bad @ character");
 		}
-	}
 
-	glGenTextures(1, &atlas);
-	glBindTexture(GL_TEXTURE_2D, atlas);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,bitmap_width * cols,bitmap_height * rows,0,GL_RGBA,GL_UNSIGNED_BYTE,bitmap.data());
+		// fill in the metrics
+		const int metric_index = character - char_low;
+		FontCharacterMetric &cmetric = character_metrics.at(metric_index);
+
+		cmetric.width = (width_pixels / (float)screen_pixel_dimensions.width) * (screen_area.right - screen_area.left);
+		cmetric.height = (height_pixels / (float)screen_pixel_dimensions.height) * (screen_area.top - screen_area.bottom);
+		cmetric.width_pixels = width_pixels;
+		cmetric.height_pixels = height_pixels;
+		cmetric.advance = ((float)(face->glyph->metrics.horiAdvance >> 6) / screen_pixel_dimensions.width) * (screen_area.right - screen_area.left);
+		cmetric.bearing_y = (((face->glyph->metrics.horiBearingY >> 6) / (float)screen_pixel_dimensions.height)) * (screen_area.top - screen_area.bottom);
+		cmetric.bearing_x = (((face->glyph->metrics.horiBearingX >> 6) / (float)screen_pixel_dimensions.width)) * (screen_area.right - screen_area.left);
+		fprintf(stderr, "%c: %.2f\n", character, cmetric.bearing_x);
+
+		bitmap_copy(face->glyph->bitmap.buffer, face->glyph->bitmap.width, face->glyph->bitmap.rows, bitmap, metric.max_width_pixels, metric.max_height_pixels);
+	}
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
 }
 
-Font::~Font()
+const FontMetric &Font::font_metric() const
 {
-	glDeleteTextures(1, &atlas);
+	return metric;
 }
 
-float Font::size() const
+const FontCharacterMetric &Font::character_metric(const char c) const
 {
-	return fontsize;
+#ifndef NDEBUG
+	return character_metrics.at(c - char_low);
+#endif
+
+	return character_metrics[c - char_low];
+}
+
+void Font::bitmap_copy(unsigned char *source, int source_width, int source_height, unsigned char *dest, int dest_width, int dest_height)
+{
+	if (source_width > dest_width)
+		win::bug("Font::bitmap_copy: source_width > dest_width");
+
+	if (source_height > dest_height)
+		win::bug("Font::bitmap_copy: source_height > dest_height");
+
+	for (int source_row = 0; source_row < source_height; ++source_row)
+	{
+		const int source_start = source_row * source_width;
+		const int dest_start = source_row * dest_width;
+		memcpy(dest + dest_start, source + source_start, source_width);
+	}
 }
 
 }

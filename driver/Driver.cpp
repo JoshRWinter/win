@@ -10,7 +10,7 @@
 #include <win/AssetRoll.hpp>
 #include <win/gl/GLAtlas.hpp>
 #include <win/sound/SoundEngine.hpp>
-#include <win/FontRenderer.hpp>
+#include <win/gl/GLTextRenderer.hpp>
 #include <win/Font.hpp>
 #include <win/gl/GL.hpp>
 
@@ -46,8 +46,8 @@ int main()
 	display_options.caption = "debug_window";
 	display_options.width = 800;
 	display_options.height = 600;
-	display_options.gl_major = 3;
-	display_options.gl_minor = 3;
+	display_options.gl_major = 4;
+	display_options.gl_minor = 4;
 
 	win::Display display(display_options);
 	display.cursor(true);
@@ -67,8 +67,8 @@ int main()
 
 	win::SoundEngine audio_engine(display, roll);
 
-	win::FontRenderer font_renderer(win::Dimensions<int>(display.width(), display.height()), win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f));
-	win::Font font1(font_renderer, roll["../../fishtank/assets/arial.ttf"], 0.5f);
+	win::GLTextRenderer text_renderer(win::Dimensions<int>(display.width(), display.height()), win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f));
+	win::GLFont font1(text_renderer.dimensions(), text_renderer.area(), 0.5f, roll["../../fishtank/assets/arial.ttf"]);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 	std::cerr << "screen width is " << win::Display::screen_width() << " and screen height is " << win::Display::screen_height() << std::endl;
@@ -135,7 +135,7 @@ int main()
 	float block_position[2];
 	unsigned char block_color[3];
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.4f, 0.4f, 0.6f, 1.0f);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -201,7 +201,6 @@ int main()
 				block.yv = -block.yv;
 			}
 
-
 			audio_engine.config(block_sid, 1.0f - ((block.x + 4.0f) / 8.0f), (block.x + 4.0f) / 8.0f);
 			audio_engine.save();
 
@@ -210,6 +209,9 @@ int main()
 			block_color[0] = 1.0f;
 			block_color[1] = 1.0f;
 			block_color[2] = 1.0f;
+
+			glUseProgram(program);
+			glBindVertexArray(vao);
 
 			glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_position), block_position, GL_DYNAMIC_DRAW);
@@ -227,9 +229,10 @@ int main()
 		if(0 == strftime(formatted, sizeof(formatted), "Today is %A, %B %d\n%I:%M:%S %p", tm))
 			strcpy(formatted, "null");
 
-		font_renderer.draw(font1, formatted, mousex, mousey, win::Color(1.0f, 1.0f, 0.0f), true);
-		glBindVertexArray(vao);
-		glUseProgram(program);
+		text_renderer.draw(font1, formatted, mousex, mousey, win::Color<float>(1.0f, 1.0f, 0.0f), true);
+		text_renderer.flush();
+
+		win::gl_check_error();
 
 		display.swap();
 

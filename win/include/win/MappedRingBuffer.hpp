@@ -107,6 +107,13 @@ template <typename T, bool contiguous> class MappedRingBufferRange
 	friend class MappedRingBufferRangeSliceIterable<T>;
 
 public:
+	MappedRingBufferRange()
+		: buffer(NULL)
+		, buffer_length(-1)
+		, range_head(-1)
+		, range_length(-1)
+	{}
+
 	MappedRingBufferRange(T *buffer, int buffer_length, int head, int length)
 		: buffer(buffer)
 		, buffer_length(buffer_length)

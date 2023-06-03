@@ -91,6 +91,10 @@ template <typename T, bool contiguous = false> class GLMappedRingBufferRange : p
 	{}
 
 public:
+	GLMappedRingBufferRange()
+		: locked(true) // pretend to be locked so the destructor doesn't get angry
+	{}
+
 	GLMappedRingBufferRange(GLMappedRingBufferRange<T, contiguous> &&rhs) noexcept
 		: MappedRingBufferRange<T, contiguous>(std::move(rhs))
 		, locked(rhs.locked)
