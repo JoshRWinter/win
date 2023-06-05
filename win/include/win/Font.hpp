@@ -2,6 +2,7 @@
 
 #include <array>
 #include <memory>
+#include <vector>
 
 #include <win/Win.hpp>
 #include <win/Utility.hpp>
@@ -9,6 +10,14 @@
 
 namespace win
 {
+
+struct FontKern
+{
+	FontKern(char right_char, float kern) : right_char(right_char), kern(kern) {}
+
+	char right_char;
+	float kern;
+};
 
 struct FontCharacterMetric
 {
@@ -19,6 +28,7 @@ struct FontCharacterMetric
 	float advance;
 	float bearing_y;
 	float bearing_x;
+	std::vector<FontKern> kerns;
 };
 
 struct FontMetric

@@ -16,37 +16,41 @@ Font::Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &sc
 
 	int error;
 	FT_Library library;
-	error=FT_Init_FreeType(&library);
-	if(error)
+	error = FT_Init_FreeType(&library);
+	if (error)
 		win::bug("Error initializing freetype");
 
 	FT_Face face;
 	error = FT_New_Memory_Face(library, data.get(), font_file.size(), 0, &face);
-	if(error)
+	if (error)
 		win::bug("Font: Error creating face");
 
 	error = FT_Set_Pixel_Sizes(face, 0, pixelsize);
-	if(error)
+	if (error)
 		win::bug("Error setting pixel size");
 
 	//metric.font_size = 0;
 	metric.vertical_advance = (((float)(face->size->metrics.height >> 6)) / screen_pixel_dimensions.width) * (screen_area.right - screen_area.left);
 
+	FT_UInt indices[char_count];
 	// get largest width and height
 	metric.max_width_pixels = 0;
 	metric.max_height_pixels = 0;
-	for(char x = char_low; x <= char_high; ++x) // loop over the printing ascii characters
+	for (char x = char_low; x <= char_high; ++x) // loop over the printing ascii characters
 	{
 		error = FT_Load_Char(face, x, FT_LOAD_BITMAP_METRICS_ONLY);
-		if(error)
+		if (error)
 			win::bug("Could not render glyph " + std::to_string(x));
 
-		if((int)face->glyph->bitmap.width > metric.max_width_pixels)
-			metric.max_width_pixels = (int)face->glyph->bitmap.width;
-		if((int)face->glyph->bitmap.rows > metric.max_height_pixels)
-			metric.max_height_pixels = (int)face->glyph->bitmap.rows;
+		indices[x - char_low] = face->glyph->glyph_index;
+
+		if ((int)face->glyph->bitmap.width > metric.max_width_pixels)
+			metric.max_width_pixels = (int) face->glyph->bitmap.width;
+		if ((int)face->glyph->bitmap.rows > metric.max_height_pixels)
+			metric.max_height_pixels = (int) face->glyph->bitmap.rows;
 	}
 
+	int kernpairs = 0;
 	for (char character = char_low; character <= char_high; character++)
 	{
 		bitmaps[character - char_low].reset(new unsigned char[metric.max_width_pixels * metric.max_height_pixels]);
@@ -54,16 +58,11 @@ Font::Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &sc
 		memset(bitmap, 0, metric.max_width_pixels * metric.max_height_pixels);
 
 		error = FT_Load_Char(face, character, FT_LOAD_RENDER);
-		if(error)
+		if (error)
 			win::bug(std::string("Error rendering char ") + std::to_string((int)character) + " (" + std::to_string(character) + ")");
 
 		const int width_pixels = face->glyph->bitmap.width;//(face->glyph->metrics.width / (float)face->units_per_EM) * face->size->metrics.x_ppem;
 		const int height_pixels = face->glyph->bitmap.rows;//(face->glyph->metrics.height / (float)face->units_per_EM) * face->size->metrics.y_ppem;
-
-		if (width_pixels != face->glyph->bitmap.width || height_pixels != face->glyph->bitmap.rows)
-		{
-			win::bug("bad @ character");
-		}
 
 		// fill in the metrics
 		const int metric_index = character - char_low;
@@ -76,9 +75,23 @@ Font::Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &sc
 		cmetric.advance = ((float)(face->glyph->metrics.horiAdvance >> 6) / screen_pixel_dimensions.width) * (screen_area.right - screen_area.left);
 		cmetric.bearing_y = (((face->glyph->metrics.horiBearingY >> 6) / (float)screen_pixel_dimensions.height)) * (screen_area.top - screen_area.bottom);
 		cmetric.bearing_x = (((face->glyph->metrics.horiBearingX >> 6) / (float)screen_pixel_dimensions.width)) * (screen_area.right - screen_area.left);
-		fprintf(stderr, "%c: %.2f\n", character, cmetric.bearing_x);
 
 		bitmap_copy(face->glyph->bitmap.buffer, face->glyph->bitmap.width, face->glyph->bitmap.rows, bitmap, metric.max_width_pixels, metric.max_height_pixels);
+
+		// figure out them kerns
+		for (int k = char_low; k < char_high; ++k)
+		{
+			if (!FT_HAS_KERNING(face))
+				continue;
+
+			FT_Vector v;
+			error = FT_Get_Kerning(face, face->glyph->glyph_index, indices[k - char_low], FT_KERNING_DEFAULT, &v);
+			if (error)
+				win::bug("No kern for " + std::to_string((char)character) + " vs " + std::to_string((char)k));
+
+			if (v.x != 0)
+				cmetric.kerns.emplace_back(k, ((v.x >> 6) / (float)screen_pixel_dimensions.width) * (screen_area.right - screen_area.left));
+		}
 	}
 
 	FT_Done_Face(face);

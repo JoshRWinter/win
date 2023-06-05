@@ -20,7 +20,7 @@ class GLTextRenderer : public TextRenderer
 	friend class Font;
 
 	constexpr static int object_data_multiplier = 3;
-	constexpr static int object_data_length = 20;
+	constexpr static int object_data_length = 100;
 	constexpr static int uniform_object_data_length = object_data_length * object_data_multiplier;
 
 public:

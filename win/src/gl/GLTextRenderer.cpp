@@ -18,7 +18,7 @@ static const char *vertexshader =
 
 "struct Object { vec2 position; vec2 dims; vec2 tc; float index; float pad1; };\n"
 
-"layout (std140) uniform object_data { Object data[60]; };\n"
+"layout (std140) uniform object_data { Object data[300]; };\n"
 "uniform mat4 projection;\n"
 
 "layout (location = 0) in vec2 vert;\n"
@@ -28,7 +28,7 @@ static const char *vertexshader =
 "out vec3 ftexcoord;\n"
 
 "void main(){\n"
-"int i = draw_id % 60;\n"
+"int i = draw_id % 300;\n"
 "ftexcoord = vec3(float(texcoord.x) * data[i].tc.x, float(texcoord.y) * data[i].tc.y, data[i].index);\n"
 "mat4 t = mat4(data[i].dims.x, 0.0, 0.0, 0.0,    0.0, data[i].dims.y, 0.0, 0.0,    0.0, 0.0, 0.0, 0.0,    data[i].position.x, data[i].position.y, 0.0, 1.0);\n"
 "gl_Position = projection * t * vec4(vert.xy, 0.0, 1.0);\n"
