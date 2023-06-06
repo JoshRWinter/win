@@ -82,19 +82,59 @@ float TextRenderer::find_kern(char c, const FontCharacterMetric &cmetric_last_ch
 
 	return 0.0f;
 }
+float TextRenderer::text_width(const Font &font, const char *text)
+{
+	const auto len = strlen(text);
+	float length = 0.0f;
+	float max_length = 0.0f;
 
-// calculate line length, only up to the first newline after <start>
+	char last_char = 0;
+
+	for (int i = 0; i < len; ++i)
+	{
+		if (text[i] == '\n')
+		{
+			if (length > max_length)
+				max_length = length;
+
+			length = 0.0f;
+			last_char = 0;
+
+			continue;
+		}
+
+		const FontCharacterMetric &cmetric = font.character_metric(text[i]);
+
+		const float kern = last_char == 0 ? 0.0f : find_kern(text[i], font.character_metric(last_char));
+		length += (cmetric.advance - cmetric.bearing_x) + kern;
+
+		last_char = text[i];
+	}
+
+	if (length > max_length)
+		max_length = length;
+
+	return max_length;
+}
+
 float TextRenderer::line_length(const Font &font, const char *text, int start)
 {
 	const auto len = strlen(text);
 	float length = 0.0f;
+
+	char last_char = 0;
 
 	for (int i = start; i < len; ++i)
 	{
 		if (text[i] == '\n')
 			break;
 
-		length += font.character_metric(text[i]).advance;
+		const FontCharacterMetric &cmetric = font.character_metric(text[i]);
+
+		const float kern = last_char == 0 ? 0.0f : find_kern(text[i], font.character_metric(last_char));
+		length += (cmetric.advance - cmetric.bearing_x) + kern;
+
+		last_char = text[i];
 	}
 
 	return length;
