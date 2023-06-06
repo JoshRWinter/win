@@ -35,6 +35,8 @@ struct FontMetric
 {
 	int max_width_pixels;
 	int max_height_pixels;
+	float max_width;
+	float max_height;
 	float vertical_advance;
 };
 

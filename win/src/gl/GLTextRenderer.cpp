@@ -2,7 +2,8 @@
 
 #ifdef WIN_USE_OPENGL
 
-#include <string>
+#include <cstring>
+#include <climits>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -16,10 +17,12 @@ using namespace win::gl;
 static const char *vertexshader =
 "#version 440 core\n"
 
-"struct Object { vec2 position; vec2 dims; vec2 tc; float index; float pad1; };\n"
+"struct Object { vec2 position; uint dims; float index; };\n"
 
 "layout (std140) uniform object_data { Object data[300]; };\n"
 "uniform mat4 projection;\n"
+"uniform float width;\n"
+"uniform float height;\n"
 
 "layout (location = 0) in vec2 vert;\n"
 "layout (location = 1) in ivec2 texcoord;\n"
@@ -29,8 +32,10 @@ static const char *vertexshader =
 
 "void main(){\n"
 "int i = draw_id % 300;\n"
-"ftexcoord = vec3(float(texcoord.x) * data[i].tc.x, float(texcoord.y) * data[i].tc.y, data[i].index);\n"
-"mat4 t = mat4(data[i].dims.x, 0.0, 0.0, 0.0,    0.0, data[i].dims.y, 0.0, 0.0,    0.0, 0.0, 0.0, 0.0,    data[i].position.x, data[i].position.y, 0.0, 1.0);\n"
+"float w = (data[i].dims >> 16) / float(65535);\n"
+"float h = (data[i].dims & 65535) / float(65535);\n"
+"ftexcoord = vec3(float(texcoord.x) * w, float(texcoord.y) * h, data[i].index);\n"
+"mat4 t = mat4(width * w, 0.0, 0.0, 0.0,    0.0, height * h, 0.0, 0.0,    0.0, 0.0, 0.0, 0.0,    data[i].position.x, data[i].position.y, 0.0, 1.0);\n"
 "gl_Position = projection * t * vec4(vert.xy, 0.0, 1.0);\n"
 "}\n"
 
@@ -93,6 +98,11 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 	if (uniform_projection == -1) win::bug("GLFontRenderer - no uniform projection");
 	const glm::mat4 projection = glm::ortho(screen_area.left, screen_area.right, screen_area.bottom, screen_area.top);
 	glUniformMatrix4fv(uniform_projection, 1, GL_FALSE, glm::value_ptr(projection));
+
+	if ((uniform_width = glGetUniformLocation(program.get(), "width")) == -1)
+		win::bug("no width");
+	if ((uniform_height = glGetUniformLocation(program.get(), "height")) == -1)
+		win::bug("no height");
 
 	uniform_blink = glGetUniformLocation(program.get(), "blink");
 	if (uniform_blink == -1) win::bug("no blink");
@@ -157,6 +167,12 @@ void GLTextRenderer::flush()
 		const FontMetric &metric = font.font_metric();
 		int text_queue_index = str.text_queue_start;
 
+		glBindTexture(GL_TEXTURE_2D_ARRAY, font.texture());
+		glUniform4f(uniform_color, str.color.red, str.color.green, str.color.blue, str.color.alpha);
+		glUniform1f(uniform_width, metric.max_width);
+		glUniform1f(uniform_height, metric.max_height);
+		glUniform1i(uniform_blink, blink ? 0 : 0);
+
 		while (text_queue_index < str.text_queue_start + str.text_queue_length)
 		{
 			const int remaining = str.text_queue_length - (text_queue_index - str.text_queue_start);
@@ -170,28 +186,23 @@ void GLTextRenderer::flush()
 
 				const float xpos = c.xpos + (cmetric.width / 2.0f);
 				const float ypos = (c.ypos + (cmetric.height / 2.0f));
-				const float width = cmetric.width;
-				const float height = cmetric.height;
-				const float tc_s = cmetric.width_pixels / (float)metric.max_width_pixels;
-				const float tc_t = cmetric.height_pixels / (float)metric.max_height_pixels;
+				const std::uint16_t width_pct = (cmetric.width / metric.max_width) * std::numeric_limits<std::uint16_t>::max();
+				const std::uint16_t height_pct = (cmetric.height / metric.max_height) * std::numeric_limits<std::uint16_t>::max();
+				const std::uint32_t dims = (width_pct << 16) | height_pct;
 				const float index = c.c - Font::char_low;
+
+				fprintf(stderr, "for the letter %c, the width is %hd and the height is %hd.\n", c.c, dims >> 16, dims & 65535);
 
 				ObjectBytes bytes;
 				memcpy(bytes.data() + 0, &xpos, sizeof(xpos));
 				memcpy(bytes.data() + 4, &ypos, sizeof(ypos));
-				memcpy(bytes.data() + 8, &width, sizeof(width));
-				memcpy(bytes.data() + 12, &height, sizeof(height));
-				memcpy(bytes.data() + 16, &tc_s, sizeof(tc_s));
-				memcpy(bytes.data() + 20, &tc_t, sizeof(tc_t));
-				memcpy(bytes.data() + 24, &index, sizeof(index));
+				memcpy(bytes.data() + 8, &dims, sizeof(dims));
+				memcpy(bytes.data() + 12, &index, sizeof(index));
 
 				range[range_index] = bytes;
 				++text_queue_index;
 			}
 
-			glUniform4f(uniform_color, str.color.red, str.color.green, str.color.blue, str.color.alpha);
-			glUniform1i(uniform_blink, blink ? 0 : 0);
-			glBindTexture(GL_TEXTURE_2D_ARRAY, font.texture());
 			glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL, take, range.head());
 			object_data.lock(range);
 		}

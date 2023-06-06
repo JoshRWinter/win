@@ -44,10 +44,12 @@ private:
 	GLBuffer uniform_object_data;
 
 	GLint uniform_projection;
+	GLint uniform_width;
+	GLint uniform_height;
 	GLint uniform_color;
 	GLint uniform_blink;
 
-	typedef std::array<unsigned char, 32> ObjectBytes;
+	typedef std::array<unsigned char, 16> ObjectBytes;
 	GLMappedRingBuffer<ObjectBytes> object_data;
 };
 

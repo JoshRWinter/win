@@ -50,7 +50,9 @@ Font::Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &sc
 			metric.max_height_pixels = (int) face->glyph->bitmap.rows;
 	}
 
-	int kernpairs = 0;
+	metric.max_width = (metric.max_width_pixels / (float)screen_pixel_dimensions.width) * (screen_area.right - screen_area.left);
+	metric.max_height = (metric.max_height_pixels / (float)screen_pixel_dimensions.height) * (screen_area.top - screen_area.bottom);
+
 	for (char character = char_low; character <= char_high; character++)
 	{
 		bitmaps[character - char_low].reset(new unsigned char[metric.max_width_pixels * metric.max_height_pixels]);
