@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cmath>
 
 #include <win/TextRenderer.hpp>
 
@@ -105,9 +106,9 @@ float TextRenderer::line_length(const Font &font, const char *text, int start)
 	const auto len = strlen(text);
 	float length = 0.0f;
 
-	for(int i = start; i < len; ++i)
+	for (int i = start; i < len; ++i)
 	{
-		if(text[i] == '\n')
+		if (text[i] == '\n')
 			break;
 
 		length += font.character_metric(text[i]).advance;
@@ -118,7 +119,7 @@ float TextRenderer::line_length(const Font &font, const char *text, int start)
 
 float TextRenderer::align(int pixel_scale, float scale, float f)
 {
-	return ((((int)((f / scale) * pixel_scale)) / (float)pixel_scale) * scale);
+	return (((int)std::roundf((f / scale) * pixel_scale) / (float)pixel_scale) * scale);
 }
 
 }
