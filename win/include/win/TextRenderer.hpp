@@ -43,6 +43,7 @@ protected:
 
 	void queue(const Font &font, const char *text, float xpos, float ypos, const Color<float> &color, bool centered);
 
+	static float find_kern(char c, const FontCharacterMetric &cmetric_last_char);
 	static float line_length(const Font &font, const char *text, int start);
 	static float align(int pixel_scale, float scale, float f);
 

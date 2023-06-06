@@ -38,21 +38,7 @@ void TextRenderer::queue(const Font &font, const char *text, float xpos, float y
 		}
 		else if (text[i] == ' ')
 		{
-			float kern = 0.0f;
-			// search for a kern
-			if (last_char != 0)
-			{
-				const FontCharacterMetric &last_char_metric = font.character_metric(last_char);
-
-				for (const FontKern &fk : last_char_metric.kerns)
-				{
-					if (fk.right_char == text[i])
-					{
-						kern = fk.kern;
-						break;
-					}
-				}
-			}
+			const float kern = last_char == 0 ? 0.0f : find_kern(text[i], font.character_metric(last_char));
 
 			const FontCharacterMetric &char_metric = font.character_metric(text[i]);
 			xoffset += char_metric.advance + kern;
@@ -69,22 +55,7 @@ void TextRenderer::queue(const Font &font, const char *text, float xpos, float y
 
 		const FontCharacterMetric &char_metric = font.character_metric(text[i]);
 
-		float kern = 0.0f;
-		// search for a kern
-		if (last_char != 0)
-		{
-			const FontCharacterMetric &last_char_metric = font.character_metric(last_char);
-
-			for (const FontKern &fk : last_char_metric.kerns)
-			{
-				if (fk.right_char == text[i])
-				{
-					kern = fk.kern;
-					break;
-				}
-			}
-		}
-
+		const float kern = last_char == 0 ? 0.0f : find_kern(text[i], font.character_metric(last_char));
 		xoffset += kern;
 
 		const float x = align(screen_pixel_dimensions.width, screen_area.right - screen_area.left, xoffset);
@@ -98,6 +69,18 @@ void TextRenderer::queue(const Font &font, const char *text, float xpos, float y
 	}
 
 	string_queue.emplace_back(text_queue_start, real_len, color, font);
+}
+
+float TextRenderer::find_kern(char c, const FontCharacterMetric &cmetric_last_char)
+{
+	// search for a kern
+	for (const FontKern &fk : cmetric_last_char.kerns)
+	{
+		if (fk.right_char == c)
+			return fk.kern;
+	}
+
+	return 0.0f;
 }
 
 // calculate line length, only up to the first newline after <start>
