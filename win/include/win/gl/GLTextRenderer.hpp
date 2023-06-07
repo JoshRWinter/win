@@ -47,7 +47,6 @@ private:
 	GLint uniform_width;
 	GLint uniform_height;
 	GLint uniform_color;
-	GLint uniform_blink;
 
 	typedef std::array<unsigned char, 16> ObjectBytes;
 	GLMappedRingBuffer<ObjectBytes> object_data;

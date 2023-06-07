@@ -47,11 +47,9 @@ static const char *vertexshader =
 
 "uniform sampler2DArray tex;\n"
 "uniform vec4 color;\n"
-"uniform bool blink;\n"
 
 "void main(){\n"
-"if (blink) pixel = vec4(1.0, 1.0, 1.0, 1.0);\n"
-"else pixel = vec4(1.0, 1.0, 1.0, texture(tex, ftexcoord).r) * color;\n"
+"pixel = vec4(1.0, 1.0, 1.0, texture(tex, ftexcoord).r) * color;\n"
 "}\n"
 ;
 
@@ -104,9 +102,6 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 	if ((uniform_height = glGetUniformLocation(program.get(), "height")) == -1)
 		win::bug("no height");
 
-	uniform_blink = glGetUniformLocation(program.get(), "blink");
-	if (uniform_blink == -1) win::bug("no blink");
-
 	glBindVertexArray(vao.get());
 
 	// vertices
@@ -155,9 +150,6 @@ void GLTextRenderer::draw(const GLFont &font, const char *text, float xpos, floa
 
 void GLTextRenderer::flush()
 {
-	static int frame = 0;
-	++frame;
-	const bool blink = frame % 2 == 0;
 	glUseProgram(program.get());
 	glBindVertexArray(vao.get());
 
@@ -171,7 +163,6 @@ void GLTextRenderer::flush()
 		glUniform4f(uniform_color, str.color.red, str.color.green, str.color.blue, str.color.alpha);
 		glUniform1f(uniform_width, metric.max_width);
 		glUniform1f(uniform_height, metric.max_height);
-		glUniform1i(uniform_blink, blink ? 0 : 0);
 
 		while (text_queue_index < str.text_queue_start + str.text_queue_length)
 		{
@@ -190,8 +181,6 @@ void GLTextRenderer::flush()
 				const std::uint16_t height_pct = (cmetric.height / metric.max_height) * std::numeric_limits<std::uint16_t>::max();
 				const std::uint32_t dims = (width_pct << 16) | height_pct;
 				const float index = c.c - Font::char_low;
-
-				fprintf(stderr, "for the letter %c, the width is %hd and the height is %hd.\n", c.c, dims >> 16, dims & 65535);
 
 				ObjectBytes bytes;
 				memcpy(bytes.data() + 0, &xpos, sizeof(xpos));
