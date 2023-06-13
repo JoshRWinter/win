@@ -153,52 +153,77 @@ void GLTextRenderer::flush()
 	glUseProgram(program.get());
 	glBindVertexArray(vao.get());
 
+	const TextRendererString *last_string = NULL;
+
 	for (const auto &str : string_queue)
 	{
-		const GLFont &font = *(GLFont *)str.font;
+		const GLFont &font = *(GLFont*)str.font;
 		const FontMetric &metric = font.font_metric();
-		int text_queue_index = str.text_queue_start;
 
-		glBindTexture(GL_TEXTURE_2D_ARRAY, font.texture());
-		glUniform4f(uniform_color, str.color.red, str.color.green, str.color.blue, str.color.alpha);
-		glUniform1f(uniform_width, metric.max_width);
-		glUniform1f(uniform_height, metric.max_height);
-
-		while (text_queue_index < str.text_queue_start + str.text_queue_length)
+		if (last_string == NULL || ((GLFont*)last_string->font)->texture() != font.texture())
 		{
-			const int remaining = str.text_queue_length - (text_queue_index - str.text_queue_start);
-			const int take = std::min(object_data_length, remaining);
+			if (last_string != NULL)
+				send();
 
-			auto range = object_data.reserve(take);
-			for (int range_index = 0; range_index < take; ++range_index)
-			{
-				const auto &c = text_queue.at(text_queue_index);
-				const auto &cmetric = font.character_metric(c.c);
-
-				const float xpos = c.xpos + (cmetric.width / 2.0f);
-				const float ypos = (c.ypos + (cmetric.height / 2.0f));
-				const std::uint16_t width_pct = (cmetric.width / metric.max_width) * std::numeric_limits<std::uint16_t>::max();
-				const std::uint16_t height_pct = (cmetric.height / metric.max_height) * std::numeric_limits<std::uint16_t>::max();
-				const std::uint32_t dims = (width_pct << 16) | height_pct;
-				const float index = c.c - Font::char_low;
-
-				ObjectBytes bytes;
-				memcpy(bytes.data() + 0, &xpos, sizeof(xpos));
-				memcpy(bytes.data() + 4, &ypos, sizeof(ypos));
-				memcpy(bytes.data() + 8, &dims, sizeof(dims));
-				memcpy(bytes.data() + 12, &index, sizeof(index));
-
-				range[range_index] = bytes;
-				++text_queue_index;
-			}
-
-			glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL, take, range.head());
-			object_data.lock(range);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, font.texture());
+			glUniform1f(uniform_width, metric.max_width);
+			glUniform1f(uniform_height, metric.max_height);
 		}
+
+		if (last_string == NULL || last_string->color != str.color)
+		{
+			if (last_string != NULL)
+				send();
+
+			glUniform4f(uniform_color, str.color.red, str.color.green, str.color.blue, str.color.alpha);
+		}
+
+		auto begin = text_queue.begin() + str.text_queue_start;
+		auto end = begin + str.text_queue_length;
+		for (auto it = begin; it != end; ++it)
+		{
+			if (object_data_prebuf.size() == object_data_length)
+				send();
+
+			const TextRendererCharacter &c = *it;
+			const auto &cmetric = font.character_metric(c.c);
+
+			const float xpos = c.xpos + (cmetric.width / 2.0f);
+			const float ypos = (c.ypos + (cmetric.height / 2.0f));
+			const std::uint16_t width_pct = (cmetric.width / metric.max_width) * std::numeric_limits<std::uint16_t>::max();
+			const std::uint16_t height_pct = (cmetric.height / metric.max_height) * std::numeric_limits<std::uint16_t>::max();
+			const std::uint32_t dims = (width_pct << 16) | height_pct;
+			const float index = c.c - Font::char_low;
+
+			object_data_prebuf.emplace_back();
+			ObjectBytes &bytes = object_data_prebuf.back();
+			memcpy(bytes.data() + 0, &xpos, sizeof(xpos));
+			memcpy(bytes.data() + 4, &ypos, sizeof(ypos));
+			memcpy(bytes.data() + 8, &dims, sizeof(dims));
+			memcpy(bytes.data() + 12, &index, sizeof(index));
+		}
+
+		last_string = &str;
 	}
+
+	if (!object_data_prebuf.empty())
+		send();
 
 	text_queue.clear();
 	string_queue.clear();
+}
+
+void GLTextRenderer::send()
+{
+	const int count = object_data_prebuf.size();
+
+	auto range = object_data.reserve(count);
+	range.write(object_data_prebuf.data(), count);
+
+	glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL, count, range.head());
+	object_data.lock(range);
+
+	object_data_prebuf.clear();
 }
 
 }

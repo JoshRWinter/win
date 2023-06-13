@@ -32,6 +32,8 @@ public:
 	void flush();
 
 private:
+	void send();
+
 	GLProgram program;
 
 	GLVertexArray vao;
@@ -50,6 +52,7 @@ private:
 
 	typedef std::array<unsigned char, 16> ObjectBytes;
 	GLMappedRingBuffer<ObjectBytes> object_data;
+	std::vector<ObjectBytes> object_data_prebuf;
 };
 
 }
