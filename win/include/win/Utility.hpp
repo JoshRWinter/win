@@ -22,16 +22,19 @@ template <typename T> struct Color
 		alpha = v;
 	}
 
-	Color(float r, float g, float b)
+	Color(T r, T g, T b)
 		: red(r), green(g), blue(b)
 	{
 		alpha = (T)(std::is_integral<T>::value ? 255 : 1.0);
 	}
 
-	Color(float r, float g, float b, float a)
+	Color(T r, T g, T b, T a)
 		: red(r), green(g), blue(b), alpha(a) {}
 
-	float red, green, blue, alpha;
+	bool operator==(const Color<T> &rhs) const { return red == rhs.red && green == rhs.green && blue == rhs.blue; }
+	bool operator!=(const Color<T> &rhs) const { return red != rhs.red || green != rhs.green || blue != rhs.blue; }
+
+	T red, green, blue, alpha;
 };
 
 template <typename T> struct Area
