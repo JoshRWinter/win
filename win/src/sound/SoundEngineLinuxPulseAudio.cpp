@@ -166,7 +166,7 @@ SoundEngineLinuxPulseAudio::~SoundEngineLinuxPulseAudio()
 std::uint32_t SoundEngineLinuxPulseAudio::play(const SoundEnginePlayCommand &cmd)
 {
 	pa_threaded_mainloop_lock(loop);
-	const auto key = mixer.add(cmd.name, cmd.residency_priority, cmd.compression_priority, cmd.left, cmd.right, cmd.looping, cmd.seek);
+	const auto key = mixer.add(cmd.name, cmd.residency_priority, cmd.compression_priority, cmd.left, cmd.right, cmd.looping, cmd.cache, cmd.seek);
 	pa_threaded_mainloop_unlock(loop);
 
 	return key;

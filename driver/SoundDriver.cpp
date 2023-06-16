@@ -1,16 +1,6 @@
-#include <win/Win.hpp>
-#include <win/sound/SoundEngine.hpp>
-#include <win/sound/PitchScaleEffect.hpp>
+#include <thread>
 
-#if defined WINPLAT_WINDOWS
-#include <windows.h>
-static void sleep(int seconds)
-{
-	Sleep(seconds * 1000);
-}
-#elif defined WINPLAT_LINUX
-#include <unistd.h>
-#endif
+#include <win/sound/SoundEngine.hpp>
 
 int main()
 {
@@ -18,15 +8,14 @@ int main()
 	//win::AssetRoll roll("c:\\users\\josh\\desktop\\music.roll");
 	win::SoundEngine se(roll);
 
-	//win::PitchScaleEffect effect(1, 2.0f);
-	//auto key = se.play("gow.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, (24 + 0.85) * 60 * 44100 * 2);
-	auto key = se.play("gow.ogg", 5, 1.0f, 1.0f, 1.0f, true);
-	//se.apply_effect(key, &effect);
-	//auto key2 = se.play("soft.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, 0);
-	//auto key3 = se.play("soft.ogg", win::SoundResidencyPriority::high, 1.0f, 1.0f, 1.0f, true, 0);
-	usleep(1'000'000 * 1000);
-	//Sleep(1000 * 60);
-	//se.remove_effect(key, &effect);
+	se.play("platform_destroy.ogg", 5, 1.0f, 1.0f, 1.0f, false, true);
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+	se.play("platform_destroy.ogg", 5, 1.0f, 1.0f, 1.0f, false, true);
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+	se.play("platform_destroy.ogg", 5, 1.0f, 1.0f, 1.0f, true, true);
+	std::this_thread::sleep_for(std::chrono::seconds(3));
+	se.play("platform_destroy.ogg", 5, 1.0f, 1.0f, 1.0f, true, true);
+	std::this_thread::sleep_for(std::chrono::seconds(5));
 
 	return 0;
 }

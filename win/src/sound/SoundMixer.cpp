@@ -8,7 +8,7 @@ namespace win
 {
 
 SoundMixer::SoundMixer(win::AssetRoll &roll)
-	: cache(roll)
+	: repo(roll)
 {
 	static_assert(mix_samples % 2 == 0, "mix_samples must be divisible by 2");
 	conversion_buffers_owner.reset(new float[max_sounds * mix_samples]);
@@ -22,14 +22,14 @@ SoundMixer::~SoundMixer()
 	cleanup(true);
 }
 
-std::uint32_t SoundMixer::add(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, int seek)
+std::uint32_t SoundMixer::add(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, bool cache, int seek)
 {
 	cleanup(false);
 
 	if (compression_priority > 0.99f)
 		compression_priority = 0.99f;
 
-	Sound &sound = cache.load(name, seek);
+	Sound &sound = repo.load(name, cache, seek);
 	const auto key = sounds.add(sound, residency_priority, compression_priority, std::max(left, 0.0f), std::max(right, 0.0f), looping);
 	if (key == -1)
 	{
@@ -39,7 +39,7 @@ std::uint32_t SoundMixer::add(const char *name, int residency_priority, float co
 		{
 			if (it->residency_priority < residency_priority)
 			{
-				cache.unload(it->sound);
+				repo.unload(it->sound);
 				sounds.remove(it);
 				found = true;
 				break;
@@ -49,7 +49,7 @@ std::uint32_t SoundMixer::add(const char *name, int residency_priority, float co
 		if (!found)
 		{
 			// nevermind, need to unload it
-			cache.unload(sound);
+			repo.unload(sound);
 			return -1;
 		}
 
@@ -70,94 +70,6 @@ void SoundMixer::config(std::uint32_t key, float left, float right)
 
 	sound->left = left;
 	sound->right = right;
-}
-
-void SoundMixer::apply_effect(std::uint32_t key, win::SoundEffect *effect)
-{
-	SoundMixerSound *sound = sounds[key];
-	if (sound == NULL)
-		return;
-
-	SoundEffect *current = sound->effect_tail;
-	SoundEffect *next = NULL;
-
-	// iterate the linked list backwards
-	while (current != NULL)
-	{
-		if (effect->priority > current->priority)
-		{
-			effect->prev = current;
-			effect->inner = current;
-
-			if (next != NULL)
-			{
-				next->prev = effect;
-				next->inner = effect;
-			}
-			else
-				sound->effect_tail = effect;
-
-			return;
-		}
-
-		next = current;
-		current = current->prev;
-	}
-
-	// the list is either empty, or this item is the lowest priority. decide what to do
-
-	SoundEffect *const last = next;
-	if (last == NULL)
-	{
-		// the list is empty
-
-		effect->prev = NULL;
-		effect->inner = &sound->sound.stream;
-		sound->effect_tail = effect;
-		return;
-	}
-	else
-	{
-		// this item is the lowest priority
-
-		last->prev = effect;
-		last->inner = effect;
-		effect->prev = NULL;
-		effect->inner = &sound->sound.stream;
-		return;
-	}
-}
-
-void SoundMixer::remove_effect(std::uint32_t key, win::SoundEffect *effect)
-{
-	SoundMixerSound *sound = sounds[key];
-	if (sound == NULL)
-		return;
-
-	SoundEffect *current = sound->effect_tail;
-	SoundEffect *next = NULL;
-
-	// iterate the linked list backwards
-	while (current != NULL)
-	{
-		if (current == effect)
-		{
-			if (next != NULL)
-			{
-				next->prev = current->prev;
-				next->inner = current->inner;
-			}
-			else
-				sound->effect_tail = current->prev;
-
-			return;
-		}
-
-		next = current;
-		current = current->prev;
-	}
-
-	win::bug("SoundMixer: couldn't remove effect");
 }
 
 void SoundMixer::pause(std::uint32_t key)
@@ -186,20 +98,7 @@ void SoundMixer::cleanup(bool all)
 
 		if (kill)
 		{
-			// mark all the sound effects as "removed"
-			// so the user can notice eventually
-
-			SoundEffect *current = sound->effect_tail;
-			while (current != NULL)
-			{
-				if (current->removed)
-					win::bug("SoundMixer: effect already removed");
-
-				current->removed = true;
-				current = current->prev;
-			}
-
-			cache.unload(sound->sound);
+			repo.unload(sound->sound);
 			sound = sounds.remove(sound);
 			continue;
 		}
@@ -461,30 +360,30 @@ void SoundMixer::calculate_stereo_limiters(const int count, const int len, const
 		calculate_stereo_limiters(count, len, limiters, priorities); // go go tail call optimization
 }
 
-void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, const int buf_len)
+void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const dest, const int len)
 {
 	float extractbuf[mix_samples]; // mix_samples will be >= buf_len
 	zero_float(extractbuf, mix_samples);
 
-	const int channels = sound.sound.stream.channels();
-	const int read_samples = channels == 1 ? buf_len / 2 : buf_len;
+	const int channels = sound.sound.source.channels();
+	const int read_samples = channels == 1 ? len / 2 : len;
 
 	if (channels != 1 && channels != 2)
 		win::bug("SoundMixer: mono or stereo PCM required");
 
 	// extract the PCM data from the stream
-	const int got = extract_pcm(sound, extractbuf, read_samples);
+	const int got = sound.sound.source.read_samples(extractbuf, read_samples);
 	if (got < read_samples) // we were shorted a little bit
 	{
-		if (sound.sound.stream.is_writing_completed() && sound.sound.stream.size() == 0) // the decoder is done and the stream is empty
+		if (sound.sound.source.empty()) // the decoder is done and the stream is empty
 		{
 			if (sound.looping)
 			{
 				// restart the stream, for the next loop
-				sound.sound.source.reset();
+				sound.sound.source.restart();
 
 				// now that it's been restarted, see if we can squeeze a bit more out of it
-				const int got2 = extract_pcm(sound, extractbuf + got, read_samples - got);
+				const int got2 = sound.sound.source.read_samples(extractbuf + got, read_samples - got);
 
 				if (got + got2 < read_samples) // gol dangit we were shorted again
 					zero_float(extractbuf + got + got2, read_samples - (got + got2)); // blank out the rest, this will cause a small skip in the audio. oh well
@@ -502,33 +401,25 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, co
 	// apply volume config
 	if (channels == 1)
 	{
-		for (int frame = 0; frame < buf_len; frame += 2)
+		for (int frame = 0; frame < len; frame += 2)
 		{
 			const float sample = extractbuf[frame / 2];
 
-			buf[frame] = sample * sound.left;
-			buf[frame + 1] = sample * sound.right;
+			dest[frame] = sample * sound.left;
+			dest[frame + 1] = sample * sound.right;
 		}
 	}
 	else
 	{
-		for (int frame = 0; frame < buf_len; frame += 2)
+		for (int frame = 0; frame < len; frame += 2)
 		{
 			const float left = extractbuf[frame];
 			const float right = extractbuf[frame + 1];
 
-			buf[frame] = left * sound.left;
-			buf[frame + 1] = right * sound.right;
+			dest[frame] = left * sound.left;
+			dest[frame + 1] = right * sound.right;
 		}
 	}
-}
-
-int SoundMixer::extract_pcm(SoundMixerSound &sound, float *dest, int len)
-{
-	if (sound.effect_tail != NULL)
-		return sound.effect_tail->read_samples(dest, len);
-	else
-		return sound.sound.stream.read_samples(dest, len);
 }
 
 void SoundMixer::zero_float(float *f, int len)

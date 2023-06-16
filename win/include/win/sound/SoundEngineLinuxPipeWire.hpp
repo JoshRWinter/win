@@ -12,16 +12,16 @@
 namespace win
 {
 
-class SoundEngineLinuxPipeWire : public SoundEngineImplementation
+class SoundEngineLinuxPipeWire : public SoundEngineBase
 {
 	WIN_NO_COPY_MOVE(SoundEngineLinuxPipeWire);
 
 public:
-	SoundEngineLinuxPipeWire(AssetRoll&, const char*);
-	~SoundEngineLinuxPipeWire();
+	SoundEngineLinuxPipeWire(AssetRoll &roll, const char *soname);
+	~SoundEngineLinuxPipeWire() override;
 
-	std::uint32_t play(const SoundEnginePlayCommand&) override;
-	void save(const std::vector<SoundEnginePlaybackCommand>&, const std::vector<SoundEngineConfigCommand>&) override;
+	std::uint32_t play(const SoundEnginePlayCommand &cmd) override;
+	void save(const std::vector<SoundEnginePlaybackCommand> &playback, const std::vector<SoundEngineConfigCommand> &configs) override;
 
 private:
 	static void stream_process(void*);
