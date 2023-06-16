@@ -8,8 +8,8 @@ int main()
 	//win::AssetRoll roll("c:\\users\\josh\\desktop\\music.roll");
 	win::SoundEngine se(roll);
 
-	auto key = se.play("platform_destroy.ogg", 5, 1.0f, 1.0f, 1.0f);
-	std::this_thread::sleep_for(std::chrono::seconds(20));
+	auto key = se.play("platform_destroy.ogg", 5, 1.0f, 1.0f, 1.0f, true, true);
+	std::this_thread::sleep_for(std::chrono::seconds(1));
 
 	return 0;
 }

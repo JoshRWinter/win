@@ -49,21 +49,21 @@ public:
 	static constexpr int max_sounds = 32;
 	static constexpr int mix_samples = 360;
 
-	explicit SoundMixer(win::AssetRoll&);
+	explicit SoundMixer(win::AssetRoll &roll);
 	~SoundMixer();
 
-	std::uint32_t add(const char*, int, float, float, float, bool, int);
-	void config(std::uint32_t, float, float);
-	void pause(std::uint32_t);
-	void resume(std::uint32_t);
-	void stop(std::uint32_t);
-	void cleanup(bool);
-	int mix_stereo(std::int16_t*, int);
+	std::uint32_t add(const char *name, int residency_priority, float compression_priority, float left, float right, bool loop, bool cache, int seek);
+	void config(std::uint32_t key, float left, float right);
+	void pause(std::uint32_t key);
+	void resume(std::uint32_t key);
+	void stop(std::uint32_t key);
+	void cleanup(bool all);
+	int mix_stereo(std::int16_t *dest, int len);
 
 private:
-	void calculate_stereo_limiters(int, int, const std::array<StereoLimiter, max_sounds>&, const std::array<float, max_sounds>&);
-	static void extract_stereo_f32(SoundMixerSound&, float*, int);
-	static int extract_pcm(SoundMixerSound&, float*, int);
+	void calculate_stereo_limiters(int count, int len, const std::array<StereoLimiter, max_sounds> &limiters, const std::array<float, max_sounds> &priorities);
+	static void extract_stereo_f32(SoundMixerSound&, float *dest, int len);
+	static int extract_pcm(SoundMixerSound &sound, float *dest, int len);
 	static void zero_float(float*, int len);
 
 	std::unique_ptr<float[]> conversion_buffers_owner;

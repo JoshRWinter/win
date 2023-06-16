@@ -118,7 +118,7 @@ SoundEngineLinuxPipeWire::~SoundEngineLinuxPipeWire()
 std::uint32_t SoundEngineLinuxPipeWire::play(const SoundEnginePlayCommand &cmd)
 {
 	pw_thread_loop_lock(loop);
-	const auto key = mixer.add(cmd.name, cmd.residency_priority, cmd.compression_priority, cmd.left, cmd.right, cmd.looping, cmd.seek);
+	const auto key = mixer.add(cmd.name, cmd.residency_priority, cmd.compression_priority, cmd.left, cmd.right, cmd.looping, cmd.cache, cmd.seek);
 	pw_thread_loop_unlock(loop);
 
 	return key;

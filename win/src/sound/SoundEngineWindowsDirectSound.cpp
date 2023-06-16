@@ -124,7 +124,7 @@ SoundEngineWindowsDirectSound::~SoundEngineWindowsDirectSound()
 std::uint32_t SoundEngineWindowsDirectSound::play(const SoundEnginePlayCommand &cmd)
 {
 	std::lock_guard<std::mutex> lock(loop_lock);
-	return mixer.add(cmd.name, cmd.residency_priority, cmd.compression_priority, cmd.left, cmd.right, cmd.looping, cmd.seek);
+	return mixer.add(cmd.name, cmd.residency_priority, cmd.compression_priority, cmd.left, cmd.right, cmd.looping, cmd.cache, cmd.seek);
 }
 
 void SoundEngineWindowsDirectSound::save(const std::vector<SoundEnginePlaybackCommand> &playback, const std::vector<SoundEngineConfigCommand> &config)

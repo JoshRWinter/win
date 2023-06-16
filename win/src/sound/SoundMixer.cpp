@@ -22,14 +22,14 @@ SoundMixer::~SoundMixer()
 	cleanup(true);
 }
 
-std::uint32_t SoundMixer::add(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, int seek)
+std::uint32_t SoundMixer::add(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, bool cache, int seek)
 {
 	cleanup(false);
 
 	if (compression_priority > 0.99f)
 		compression_priority = 0.99f;
 
-	Sound &sound = repo.load(name, seek);
+	Sound &sound = repo.load(name, seek, cache);
 	const auto key = sounds.add(sound, residency_priority, compression_priority, std::max(left, 0.0f), std::max(right, 0.0f), looping);
 	if (key == -1)
 	{
@@ -360,13 +360,13 @@ void SoundMixer::calculate_stereo_limiters(const int count, const int len, const
 		calculate_stereo_limiters(count, len, limiters, priorities); // go go tail call optimization
 }
 
-void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, const int buf_len)
+void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const dest, const int len)
 {
 	float extractbuf[mix_samples]; // mix_samples will be >= buf_len
 	zero_float(extractbuf, mix_samples);
 
 	const int channels = sound.sound.source->channels();
-	const int read_samples = channels == 1 ? buf_len / 2 : buf_len;
+	const int read_samples = channels == 1 ? len / 2 : len;
 
 	if (channels != 1 && channels != 2)
 		win::bug("SoundMixer: mono or stereo PCM required");
@@ -401,23 +401,23 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const buf, co
 	// apply volume config
 	if (channels == 1)
 	{
-		for (int frame = 0; frame < buf_len; frame += 2)
+		for (int frame = 0; frame < len; frame += 2)
 		{
 			const float sample = extractbuf[frame / 2];
 
-			buf[frame] = sample * sound.left;
-			buf[frame + 1] = sample * sound.right;
+			dest[frame] = sample * sound.left;
+			dest[frame + 1] = sample * sound.right;
 		}
 	}
 	else
 	{
-		for (int frame = 0; frame < buf_len; frame += 2)
+		for (int frame = 0; frame < len; frame += 2)
 		{
 			const float left = extractbuf[frame];
 			const float right = extractbuf[frame + 1];
 
-			buf[frame] = left * sound.left;
-			buf[frame + 1] = right * sound.right;
+			dest[frame] = left * sound.left;
+			dest[frame + 1] = right * sound.right;
 		}
 	}
 }

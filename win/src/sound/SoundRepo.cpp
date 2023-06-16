@@ -13,7 +13,7 @@ SoundRepo::~SoundRepo()
 		win::bug("Leftover sound streams");
 }
 
-Sound &SoundRepo::load(const char *name, int seek)
+Sound &SoundRepo::load(const char *name, bool cache, int seek)
 {
 	// load a decoder
 	DecodingPcmSource &source = decoders.add(roll[name], seek);

@@ -9,7 +9,7 @@
 namespace win
 {
 
-class SoundEngineLinuxDummy : public SoundEngineImplementation
+class SoundEngineLinuxDummy : public SoundEngineBase
 {
 	WIN_NO_COPY_MOVE(SoundEngineLinuxDummy);
 

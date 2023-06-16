@@ -18,8 +18,8 @@ public:
 	explicit SoundRepo(win::AssetRoll&);
 	~SoundRepo();
 
-	Sound &load(const char*, int);
-	void unload(Sound&);
+	Sound &load(const char *name, bool cache, int seek);
+	void unload(Sound &sound);
 
 private:
 	AssetRoll &roll;

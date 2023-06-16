@@ -27,9 +27,9 @@ public:
 	int read_samples(std::int16_t *buf, int samples) override;
 
 private:
-	void set_channels(int);
-	static void decodeogg_loop(DecodingPcmSource &, win::Stream, int);
-	static void decodeogg(DecodingPcmSource &, win::Stream &, int);
+	void set_channels(int c);
+	static void decodeogg_loop(DecodingPcmSource &parent, win::Stream datafile, int seek_to);
+	static void decodeogg(DecodingPcmSource &parent, win::Stream &datafile, int seek_to);
 
 	win::ConcurrentRingBuffer<std::int16_t, buffersize + 1> buffer;
 	std::atomic<bool> cancel;

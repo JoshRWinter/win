@@ -18,7 +18,7 @@
 namespace win
 {
 
-class SoundEngineWindowsDirectSound : public SoundEngineImplementation
+class SoundEngineWindowsDirectSound : public SoundEngineBase
 {
 	WIN_NO_COPY_MOVE(SoundEngineWindowsDirectSound);
 
@@ -27,14 +27,14 @@ class SoundEngineWindowsDirectSound : public SoundEngineImplementation
 	constexpr static int buffer_len_bytes = (write_size_stereo_samples * 2 * sizeof(std::int16_t)) * 3;
 
 public:
-	SoundEngineWindowsDirectSound(HWND, AssetRoll &roll);
-	~SoundEngineWindowsDirectSound();
+	SoundEngineWindowsDirectSound(HWND hwnd, AssetRoll &roll);
+	~SoundEngineWindowsDirectSound() override;
 
-	std::uint32_t play(const SoundEnginePlayCommand&) override;
-	void save(const std::vector<SoundEnginePlaybackCommand>&, const std::vector<SoundEngineConfigCommand>&) override;
+	std::uint32_t play(const SoundEnginePlayCommand &cmd) override;
+	void save(const std::vector<SoundEnginePlaybackCommand> &playback, const std::vector<SoundEngineConfigCommand> &configs) override;
 
 private:
-	static void loop(SoundEngineWindowsDirectSound&, std::atomic<bool>&);
+	static void loop(SoundEngineWindowsDirectSound &engine, std::atomic<bool> &engine);
 	bool write();
 
 	std::thread loop_thread;

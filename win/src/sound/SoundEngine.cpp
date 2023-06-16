@@ -51,15 +51,9 @@ SoundEngine::SoundEngine(Display &parent, AssetRoll &roll)
 SoundEngine::SoundEngine(AssetRoll &roll)
 	: SoundEngine(NULL, roll) {}
 
-std::uint32_t SoundEngine::play(const char *name, int residency_priority, float compression_priority, bool looping, int seek)
+std::uint32_t SoundEngine::play(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, bool cache, int seek)
 {
-	SoundEnginePlayCommand cmd(name, residency_priority, compression_priority, 1.0f, 1.0f, looping, seek);
-	return inner->play(cmd);
-}
-
-std::uint32_t SoundEngine::play(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, int seek)
-{
-	SoundEnginePlayCommand cmd(name, residency_priority, compression_priority, left, right, looping, seek);
+	SoundEnginePlayCommand cmd(name, residency_priority, compression_priority, left, right, looping, cache, seek);
 	return inner->play(cmd);
 }
 

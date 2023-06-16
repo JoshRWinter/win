@@ -12,13 +12,14 @@ namespace win
 
 struct SoundEnginePlayCommand
 {
-	SoundEnginePlayCommand(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, int seek)
+	SoundEnginePlayCommand(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, bool cache, int seek)
 		: name(name)
 		, residency_priority(residency_priority)
 		, compression_priority(compression_priority)
 		, left(left)
 		, right(right)
 		, looping(looping)
+		, cache(cache)
 		, seek(seek)
 	{}
 
@@ -28,6 +29,7 @@ struct SoundEnginePlayCommand
 	float left;
 	float right;
 	bool looping;
+	bool cache;
 	int seek;
 };
 
@@ -57,17 +59,17 @@ struct SoundEngineConfigCommand
 	float right;
 };
 
-class SoundEngineImplementation
+class SoundEngineBase
 {
-	WIN_NO_COPY_MOVE(SoundEngineImplementation);
+	WIN_NO_COPY_MOVE(SoundEngineBase);
 
 public:
-	SoundEngineImplementation() = default;
+	SoundEngineBase() = default;
 
-	virtual std::uint32_t play(const SoundEnginePlayCommand&) = 0;
-	virtual void save(const std::vector<SoundEnginePlaybackCommand>&, const std::vector<SoundEngineConfigCommand>&) = 0;
+	virtual std::uint32_t play(const SoundEnginePlayCommand &cmd) = 0;
+	virtual void save(const std::vector<SoundEnginePlaybackCommand> &playback, const std::vector<SoundEngineConfigCommand> &configs) = 0;
 
-	virtual ~SoundEngineImplementation() = default;
+	virtual ~SoundEngineBase() = default;
 };
 
 #if defined WINPLAT_WINDOWS
@@ -86,9 +88,7 @@ public:
 	SoundEngine(AssetRoll&);
 
 	// name must live until the save() call returns
-	std::uint32_t play(const char *name, int, float, bool = false, int = 0);
-	// name must live until the save() call returns
-	std::uint32_t play(const char*, int, float, float, float, bool, int = 0);
+	std::uint32_t play(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, bool cache, int seek = 0);
 	void pause(std::uint32_t);
 	void resume(std::uint32_t);
 	void stop(std::uint32_t);
@@ -98,7 +98,7 @@ public:
 	void save();
 
 private:
-	std::unique_ptr<SoundEngineImplementation> inner;
+	std::unique_ptr<SoundEngineBase> inner;
 
 	std::vector<SoundEnginePlayCommand> play_commands;
 	std::vector<SoundEnginePlaybackCommand> playback_commands;

@@ -12,19 +12,19 @@
 namespace win
 {
 
-class SoundEngineLinuxPulseAudio : public SoundEngineImplementation
+class SoundEngineLinuxPulseAudio : public SoundEngineBase
 {
 	WIN_NO_COPY_MOVE(SoundEngineLinuxPulseAudio);
 
 public:
-	SoundEngineLinuxPulseAudio(AssetRoll&, const char*);
-	~SoundEngineLinuxPulseAudio();
+	SoundEngineLinuxPulseAudio(AssetRoll &name, const char *soname);
+	~SoundEngineLinuxPulseAudio() override;
 
-	std::uint32_t play(const SoundEnginePlayCommand&) override;
-	void save(const std::vector<SoundEnginePlaybackCommand>&, const std::vector<SoundEngineConfigCommand>&) override;
+	std::uint32_t play(const SoundEnginePlayCommand &cmd) override;
+	void save(const std::vector<SoundEnginePlaybackCommand> &playback, const std::vector<SoundEngineConfigCommand> &configs) override;
 
 private:
-	static void process(pa_stream*, size_t, void*);
+	static void process(pa_stream *stream, size_t request_bytes, void *userdata);
 	void load_functions();
 
 	void *so;
