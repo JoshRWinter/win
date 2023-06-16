@@ -5,7 +5,6 @@
 
 #include <win/Win.hpp>
 #include <win/AssetRoll.hpp>
-#include <win/sound/SoundEffect.hpp>
 #include <win/Display.hpp>
 
 namespace win
@@ -90,8 +89,6 @@ public:
 	std::uint32_t play(const char *name, int, float, bool = false, int = 0);
 	// name must live until the save() call returns
 	std::uint32_t play(const char*, int, float, float, float, bool, int = 0);
-	//void apply_effect(std::uint32_t, SoundEffect*);
-	//void remove_effect(std::uint32_t, SoundEffect*);
 	void pause(std::uint32_t);
 	void resume(std::uint32_t);
 	void stop(std::uint32_t);

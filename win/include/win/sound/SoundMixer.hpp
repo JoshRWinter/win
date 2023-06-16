@@ -6,9 +6,7 @@
 
 #include <win/Win.hpp>
 #include <win/sound/ActiveSoundStore.hpp>
-#include <win/sound/PcmStream.hpp>
-#include <win/sound/SoundEffect.hpp>
-#include <win/sound/SoundCache.hpp>
+#include <win/sound/SoundRepo.hpp>
 #include <win/AssetRoll.hpp>
 
 namespace win
@@ -20,7 +18,6 @@ struct SoundMixerSound
 		: sound(sound)
 		, residency_priority(residency_priority)
 		, compression_priority(compression_priority)
-		, effect_tail(NULL)
 		, left(left)
 		, right(right)
 		, left_limiter(1.0f)
@@ -33,7 +30,6 @@ struct SoundMixerSound
 	Sound &sound;
 	int residency_priority;
 	float compression_priority;
-	SoundEffect *effect_tail;
 	float left;
 	float right;
 	float left_limiter;
@@ -58,8 +54,6 @@ public:
 
 	std::uint32_t add(const char*, int, float, float, float, bool, int);
 	void config(std::uint32_t, float, float);
-	void apply_effect(std::uint32_t, SoundEffect*);
-	void remove_effect(std::uint32_t, SoundEffect*);
 	void pause(std::uint32_t);
 	void resume(std::uint32_t);
 	void stop(std::uint32_t);
@@ -75,7 +69,7 @@ private:
 	std::unique_ptr<float[]> conversion_buffers_owner;
 	float *conversion_buffers;
 	std::chrono::time_point<std::chrono::high_resolution_clock> last_call;
-	win::SoundCache cache;
+	win::SoundRepo repo;
 	win::ActiveSoundStore<SoundMixerSound, max_sounds> sounds;
 };
 
