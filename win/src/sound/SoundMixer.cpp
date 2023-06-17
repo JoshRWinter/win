@@ -372,7 +372,7 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const dest, c
 		win::bug("SoundMixer: mono or stereo PCM required");
 
 	// extract the PCM data from the stream
-	const int got = extract_pcm(sound, extractbuf, read_samples);
+	const int got = sound.sound.source->read_samples(extractbuf, read_samples);
 	if (got < read_samples) // we were shorted a little bit
 	{
 		if (sound.sound.source->empty()) // the decoder is done and the stream is empty
@@ -383,7 +383,7 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const dest, c
 				sound.sound.source->restart();
 
 				// now that it's been restarted, see if we can squeeze a bit more out of it
-				const int got2 = extract_pcm(sound, extractbuf + got, read_samples - got);
+				const int got2 = sound.sound.source->read_samples(extractbuf + got, read_samples - got);
 
 				if (got + got2 < read_samples) // gol dangit we were shorted again
 					zero_float(extractbuf + got + got2, read_samples - (got + got2)); // blank out the rest, this will cause a small skip in the audio. oh well
@@ -420,19 +420,6 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const dest, c
 			dest[frame + 1] = right * sound.right;
 		}
 	}
-}
-
-int SoundMixer::extract_pcm(SoundMixerSound &sound, float *dest, int len)
-{
-	std::int16_t tempbuf[mix_samples];
-	if (len > mix_samples)
-		win::bug("invalid len");
-
-	const int got = sound.sound.source->read_samples(tempbuf, len);
-	for (int i = 0; i < got; ++i)
-		dest[i] = tempbuf[i] / (tempbuf[i] < 0 ? 32768.0f : 32767.0f);
-
-	return got;
 }
 
 void SoundMixer::zero_float(float *f, int len)

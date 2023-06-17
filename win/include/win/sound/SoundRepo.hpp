@@ -23,7 +23,7 @@ public:
 
 private:
 	AssetRoll &roll;
-	Pool<Sound, 25> loaded_sounds;
+	Pool<Sound, 25> sounds;
 	Pool<DecodingPcmSource, 25> decoders;
 };
 

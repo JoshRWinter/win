@@ -24,14 +24,14 @@ public:
 	int channels() override;
 	void restart() override;
 	bool empty() override;
-	int read_samples(std::int16_t *buf, int samples) override;
+	int read_samples(float *buf, int samples) override;
 
 private:
 	void set_channels(int c);
 	static void decodeogg_loop(DecodingPcmSource &parent, win::Stream datafile, int seek_to);
 	static void decodeogg(DecodingPcmSource &parent, win::Stream &datafile, int seek_to);
 
-	win::ConcurrentRingBuffer<std::int16_t, buffersize + 1> buffer;
+	win::ConcurrentRingBuffer<float, buffersize + 1> buffer;
 	std::atomic<bool> cancel;
 	std::atomic<bool> reset;
 	std::atomic<bool> finished;

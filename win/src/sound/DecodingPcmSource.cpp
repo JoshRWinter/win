@@ -54,7 +54,7 @@ bool DecodingPcmSource::empty()
 	return finished.load() && buffer.size() == 0;
 }
 
-int DecodingPcmSource::read_samples(std::int16_t *buf, int samples)
+int DecodingPcmSource::read_samples(float *buf, int samples)
 {
 	return buffer.read(buf, samples);
 }
@@ -252,9 +252,14 @@ void DecodingPcmSource::decodeogg(win::DecodingPcmSource &parent, win::Stream &d
 						skip_samples -= eat;
 					}
 
+					float floatconv[4096];
+					static_assert(sizeof(floatconv) == sizeof(convbuffer) * 2, "mismatch");
+					for (int k = 0; k < want_to_write_samples; ++k)
+						floatconv[k] = convbuffer[k] / (convbuffer[k] < 0 ? 32768.0f : 32767.0f);
+
 					for(;;)
 					{
-						samples_written += parent.buffer.write(convbuffer + samples_written, want_to_write_samples - samples_written);
+						samples_written += parent.buffer.write(floatconv + samples_written, want_to_write_samples - samples_written);
 
 						if (samples_written == want_to_write_samples)
 							break;

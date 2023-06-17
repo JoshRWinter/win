@@ -9,7 +9,7 @@ SoundRepo::SoundRepo(win::AssetRoll &roll)
 
 SoundRepo::~SoundRepo()
 {
-	if (loaded_sounds.size() != 0)
+	if (sounds.size() != 0)
 		win::bug("Leftover sound streams");
 }
 
@@ -19,14 +19,14 @@ Sound &SoundRepo::load(const char *name, bool cache, int seek)
 	DecodingPcmSource &source = decoders.add(roll[name], seek);
 
 	// make a sound object
-	Sound &sound = loaded_sounds.add(&source);
+	Sound &sound = sounds.add(&source);
 	return sound;
 }
 
 void SoundRepo::unload(Sound &sound)
 {
 	DecodingPcmSource &source = *(DecodingPcmSource*)sound.source;
-	loaded_sounds.remove(sound);
+	sounds.remove(sound);
 
 	decoders.remove(source);
 }

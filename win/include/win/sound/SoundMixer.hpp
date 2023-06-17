@@ -63,7 +63,6 @@ public:
 private:
 	void calculate_stereo_limiters(int count, int len, const std::array<StereoLimiter, max_sounds> &limiters, const std::array<float, max_sounds> &priorities);
 	static void extract_stereo_f32(SoundMixerSound&, float *dest, int len);
-	static int extract_pcm(SoundMixerSound &sound, float *dest, int len);
 	static void zero_float(float*, int len);
 
 	std::unique_ptr<float[]> conversion_buffers_owner;
