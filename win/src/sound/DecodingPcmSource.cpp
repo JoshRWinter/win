@@ -9,11 +9,11 @@
 namespace win
 {
 
-DecodingPcmSource::DecodingPcmSource(Stream data, int seek_start)
+DecodingPcmSource::DecodingPcmSource(Stream data, int seek_start, const int *cached_channels)
 	: cancel(false)
 	, reset(false)
 	, finished(false)
-	, channel_count(-1)
+	, channel_count(cached_channels ? *cached_channels : -1)
 	, channels_initialized_signal(1)
 {
 	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(data), seek_start));

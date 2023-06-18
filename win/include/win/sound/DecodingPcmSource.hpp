@@ -18,7 +18,7 @@ class DecodingPcmSource : public PcmSource
 	constexpr static int buffersize = 44100 * 2 * 2; // 2 seconds of stereo, or 4 of mono
 
 public:
-	DecodingPcmSource(Stream data, int seek_start);
+	DecodingPcmSource(Stream data, int seek_start, const int *cached_channels);
 	~DecodingPcmSource();
 
 	int channels() override;
