@@ -9,15 +9,15 @@ SoundRepo::SoundRepo(win::AssetRoll &roll)
 
 SoundRepo::~SoundRepo()
 {
-	if (loaded_sounds.size() != 0)
-		win::bug("Leftover sound streams");
+	if (entries.size() != 0)
+		win::bug("Leftover sound entries");
 }
 
 Sound &SoundRepo::load(const char *name, bool cache, int seek)
 {
 	SoundRepoCacheEntry *cached = NULL;
 	// create a cache entry if one doesn't exist yet
-	for (auto &entry : sound_cache)
+	for (auto &entry : cache_entries)
 	{
 		if (entry.key_name == name && entry.key_seek == seek)
 		{
@@ -27,26 +27,28 @@ Sound &SoundRepo::load(const char *name, bool cache, int seek)
 	}
 
 	if (cached == NULL)
-		sound_cache.add(name, seek);
-
-	int *cached_channels = NULL;
-	if (cached && cached->channels != -1)
-		cached_channels = &cached->channels;
+		cached = &cache_entries.add(name, seek);
 
 	// load a decoder
-	DecodingPcmSource &source = loaded_decoder_storage.add(roll[name], seek, cached_channels);
+	DecodingPcmSource &decoder = decoders.add(roll[name], seek, cached->channels, true);
 
 	// make a sound object
-	Sound &sound = loaded_sounds.add(&source);
+	Sound &sound = entries.add(decoder, cached);
 	return sound;
 }
 
 void SoundRepo::unload(Sound &sound)
 {
-	DecodingPcmSource &source = *(DecodingPcmSource*)sound.source;
-	loaded_sounds.remove(sound);
+	auto &entry = (SoundRepoEntry&)sound;
 
-	loaded_decoder_storage.remove(source);
+	DecodingPcmSource &source = (DecodingPcmSource&)sound.source;
+
+	// fill in the cache information, if appropriate
+	if (entry.cache_entry->channels == -1)
+		entry.cache_entry->channels = sound.source.channels();
+
+	entries.remove(entry);
+	decoders.remove(source);
 }
 
 }

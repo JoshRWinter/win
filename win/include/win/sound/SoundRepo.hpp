@@ -27,6 +27,16 @@ struct SoundRepoCacheEntry
 	std::unique_ptr<float[]> pcm;
 };
 
+struct SoundRepoEntry : Sound
+{
+	SoundRepoEntry(PcmSource &source, SoundRepoCacheEntry *cache_entry)
+		: Sound(source)
+		, cache_entry(cache_entry)
+	{}
+
+	SoundRepoCacheEntry *cache_entry;
+};
+
 class SoundRepo
 {
 	WIN_NO_COPY_MOVE(SoundRepo);
@@ -40,9 +50,9 @@ public:
 
 private:
 	AssetRoll &roll;
-	Pool<Sound, 25> loaded_sounds;
-	Pool<DecodingPcmSource, 25> loaded_decoder_storage;
-	Pool<SoundRepoCacheEntry, 25> sound_cache;
+	Pool<SoundRepoEntry, 25> entries;
+	Pool<SoundRepoCacheEntry, 25> cache_entries;
+	Pool<DecodingPcmSource, 25> decoders;
 };
 
 }

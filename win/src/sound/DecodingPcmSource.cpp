@@ -9,14 +9,27 @@
 namespace win
 {
 
-DecodingPcmSource::DecodingPcmSource(Stream data, int seek_start, const int *cached_channels)
+DecodingPcmSource::DecodingPcmSource(Stream data, int seek_start, int cached_channels, bool compute_total_size)
 	: cancel(false)
 	, reset(false)
 	, finished(false)
-	, channel_count(cached_channels ? *cached_channels : -1)
+	, channel_count(cached_channels)
 	, channels_initialized_signal(1)
+	, total_size(compute_total_size ? compute_size(data) : -1)
 {
+	if (cached_channels == -1)
+		fprintf(stderr, "uncached channels\n");
+	else
+		fprintf(stderr, "cached channels\n");
 	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(data), seek_start));
+}
+
+long DecodingPcmSource::pcm_size() const
+{
+	if (total_size == -1)
+		win::bug("DecodingPcmSource: No size");
+
+	return total_size;
 }
 
 DecodingPcmSource::~DecodingPcmSource()
@@ -46,6 +59,7 @@ void DecodingPcmSource::restart()
 	if (!finished.load())
 		win::bug("DecodingPcmSource does not support restarting if it is not empty!");
 
+	finished.store(false);
 	reset.store(true);
 }
 
@@ -57,6 +71,39 @@ bool DecodingPcmSource::empty()
 int DecodingPcmSource::read_samples(float *buf, int samples)
 {
 	return buffer.read(buf, samples);
+}
+
+long DecodingPcmSource::compute_size(Stream &stream)
+{
+	const int spot = stream.tell();
+
+	for (int index = stream.size() - 4; index >= 0; --index)
+	{
+		stream.seek(index);
+
+		unsigned char bytes[4];
+		stream.read(bytes, 4);
+
+		if (bytes[0] == 'O' && bytes[1] == 'g' && bytes[2] == 'g' && bytes[3] == 'S')
+		{
+			stream.seek(index + 6);
+
+			if (index + 6 + 8 > stream.size())
+				win::bug("Couldn't determine size");
+
+			std::uint64_t samplecount;
+			stream.read(&samplecount, sizeof(samplecount));
+
+			if (samplecount > std::numeric_limits<std::int64_t>::max())
+				win::bug("Too big");
+
+			stream.seek(spot);
+
+			return (long)samplecount;
+		}
+	}
+
+	win::bug("Couldn't determine size");
 }
 
 void DecodingPcmSource::set_channels(int c)
@@ -83,7 +130,6 @@ void DecodingPcmSource::decodeogg_loop(win::DecodingPcmSource &parent, win::Stre
 		bool expected = true;
 		if (parent.reset.compare_exchange_strong(expected, false))
 		{
-
 			datafile.seek(0);
 			decodeogg(parent, datafile, seek_to);
 			parent.finished.store(true);

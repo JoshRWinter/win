@@ -365,25 +365,25 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const dest, c
 	float extractbuf[mix_samples]; // mix_samples will be >= buf_len
 	zero_float(extractbuf, mix_samples);
 
-	const int channels = sound.sound.source->channels();
+	const int channels = sound.sound.source.channels();
 	const int read_samples = channels == 1 ? len / 2 : len;
 
 	if (channels != 1 && channels != 2)
 		win::bug("SoundMixer: mono or stereo PCM required");
 
 	// extract the PCM data from the stream
-	const int got = sound.sound.source->read_samples(extractbuf, read_samples);
+	const int got = sound.sound.source.read_samples(extractbuf, read_samples);
 	if (got < read_samples) // we were shorted a little bit
 	{
-		if (sound.sound.source->empty()) // the decoder is done and the stream is empty
+		if (sound.sound.source.empty()) // the decoder is done and the stream is empty
 		{
 			if (sound.looping)
 			{
 				// restart the stream, for the next loop
-				sound.sound.source->restart();
+				sound.sound.source.restart();
 
 				// now that it's been restarted, see if we can squeeze a bit more out of it
-				const int got2 = sound.sound.source->read_samples(extractbuf + got, read_samples - got);
+				const int got2 = sound.sound.source.read_samples(extractbuf + got, read_samples - got);
 
 				if (got + got2 < read_samples) // gol dangit we were shorted again
 					zero_float(extractbuf + got + got2, read_samples - (got + got2)); // blank out the rest, this will cause a small skip in the audio. oh well

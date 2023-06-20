@@ -11,11 +11,11 @@ class Sound
 	WIN_NO_COPY_MOVE(Sound);
 
 public:
-	explicit Sound(PcmSource *source)
+	explicit Sound(PcmSource &source)
 		: source(source)
 	{}
 
-	win::PcmSource *source;
+	win::PcmSource &source;
 };
 
 }
