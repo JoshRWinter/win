@@ -24,6 +24,11 @@ DecodingPcmSource::DecodingPcmSource(Stream data, int seek_start, int cached_cha
 	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(data), seek_start));
 }
 
+DecodingPcmSource::~DecodingPcmSource()
+{
+	stop();
+}
+
 long DecodingPcmSource::pcm_size() const
 {
 	if (total_size == -1)
@@ -32,10 +37,11 @@ long DecodingPcmSource::pcm_size() const
 	return total_size;
 }
 
-DecodingPcmSource::~DecodingPcmSource()
+void DecodingPcmSource::stop()
 {
 	cancel.store(true);
-	worker.join();
+	if (worker.joinable())
+		worker.join();
 }
 
 int DecodingPcmSource::channels()

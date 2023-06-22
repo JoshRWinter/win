@@ -34,6 +34,7 @@ void CachingPcmSource::restart()
 			win::bug("CachingPcmSource doesn't support restarting if not empty!");
 
 		mode = CachingPcmSourceMode::read_from_cache;
+		decoder.stop();
 	}
 	else
 	{

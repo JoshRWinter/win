@@ -22,6 +22,7 @@ public:
 	~DecodingPcmSource();
 
 	long pcm_size() const;
+	void stop();
 
 	int channels() override;
 	void restart() override;
