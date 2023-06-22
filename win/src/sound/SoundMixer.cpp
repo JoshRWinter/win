@@ -29,7 +29,7 @@ std::uint32_t SoundMixer::add(const char *name, int residency_priority, float co
 	if (compression_priority > 0.99f)
 		compression_priority = 0.99f;
 
-	Sound &sound = repo.load(name, seek, cache);
+	Sound &sound = repo.load(name, cache, seek);
 	const auto key = sounds.add(sound, residency_priority, compression_priority, std::max(left, 0.0f), std::max(right, 0.0f), looping);
 	if (key == -1)
 	{

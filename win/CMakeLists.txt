@@ -88,6 +88,12 @@ add_library(win STATIC
 	include/win/sound/DecodingPcmSource.hpp
 	src/sound/DecodingPcmSource.cpp
 
+	include/win/sound/CachingPcmSource.hpp
+	src/sound/CachingPcmSource.cpp
+
+	include/win/sound/CachedPcmSource.hpp
+	src/sound/CachedPcmSource.cpp
+
 	include/win/sound/Sound.hpp
 
 	include/win/sound/SoundRepo.hpp

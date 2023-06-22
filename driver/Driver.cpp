@@ -145,7 +145,7 @@ int main()
 		if(press && button == win::Button::esc)
 			quit = true;
 		else if(press)
-			audio_engine.play(effect, 5, 0.1f);
+			audio_engine.play(effect, 5, 0.1f, 1.0f, 1.0f, false, true);
 	});
 
 	float mousex = 0.0f, mousey = 0.0f;
@@ -166,7 +166,7 @@ int main()
 	// 	std::cerr << (char)key;
 	// });
 
-	const int block_sid = audio_engine.play(music, 5, 1.0f, 1.0f, 1.0f, true);
+	const auto block_sid = audio_engine.play(music, 5, 1.0f, 1.0f, 1.0f, true, false);
 	while(!quit)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
