@@ -3,19 +3,19 @@
 namespace win
 {
 
-CachingPcmSource::CachingPcmSource(DecodingPcmSource &decoder)
+CachingPcmSource::CachingPcmSource(DecodingPcmSource &decoder, CachedPcmSource &cached, float *pcmdata, long pcmlength)
 	: writemark(0)
-	, pcmlength(decoder.pcm_size())
-	, pcmdata(new float[pcmlength])
+	, pcmlength(pcmlength)
+	, pcmdata(pcmdata)
 	, mode(CachingPcmSourceMode::read_from_decoder)
 	, decoder(decoder)
-	, cache(decoder.channels(), pcmdata.get(), pcmlength)
+	, cached(cached)
 {
 }
 
 int CachingPcmSource::channels()
 {
-	return cache.channels();
+	return cached.channels();
 }
 
 bool CachingPcmSource::empty()
@@ -23,7 +23,7 @@ bool CachingPcmSource::empty()
 	if (mode == CachingPcmSourceMode::read_from_decoder)
 		return decoder.empty();
 	else
-		return cache.empty();
+		return cached.empty();
 }
 
 void CachingPcmSource::restart()
@@ -37,7 +37,7 @@ void CachingPcmSource::restart()
 	}
 	else
 	{
-		cache.restart();
+		cached.restart();
 	}
 }
 
@@ -59,7 +59,7 @@ int CachingPcmSource::read_samples(float *buf, int samples)
 	}
 	else
 	{
-		return cache.read_samples(buf, samples);
+		return cached.read_samples(buf, samples);
 	}
 }
 

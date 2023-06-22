@@ -46,9 +46,14 @@ Sound &SoundRepo::load(const char *name, bool cache, int seek)
 	{
 		fprintf(stderr, "%s: preparing a cache\n", name);
 		auto &decoder = decoders.add(roll[name], seek, cached->channels, true);
-		auto &caching_source = caching_sources.add(decoder);
 
-		return entries.add(caching_source, *cached, &decoder, &caching_source, (CachedPcmSource *)NULL);
+		const long size = decoder.pcm_size();
+		float *destination = new float[size];
+
+		auto &cached_source = cached_sources.add(decoder.channels(), destination, size);
+		auto &caching_source = caching_sources.add(decoder, cached_source, destination, size);
+
+		return entries.add(caching_source, *cached, &decoder, &caching_source, &cached_source);
 	}
 	else // no cache pls
 	{

@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include <win/sound/PcmSource.hpp>
 #include <win/sound/DecodingPcmSource.hpp>
 #include <win/sound/CachedPcmSource.hpp>
 
@@ -20,7 +19,7 @@ class CachingPcmSource : public PcmSource
 	WIN_NO_COPY_MOVE(CachingPcmSource);
 
 public:
-	explicit CachingPcmSource(DecodingPcmSource &source);
+	explicit CachingPcmSource(DecodingPcmSource &decoder, CachedPcmSource &cached, float *pcmdata, long pcmlength);
 
 	int channels() override;
 	bool empty() override;
@@ -35,10 +34,9 @@ private:
 	int writemark;
 	long pcmlength;
 	std::unique_ptr<float[]> pcmdata;
-
 	CachingPcmSourceMode mode;
 	DecodingPcmSource &decoder;
-	CachedPcmSource cache;
+	CachedPcmSource &cached;
 };
 
 }
