@@ -115,8 +115,6 @@ add_library(win STATIC
 
 	include/win/sound/SoundEngineLinuxPipeWire.hpp
 	src/sound/SoundEngineLinuxPipeWire.cpp
-
-	include/win/sound/test/SoundIntegrationTests.hpp
 )
 
 if(WIN32)

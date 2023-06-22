@@ -1,7 +1,5 @@
 #pragma once
 
-//#define WIN_USE_SOUND_INTEGRATION_TESTS
-
 // redifined platform macros for conditional compilation
 #if defined __linux__
 #define WINPLAT_LINUX
