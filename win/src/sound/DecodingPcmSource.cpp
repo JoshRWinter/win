@@ -17,10 +17,6 @@ DecodingPcmSource::DecodingPcmSource(Stream data, int seek_start, int cached_cha
 	, channels_initialized_signal(1)
 	, total_size(compute_total_size ? compute_size(data) : -1)
 {
-	if (cached_channels == -1)
-		fprintf(stderr, "decoder starting up with no channel cache\n");
-	else
-		fprintf(stderr, "decoder starting up with cached channels\n");
 	worker = std::move(std::thread(decodeogg_loop, std::ref(*this), std::move(data), seek_start));
 }
 

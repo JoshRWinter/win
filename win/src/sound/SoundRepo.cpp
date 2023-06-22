@@ -37,14 +37,12 @@ Sound &SoundRepo::load(const char *name, bool cache, int seek)
 
 	if (cached->pcm) // if there is cached sound data
 	{
-		fprintf(stderr, "%s: playing from cache.\n", name);
 		auto &cached_source = cached_sources.add(cached->channels, cached->pcm.get(), cached->length);
 
 		return entries.add((PcmSource&) cached_source, *cached, (DecodingPcmSource *)NULL, (CachingPcmSource *)NULL, &cached_source);
 	}
 	else if (cache) // no cached data exists, but we want to cache
 	{
-		fprintf(stderr, "%s: preparing a cache\n", name);
 		auto &decoder = decoders.add(roll[name], seek, cached->channels, true);
 
 		const long size = decoder.pcm_size();
@@ -57,7 +55,6 @@ Sound &SoundRepo::load(const char *name, bool cache, int seek)
 	}
 	else // no cache pls
 	{
-		fprintf(stderr, "%s: no fuckin caching bitch\n", name);
 		auto &decoder = decoders.add(roll[name], seek, cached->channels, true);
 
 		return entries.add(decoder, *cached, &decoder, (CachingPcmSource *)NULL, (CachedPcmSource *)NULL);
@@ -72,7 +69,6 @@ void SoundRepo::unload(Sound &sound)
 
 	if (entry.cache_entry.channels == -1)
 	{
-		fprintf(stderr, "%s: saving channels to cache\n", entry.cache_entry.key_name.c_str());
 		entry.cache_entry.channels = sound.source.channels();
 	}
 
@@ -83,7 +79,6 @@ void SoundRepo::unload(Sound &sound)
 
 		entry.cache_entry.pcm.reset(pcm);
 		entry.cache_entry.length = length;
-		fprintf(stderr, "%s: saving %ld samples of pcm data to cache\n", entry.cache_entry.key_name.c_str(), length);
 	}
 
 	if (entry.cacher != NULL)
