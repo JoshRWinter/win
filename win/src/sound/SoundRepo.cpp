@@ -45,7 +45,7 @@ Sound &SoundRepo::load(const char *name, bool cache, int seek)
 	{
 		auto &decoder = decoders.add(roll[name], seek, cached->channels, true);
 
-		const long size = decoder.pcm_size();
+		const long size = std::max(0L, decoder.pcm_size() - seek);
 		float *destination = new float[size];
 
 		auto &cached_source = cached_sources.add(decoder.channels(), destination, size);
