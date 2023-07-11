@@ -73,7 +73,7 @@ int main()
 	win::GLFont font3 = text_renderer.create_font(0.2f, roll["assets/NotoSansMono-Regular.ttf"]);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
-	std::cerr << "screen width is " << win::Display::screen_width() << " and screen height is " << win::Display::screen_height() << std::endl;
+	std::cerr << "screen width is " << display.screen_width() << " and screen height is " << display.screen_height() << std::endl;
 
 	const win::AtlasItem coords = atlas.item(4);
 	const float verts[] =

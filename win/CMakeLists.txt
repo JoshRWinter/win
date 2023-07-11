@@ -67,9 +67,15 @@ add_library(win STATIC
 	include/win/AssetRollStreamCompressed.hpp
 	src/AssetRollStreamCompressed.cpp
 
+	include/win/DisplayBase.hpp
+	src/DisplayBase.cpp
+
+	#src/DisplayLinux.cpp
+
+	include/win/Win32Display.hpp
+	src/Win32Display.cpp
+
 	include/win/Display.hpp
-	src/DisplayLinux.cpp
-	src/DisplayWindows.cpp
 
 	include/win/Font.hpp
 	src/Font.cpp
