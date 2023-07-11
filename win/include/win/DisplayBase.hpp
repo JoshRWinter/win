@@ -5,6 +5,10 @@
 #include <win/Win.hpp>
 #include <win/Event.hpp>
 
+#ifdef WINPLAT_LINUX
+#include <X11/Xlib.h>
+#endif
+
 namespace win
 {
 

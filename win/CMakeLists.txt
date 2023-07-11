@@ -70,7 +70,8 @@ add_library(win STATIC
 	include/win/DisplayBase.hpp
 	src/DisplayBase.cpp
 
-	#src/DisplayLinux.cpp
+	include/win/X11Display.hpp
+	src/X11Display.cpp
 
 	include/win/Win32Display.hpp
 	src/Win32Display.cpp

@@ -6,8 +6,7 @@
 #include <X11/XKBlib.h>
 #include <X11/Xatom.h>
 
-#include <win/Event.hpp>
-#include <win/Display.hpp>
+#include <win/X11Display.hpp>
 
 typedef GLXContext (*glXCreateContextAttribsARBProc)(::Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
@@ -219,17 +218,12 @@ static win::Button keystring_to_button(const char *const keystring)
 namespace win
 {
 
-Display::Display(const DisplayOptions &options)
+X11Display::X11Display(const DisplayOptions &options)
 {
 	if (options.width < 1 || options.height < 1)
 		win::bug("Invalid window dimensions");
 	if (options.gl_major == 0)
 		win::bug("Unsupported GL version");
-
-	window_handler = default_window_handler;
-	button_handler = default_button_handler;
-	character_handler = default_character_handler;
-	mouse_handler = default_mouse_handler;
 
 	int visual_attributes[] =
 	{
@@ -298,14 +292,14 @@ Display::Display(const DisplayOptions &options)
 	XFree(fbconfig);
 }
 
-Display::~Display()
+X11Display::~X11Display()
 {
 	glXMakeCurrent(xdisplay, None, NULL);
 	glXDestroyContext(xdisplay, context);
 	XDestroyWindow(xdisplay, window);
 }
 
-void Display::process()
+void X11Display::process()
 {
 	while(XPending(xdisplay))
 	{
@@ -360,12 +354,12 @@ void Display::process()
 	}
 }
 
-void Display::swap()
+void X11Display::swap()
 {
 	glXSwapBuffers(xdisplay, window);
 }
 
-int Display::width()
+int X11Display::width()
 {
 	Window root;
 	int xpos;
@@ -380,7 +374,7 @@ int Display::width()
 	return width;
 }
 
-int Display::height()
+int X11Display::height()
 {
 	Window root;
 	int xpos;
@@ -395,7 +389,17 @@ int Display::height()
 	return height;
 }
 
-void Display::cursor(bool show)
+int X11Display::screen_width()
+{
+	return WidthOfScreen(ScreenOfDisplay(xdisplay, 0));
+}
+
+int X11Display::screen_height()
+{
+	return HeightOfScreen(ScreenOfDisplay(xdisplay, 0));
+}
+
+void X11Display::cursor(bool show)
 {
 	if(show)
 	{
@@ -416,39 +420,14 @@ void Display::cursor(bool show)
 	}
 }
 
-void Display::vsync(bool on)
+void X11Display::vsync(bool on)
 {
 	glXSwapIntervalEXT(xdisplay, window, on);
 }
 
-void Display::register_window_handler(WindowHandler f)
+NativeWindowHandle X11Display::native_handle()
 {
-	window_handler = std::move(f);
-}
-
-void Display::register_button_handler(ButtonHandler f)
-{
-	button_handler = std::move(f);
-}
-
-void Display::register_character_handler(CharacterHandler f)
-{
-	character_handler = std::move(f);
-}
-
-void Display::register_mouse_handler(MouseHandler f)
-{
-	mouse_handler = std::move(f);
-}
-
-int Display::screen_width()
-{
-	return WidthOfScreen(ScreenOfDisplay(xdisplay, 0));
-}
-
-int Display::screen_height()
-{
-	return HeightOfScreen(ScreenOfDisplay(xdisplay, 0));
+	return &window;
 }
 
 }

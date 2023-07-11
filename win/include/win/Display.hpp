@@ -7,6 +7,7 @@
 #if defined WINPLAT_WINDOWS
 #include <win/Win32Display.hpp>
 #elif defined WINPLAT_LINUX
+#include <win/X11Display.hpp>
 #endif
 
 namespace win
@@ -22,6 +23,7 @@ public:
 #if defined WINPLAT_WINDOWS
 		inner.reset(new Win32Display(options));
 #elif defined WINPLAT_LINUX
+		inner.reset(new X11Display(options));
 #endif
 	}
 
