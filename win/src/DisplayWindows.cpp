@@ -12,7 +12,7 @@
 #include <win/Event.hpp>
 
 #ifdef WIN_USE_OPENGL
-#include <win/GL.hpp>
+#include <win/GL/GL.hpp>
 #endif
 
 namespace win
@@ -182,7 +182,7 @@ void Display::win_init_gl(Display &display, HWND hwnd)
 		std::abort();
 	}
 
-	load_gl_extensions();
+	display.wglSwapIntervalEXT = (decltype(wglSwapIntervalEXT)) wglGetProcAddress("wglSwapIntervalEXT");
 }
 
 void Display::win_term_gl()

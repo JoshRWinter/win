@@ -57,7 +57,7 @@ int main()
 #if defined WINPLAT_LINUX
 	win::AssetRoll roll("roll");
 #elif defined WINPLAT_WINDOWS
-	win::AssetRoll roll("c:\\users\\josh\\desktop\\win\\driver\\assets.roll");
+	win::AssetRoll roll("c:\\users\\josh\\desktop\\winbuild\\driver\\assets.roll");
 #endif
 
 	win::GLAtlas atlas(roll["main.atlas"], win::GLAtlas::Mode::linear);

@@ -34,7 +34,7 @@ public:
 	void save(const std::vector<SoundEnginePlaybackCommand> &playback, const std::vector<SoundEngineConfigCommand> &configs) override;
 
 private:
-	static void loop(SoundEngineWindowsDirectSound &engine, std::atomic<bool> &engine);
+	static void loop(SoundEngineWindowsDirectSound &engine, std::atomic<bool> &cancel);
 	bool write();
 
 	std::thread loop_thread;

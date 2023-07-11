@@ -125,13 +125,13 @@ if(WIN32)
 		PUBLIC
 		include
 		${OPENGL_INCLUDE_DIRS}
+		include/GL
 		${DSOUND_INCLUDE_DIRS}
 		PRIVATE
 		include/freetype
 		include/ogg
 		include/vorbis
 		include/zlib
-		glm
 		)
 
 	target_link_libraries(win
@@ -168,7 +168,6 @@ else()
 		${PipeWire_INCLUDE_DIRS}
 		${Spa_INCLUDE_DIRS}
 		${PULSEAUDIO_INCLUDE_DIRS}
-		glm
 		)
 
 	target_link_libraries(win

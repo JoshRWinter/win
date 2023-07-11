@@ -124,6 +124,11 @@ void load_gl_functions()
 	glDrawElementsInstancedBaseInstance = (decltype(glDrawElementsInstancedBaseInstance)) get_proc("glDrawElementsInstancedBaseInstance");
 	glDrawElementsBaseVertex = (decltype(glDrawElementsBaseVertex)) get_proc("glDrawElementsBaseVertex");
 	glMultiDrawElementsIndirect = (decltype(glMultiDrawElementsIndirect)) get_proc("glMultiDrawElementsIndirect");
+
+#ifdef WINPLAT_WINDOWS
+	glTexImage3D = (decltype(glTexImage3D)) get_proc("glTexImage3D");
+	glTexSubImage3D = (decltype(glTexSubImage3D)) get_proc("glTexSubImage3D");
+#endif
 }
 
 GLuint load_gl_shaders(const std::string &vertex, const std::string &fragment)

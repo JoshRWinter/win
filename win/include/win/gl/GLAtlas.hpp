@@ -5,6 +5,7 @@
 #ifdef WIN_USE_OPENGL
 
 #include <GL/gl.h>
+#include <GL/glext.h>
 
 #include <win/Atlas.hpp>
 

@@ -9,6 +9,9 @@
 #ifdef WINPLAT_LINUX
 #include <X11/Xlib.h>
 #include <GL/glx.h>
+#elif defined WINPLAT_WINDOWS
+#include <GL/gl.h>
+#include <wglext.h>
 #endif
 
 namespace win
@@ -94,6 +97,7 @@ private:
 	HGLRC context;
 	int gl_major;
 	int gl_minor;
+	PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 
 	static LRESULT CALLBACK wndproc(HWND, UINT, WPARAM, LPARAM);
 	static void win_init_gl(Display&, HWND);
