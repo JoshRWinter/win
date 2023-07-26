@@ -69,21 +69,6 @@ const AtlasItem &Atlas::item(int index) const
 	return textures[index];
 }
 
-int Atlas::width() const
-{
-	return canvas_width;
-}
-
-int Atlas::height() const
-{
-	return canvas_height;
-}
-
-const unsigned char *Atlas::data() const
-{
-	return imgdata.get();
-}
-
 void Atlas::corrupt()
 {
 	win::bug("Atlas: corrupt");

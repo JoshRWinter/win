@@ -12,7 +12,7 @@
 namespace win
 {
 
-class GLAtlas
+class GLAtlas : public Atlas
 {
 	WIN_NO_COPY_MOVE(GLAtlas);
 
@@ -23,9 +23,6 @@ public:
 	~GLAtlas();
 
 	GLuint texture() const;
-
-	int count() const;
-	const AtlasItem &item(int) const;
 
 private:
 	GLuint gltex;

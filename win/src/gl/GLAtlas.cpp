@@ -6,8 +6,8 @@ namespace win
 {
 
 GLAtlas::GLAtlas(Stream stream, Mode mode)
+	: Atlas(std::move(stream))
 {
-
 	glGenTextures(1, &gltex);
 	glBindTexture(GL_TEXTURE_2D, gltex);
 
@@ -16,15 +16,10 @@ GLAtlas::GLAtlas(Stream stream, Mode mode)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	Atlas atlas(std::move(stream));
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas_width, canvas_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, imgdata.get());
 
-	// copy over the items
-	num = atlas.count();
-	items.reset(new AtlasItem[num]);
-	for (int i = 0; i < num; ++i)
-		items[i] = atlas.item(i);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlas.width(), atlas.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, atlas.data());
+	// kill off the bitmap data cause we don't need it any more
+	imgdata.reset(NULL);
 }
 
 GLAtlas::~GLAtlas()
@@ -35,21 +30,6 @@ GLAtlas::~GLAtlas()
 GLuint GLAtlas::texture() const
 {
 	return gltex;
-}
-
-int GLAtlas::count() const
-{
-	return num;
-}
-
-const AtlasItem &GLAtlas::item(int i) const
-{
-#ifndef NDEBUG
-	if (i < 0 || i >= num)
-		win::bug("GLAtlas: item out of bounds");
-#endif
-
-	return items[i];
 }
 
 }
