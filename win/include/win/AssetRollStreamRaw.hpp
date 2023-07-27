@@ -8,13 +8,12 @@
 namespace win
 {
 
-class AssetRollStreamRaw : public StreamImpl
+class AssetRollStreamRaw : public StreamBase
 {
 	WIN_NO_COPY_MOVE(AssetRollStreamRaw);
 
 public:
 	AssetRollStreamRaw(const std::string&, unsigned long long, unsigned long long);
-	~AssetRollStreamRaw() {}
 
 	unsigned long long size() const override;
 	void read(void*, unsigned long long) override;
@@ -24,6 +23,9 @@ public:
 	unsigned long long tell() override;
 
 private:
+	void lazy_init();
+
+	std::string asset_roll_name;
 	std::ifstream stream;
 	unsigned long long begin;
 	unsigned long long length;

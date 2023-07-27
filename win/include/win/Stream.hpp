@@ -6,16 +6,16 @@
 namespace win
 {
 
-class StreamImpl
+class StreamBase
 {
 public:
-	StreamImpl() = default;
-	StreamImpl(const StreamImpl&) = delete;
-	StreamImpl(StreamImpl&&) = delete;
-	virtual ~StreamImpl() = default;
+	StreamBase() = default;
+	StreamBase(const StreamBase&) = delete;
+	StreamBase(StreamBase&&) = delete;
+	virtual ~StreamBase() = default;
 
-	void operator=(const StreamImpl&) = delete;
-	void operator=(StreamImpl&&) = delete;
+	void operator=(const StreamBase&) = delete;
+	void operator=(StreamBase&&) = delete;
 
 	virtual unsigned long long size() const = 0;
 	virtual void read(void*, unsigned long long) = 0;
@@ -29,7 +29,7 @@ class Stream
 {
 	friend class AssetRoll;
 public:
-	explicit Stream(StreamImpl *inner) : inner(inner) {}
+	explicit Stream(StreamBase *inner) : inner(inner) {}
 	Stream(const Stream&) = delete;
 	Stream(Stream&&) = default;
 
@@ -43,7 +43,7 @@ public:
 	unsigned long long tell() { return inner->tell(); }
 
 private:
-	std::unique_ptr<StreamImpl> inner;
+	std::unique_ptr<StreamBase> inner;
 };
 
 }

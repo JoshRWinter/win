@@ -5,15 +5,11 @@ namespace win
 {
 
 AssetRollStreamRaw::AssetRollStreamRaw(const std::string &name, unsigned long long begin, unsigned long long length)
-	: stream(std::move(std::ifstream(name, std::ifstream::binary)))
+	//: stream(std::move(std::ifstream(name, std::ifstream::binary)))
+	: asset_roll_name(name)
 	, begin(begin)
 	, length(length)
-{
-	if (!stream)
-		win::bug("Couldn't open \"" + name + "\" for reading");
-
-	stream.seekg(begin);
-}
+{}
 
 unsigned long long AssetRollStreamRaw::size() const
 {
@@ -22,6 +18,8 @@ unsigned long long AssetRollStreamRaw::size() const
 
 void AssetRollStreamRaw::read(void *buf, unsigned long long len)
 {
+	lazy_init();
+
 	if ((unsigned long long)stream.tellg() - begin > length)
 		win::bug("AssetRollStreamRaw: read past end");
 
@@ -33,6 +31,8 @@ void AssetRollStreamRaw::read(void *buf, unsigned long long len)
 
 std::unique_ptr<unsigned char[]> AssetRollStreamRaw::read_all()
 {
+	lazy_init();
+
 	std::unique_ptr<unsigned char[]> memory(new unsigned char[length]);
 
 	stream.read((char*)memory.get(), length);
@@ -45,6 +45,8 @@ std::unique_ptr<unsigned char[]> AssetRollStreamRaw::read_all()
 
 std::string AssetRollStreamRaw::read_all_as_string()
 {
+	lazy_init();
+
 	std::unique_ptr<char[]> memory(new char[length + 1]);
 
 	stream.read(memory.get(), length);
@@ -59,16 +61,32 @@ std::string AssetRollStreamRaw::read_all_as_string()
 
 void AssetRollStreamRaw::seek(unsigned long long pos)
 {
+	lazy_init();
+
 	stream.seekg(begin + pos);
 }
 
 unsigned long long AssetRollStreamRaw::tell()
 {
+	lazy_init();
+
 	const long long spot = stream.tellg();
 	if (spot == -1)
 		win::bug("AssetRollStreamRaw: tellg() failure");
 
 	return spot - begin;
+}
+
+void AssetRollStreamRaw::lazy_init()
+{
+	if (!stream.is_open())
+	{
+		stream = std::move(std::ifstream(asset_roll_name, std::ifstream::binary));
+		if (!stream)
+			win::bug("Couldn't open \"" + asset_roll_name + "\" for reading");
+
+		stream.seekg(begin);
+	}
 }
 
 }

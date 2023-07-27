@@ -6,7 +6,7 @@
 namespace win
 {
 
-class AssetRollStreamCompressed : public StreamImpl
+class AssetRollStreamCompressed : public StreamBase
 {
 	WIN_NO_COPY_MOVE(AssetRollStreamCompressed);
 
