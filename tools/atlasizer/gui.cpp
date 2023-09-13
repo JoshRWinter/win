@@ -7,7 +7,7 @@
 #endif
 
 #include <win/Display.hpp>
-#include <win/GL.hpp>
+#include <win/gl/GL.hpp>
 #include <win/Event.hpp>
 
 #include <glm/glm.hpp>
@@ -16,6 +16,8 @@
 
 #include "atlasizer.hpp"
 #include "layoutexporter.hpp"
+
+using namespace win::gl;
 
 class GUIAtlasItem : public AtlasItem
 {
