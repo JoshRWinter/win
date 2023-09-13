@@ -85,7 +85,7 @@ void Targa::load_image_bytes(std::ifstream &stream)
 
 	const bool bottom_origin = !((imdesc >> 5) & 1);
 
-	const int bytes_per_pixel = bits / 8;
+	int bytes_per_pixel = bits / 8;
 	if(filesize(filename) - 18 < w * h * bytes_per_pixel)
 		corrupt();
 
@@ -98,6 +98,7 @@ void Targa::load_image_bytes(std::ifstream &stream)
 	if(bits == 24)
 	{
 		bits = 32;
+		bytes_per_pixel = 4;
 		auto newbytes = std::make_unique<unsigned char[]>(w * h * 4);
 
 		int sourceindex = 0;
