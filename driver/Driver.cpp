@@ -67,7 +67,7 @@ int main()
 
 	win::SoundEngine audio_engine(display, roll);
 
-	win::GLTextRenderer text_renderer(win::Dimensions<int>(display.width(), display.height()), win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f));
+	win::GLTextRenderer text_renderer(win::Dimensions<int>(display.width(), display.height()), win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f), GL_TEXTURE1, true);
 	win::GLFont font1 = text_renderer.create_font(0.5f, roll["assets/arial.ttf"]);
 	win::GLFont font2 = text_renderer.create_font(0.5f, roll["assets/CHE-THIS.TTF"]);
 	win::GLFont font3 = text_renderer.create_font(0.2f, roll["assets/NotoSansMono-Regular.ttf"]);
@@ -214,6 +214,7 @@ int main()
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_position), block_position, GL_DYNAMIC_DRAW);
 			glBindBuffer(GL_ARRAY_BUFFER, vbo_color.get());
 			glBufferData(GL_ARRAY_BUFFER, sizeof(block_color), block_color, GL_DYNAMIC_DRAW);
+			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, atlas.texture());
 
 			glClear(GL_COLOR_BUFFER_BIT);

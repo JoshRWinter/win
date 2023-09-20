@@ -56,8 +56,12 @@ static const char *vertexshader =
 namespace win
 {
 
-GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area)
+GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned)
 	: TextRenderer(screen_pixel_dimensions, screen_area)
+	, texture_unit(texture_unit)
+	, texture_unit_owned(texture_unit_owned)
+	, current_font(NULL)
+	, current_color(0.0f, 0.0f, 0.0f, 1.0f)
 {
 	const float verts[] =
 	{
@@ -90,10 +94,11 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 	glUseProgram(program.get());
 
 	uniform_color = glGetUniformLocation(program.get(), "color");
-	if (uniform_color == -1) win::bug("GLFontRenderer - no uniform color");
+	if (uniform_color == -1) win::bug("GLTextRenderer - no uniform color");
+	glUniform4f(uniform_color, current_color.red, current_color.green, current_color.blue, current_color.alpha);
 
 	uniform_projection = glGetUniformLocation(program.get(), "projection");
-	if (uniform_projection == -1) win::bug("GLFontRenderer - no uniform projection");
+	if (uniform_projection == -1) win::bug("GLTextRenderer - no uniform projection");
 	const glm::mat4 projection = glm::ortho(screen_area.left, screen_area.right, screen_area.bottom, screen_area.top);
 	glUniformMatrix4fv(uniform_projection, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -101,6 +106,10 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 		win::bug("no width");
 	if ((uniform_height = glGetUniformLocation(program.get(), "height")) == -1)
 		win::bug("no height");
+
+	const auto uniform_sampler = glGetUniformLocation(program.get(), "tex");
+	if (uniform_sampler == -1) win::bug("no tex");
+	glUniform1i(uniform_sampler, texture_unit - GL_TEXTURE0);
 
 	glBindVertexArray(vao.get());
 
@@ -158,27 +167,32 @@ void GLTextRenderer::flush()
 	glUseProgram(program.get());
 	glBindVertexArray(vao.get());
 
-	const TextRendererString *last_string = NULL;
-
 	for (const auto &str : string_queue)
 	{
 		const GLFont &font = *(GLFont*)str.font;
 		const FontMetric &metric = font.font_metric();
 
-		if (last_string == NULL || ((GLFont*)last_string->font)->texture() != font.texture())
+		if (current_font != &font)
 		{
-			if (last_string != NULL)
-				send();
+			send();
+			current_font = &font;
 
-			glBindTexture(GL_TEXTURE_2D_ARRAY, font.texture());
 			glUniform1f(uniform_width, metric.max_width);
 			glUniform1f(uniform_height, metric.max_height);
+
+			glActiveTexture(texture_unit);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, font.texture());
+		}
+		else if (!texture_unit_owned)
+		{
+			glActiveTexture(texture_unit);
+			glBindTexture(GL_TEXTURE_2D_ARRAY, font.texture());
 		}
 
-		if (last_string == NULL || last_string->color != str.color)
+		if (current_color != str.color)
 		{
-			if (last_string != NULL)
-				send();
+			send();
+			current_color = str.color;
 
 			glUniform4f(uniform_color, str.color.red, str.color.green, str.color.blue, str.color.alpha);
 		}
@@ -207,8 +221,6 @@ void GLTextRenderer::flush()
 			memcpy(bytes.data() + 8, &dims, sizeof(dims));
 			memcpy(bytes.data() + 12, &index, sizeof(index));
 		}
-
-		last_string = &str;
 	}
 
 	if (!object_data_prebuf.empty())
@@ -221,6 +233,9 @@ void GLTextRenderer::flush()
 void GLTextRenderer::send()
 {
 	const int count = object_data_prebuf.size();
+
+	if (count == 0)
+		return;
 
 	auto range = object_data.reserve(count);
 	range.write(object_data_prebuf.data(), count);
