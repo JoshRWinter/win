@@ -18,10 +18,11 @@ struct AtlasItem
 
 class Atlas
 {
-	WIN_NO_COPY_MOVE(Atlas);
+	WIN_NO_COPY(Atlas);
 
 public:
 	explicit Atlas(Stream);
+	Atlas(Atlas&&) = default;
 
 	int count() const;
 	const AtlasItem &item(int) const;

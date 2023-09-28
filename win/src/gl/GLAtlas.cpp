@@ -8,8 +8,7 @@ namespace win
 GLAtlas::GLAtlas(Stream stream, Mode mode)
 	: Atlas(std::move(stream))
 {
-	glGenTextures(1, &gltex);
-	glBindTexture(GL_TEXTURE_2D, gltex);
+	glBindTexture(GL_TEXTURE_2D, gltex.get());
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mode == Mode::linear ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mode == Mode::linear ? GL_LINEAR : GL_NEAREST);
@@ -22,14 +21,9 @@ GLAtlas::GLAtlas(Stream stream, Mode mode)
 	imgdata.reset(NULL);
 }
 
-GLAtlas::~GLAtlas()
-{
-	glDeleteTextures(1, &gltex);
-}
-
 GLuint GLAtlas::texture() const
 {
-	return gltex;
+	return gltex.get();
 }
 
 }

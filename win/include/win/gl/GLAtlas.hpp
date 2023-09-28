@@ -8,24 +8,25 @@
 #include <GL/glext.h>
 
 #include <win/Atlas.hpp>
+#include <win/gl/GL.hpp>
 
 namespace win
 {
 
 class GLAtlas : public Atlas
 {
-	WIN_NO_COPY_MOVE(GLAtlas);
+	WIN_NO_COPY(GLAtlas);
 
 public:
 	enum class Mode { linear, nearest };
 
 	GLAtlas(Stream, Mode);
-	~GLAtlas();
+	GLAtlas(GLAtlas&&) = default;
 
 	GLuint texture() const;
 
 private:
-	GLuint gltex;
+	GLTexture gltex;
 
 	int num;
 	std::unique_ptr<AtlasItem[]> items;
