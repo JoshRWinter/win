@@ -128,6 +128,7 @@ void load_gl_functions()
 #ifdef WINPLAT_WINDOWS
 	glTexImage3D = (decltype(glTexImage3D)) get_proc("glTexImage3D");
 	glTexSubImage3D = (decltype(glTexSubImage3D)) get_proc("glTexSubImage3D");
+	glActiveTexture = (decltype(glActiveTexture)) get_proc("glActiveTexture");
 #endif
 }
 
