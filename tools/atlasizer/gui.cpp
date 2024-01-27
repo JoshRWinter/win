@@ -1,5 +1,7 @@
 // most of this code dirty nasty
 
+#ifndef NOGUI
+
 #include <win/Win.hpp>
 
 #ifdef WINPLAT_WINDOWS
@@ -940,3 +942,5 @@ void gui()
 	glDeleteVertexArrays(1, &renderstate.guides.vao);
 	glDeleteBuffers(1, &renderstate.guides.vbo);
 }
+
+#endif
