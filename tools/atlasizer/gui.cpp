@@ -652,6 +652,8 @@ void gui()
 
 	// opengl nonsense
 
+	win::load_gl_functions();
+
 	struct
 	{
 		struct // opengl state for drawing atlas items
