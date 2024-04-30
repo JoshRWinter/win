@@ -78,10 +78,6 @@ void compileatlas(const std::string &layoutfile, const std::string &atlasfile)
 	if (std::filesystem::exists(atlasfile) && !is_atlas_file(atlasfile))
 		throw std::runtime_error("Unwilling to overwrite file " + atlasfile + " which is not an atlas");
 
-	std::ofstream out(atlasfile, std::ofstream::binary);
-	if (!out)
-		throw std::runtime_error("couldn't open " + atlasfile + " for writing");
-
 	int padding;
 	const std::vector<AtlasItemDescriptor> descriptors = LayoutExporter::import(layoutfile, padding);
 
@@ -103,6 +99,10 @@ void compileatlas(const std::string &layoutfile, const std::string &atlasfile)
 
 	for (const AtlasItem &item : items)
 		bitblt(item, atlas.get(), width, height);
+
+	std::ofstream out(atlasfile, std::ofstream::binary);
+	if (!out)
+		throw std::runtime_error("couldn't open " + atlasfile + " for writing");
 
 	// write magic
 	out.write(magic, sizeof(magic));
