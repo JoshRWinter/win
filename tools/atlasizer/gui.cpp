@@ -30,8 +30,16 @@ public:
 		: AtlasItem(filename, x, y)
 		, original_index(original_index)
 	{
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
 		GLenum format;
-		if (targa.bpp() == 8) format = GL_RED;
+		if (targa.bpp() == 8)
+		{
+			GLint swizzle[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+			glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+			format = GL_RED;
+		}
 		else if (targa.bpp() == 24)
 			format = GL_BGR;
 		else if (targa.bpp() == 32)
@@ -39,8 +47,6 @@ public:
 		else
 			win::bug("Unsupported TARGA color depth: " + std::to_string(targa.bpp()));
 
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, format, GL_UNSIGNED_BYTE, targa.data());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
