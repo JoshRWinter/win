@@ -55,7 +55,7 @@ static void get_bounds(const std::vector<AtlasItem> &items, int padding, int &wi
 
 static void bitblt(const AtlasItem &item, unsigned char *atlas, int width, int height)
 {
-	int source = (item.width * item.height * 4) - (item.width * 4);
+	int source = 0;
 	int dest = (width * 4 * item.y) + (item.x * 4);
 
 	std::unique_ptr<unsigned char[]> converted;
@@ -75,7 +75,7 @@ static void bitblt(const AtlasItem &item, unsigned char *atlas, int width, int h
 
 		memcpy(atlas + dest, img + source, item.width * 4);
 
-		source -= item.width * 4;
+		source += item.width * 4;
 		dest += width * 4;
 	}
 }
