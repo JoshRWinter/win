@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(roll roll/roll.cpp roll/roll.hpp roll/recipe/recipe.cpp roll/recipe/recipe.hpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
 add_executable(roll-recipe-tests roll/recipe/tests/test.hpp roll/recipe/tests/parsertests.cpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
 
-add_executable(atlasizer atlasizer/atlasizer.hpp atlasizer/main.cpp atlasizer/gui.cpp atlasizer/targa.cpp atlasizer/targa.hpp atlasizer/layoutexporter.cpp atlasizer/layoutexporter.hpp atlasizer/compileatlas.cpp)
+add_executable(atlasizer atlasizer/atlasizer.hpp atlasizer/main.cpp atlasizer/gui.cpp atlasizer/layoutexporter.cpp atlasizer/layoutexporter.hpp atlasizer/compileatlas.cpp)
 
 if (NOGUI)
 	add_compile_definitions(NOGUI)

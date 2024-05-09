@@ -55,9 +55,16 @@ static void get_bounds(const std::vector<AtlasItem> &items, int padding, int &wi
 
 static void bitblt(const AtlasItem &item, unsigned char *atlas, int width, int height)
 {
-	int source = 0;
+	int source = (item.width * item.height * 4) - (item.width * 4);
 	int dest = (width * 4 * item.y) + (item.x * 4);
-	const unsigned char *img = item.targa.data();
+
+	std::unique_ptr<unsigned char[]> converted;
+	if (item.targa.bpp() != 32)
+	{
+		converted = convert_to_bgra8(item.targa);
+	}
+
+	const auto *img = converted ? converted.get() : item.targa.data();
 
 	for (int row = 0; row < item.height; ++row)
 	{
@@ -68,7 +75,7 @@ static void bitblt(const AtlasItem &item, unsigned char *atlas, int width, int h
 
 		memcpy(atlas + dest, img + source, item.width * 4);
 
-		source += item.width * 4;
+		source -= item.width * 4;
 		dest += width * 4;
 	}
 }
@@ -131,4 +138,39 @@ void compileatlas(const std::string &layoutfile, const std::string &atlasfile)
 
 	// write atlas
 	out.write((char*)atlas.get(), width * height * 4);
+}
+
+std::unique_ptr<unsigned char[]> convert_to_bgra8(const win::Targa &targa)
+{
+	if (targa.bpp() == 32)
+		win::bug("no conversion needed");
+
+	std::unique_ptr<unsigned char[]> converted(new unsigned char[targa.width() * targa.height() * 4]);
+
+	const auto original = targa.data();
+
+	if (targa.bpp() == 24)
+	{
+		for (int i = 0; i < targa.width() * targa.height(); ++i)
+		{
+			converted[(i * 4) + 0] = original[(i * 3) + 0];
+			converted[(i * 4) + 1] = original[(i * 3) + 1];
+			converted[(i * 4) + 2] = original[(i * 3) + 2];
+			converted[(i * 4) + 3] = 255;
+		}
+	}
+	else if (targa.bpp() == 8)
+	{
+		for (int i = 0; i < targa.width() * targa.height(); ++i)
+		{
+			converted[(i * 4) + 0] = original[(i * 1) + 0];
+			converted[(i * 4) + 1] = original[(i * 1) + 0];
+			converted[(i * 4) + 2] = original[(i * 1) + 0];
+			converted[(i * 4) + 3] = 255;
+		}
+	}
+	else
+		win::bug("Unsupported color depth " + std::to_string(targa.bpp()));
+
+	return converted;
 }

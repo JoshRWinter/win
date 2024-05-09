@@ -63,6 +63,9 @@ add_library(win STATIC
 	include/win/AssetRoll.hpp
 	src/AssetRoll.cpp
 
+	include/win/FileReadStream.hpp
+	src/FileReadStream.cpp
+
 	include/win/AssetRollStreamRaw.hpp
 	src/AssetRollStreamRaw.cpp
 

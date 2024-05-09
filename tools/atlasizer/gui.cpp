@@ -30,13 +30,24 @@ public:
 		: AtlasItem(filename, x, y)
 		, original_index(original_index)
 	{
+		GLenum format;
+		if (targa.bpp() == 8) format = GL_RED;
+		else if (targa.bpp() == 24)
+			format = GL_BGR;
+		else if (targa.bpp() == 32)
+			format = GL_BGRA;
+		else
+			win::bug("Unsupported TARGA color depth: " + std::to_string(targa.bpp()));
+
 		glGenTextures(1, &texture);
 		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, targa.data());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, format, GL_UNSIGNED_BYTE, targa.data());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		win::gl_check_error();
 	}
 
 	~GUIAtlasItem()
@@ -751,6 +762,11 @@ void gui()
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, NULL);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(guide_verts), guide_verts, GL_STATIC_DRAW);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	while (!quit)
 	{

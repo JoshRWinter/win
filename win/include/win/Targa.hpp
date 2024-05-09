@@ -1,5 +1,6 @@
 #pragma once
 
+#include <win/Win.hpp>
 #include <win/Stream.hpp>
 
 namespace win
@@ -7,13 +8,12 @@ namespace win
 
 class Targa
 {
+	WIN_NO_COPY(Targa);
+
 public:
-	Targa();
-	Targa(Stream);
-	Targa(const Targa&) = delete;
+	explicit Targa(Stream);
 	Targa(Targa&&) = default;
 
-	void operator=(const Targa&) = delete;
 	Targa &operator=(Targa&&) = default;
 
 	int width() const;

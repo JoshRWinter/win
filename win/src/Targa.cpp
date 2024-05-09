@@ -54,8 +54,11 @@ void Targa::load_image_bytes(Stream &raw)
 	raw.seek(16);
 	raw.read(&bits, sizeof(bits));
 
-	if(bits != 32)
-		win::bug("Only 32 bit TARGAs are supported");
+	if (bits != 8 && bits != 24 && bits != 32)
+		win::bug("TARGAs must be 8, 24, or 32 bit color depth");
+
+	// components per pixel
+	const int cpp = bits / 8;
 
 	// image descriptor
 	unsigned char imdesc;
@@ -63,22 +66,22 @@ void Targa::load_image_bytes(Stream &raw)
 
 	const bool bottom_origin = !((imdesc >> 5) & 1);
 
-	if(raw.size() - 18 < w * h * 4)
-		win::bug("Corrupt targa: tried to read " + std::to_string(w * h * 4) + " bytes from " + std::to_string(raw.size() - 18) + " bytes");
+	if(raw.size() - 18 < w * h * cpp)
+		win::bug("Corrupt targa: tried to read " + std::to_string(w * h * cpp) + " bytes from " + std::to_string(raw.size() - 18) + " bytes");
 
 	raw.seek(18);
-	bytes.reset(new unsigned char[w * h * 4]);
-	raw.read(bytes.get(), w * h * 4);
+	bytes.reset(new unsigned char[w * h * cpp]);
+	raw.read(bytes.get(), w * h * cpp);
 
 	if (!bottom_origin)
 	{
-		auto newbytes = std::make_unique<unsigned char[]>(w * h * 4);
+		auto newbytes = std::make_unique<unsigned char[]>(w * h * cpp);
 
-		int sourceindex = (w * h * 4) - (w * 4);
-		for (int i = 0; i < w * h * 4; i += w * 4)
+		int sourceindex = (w * h * cpp) - (w * cpp);
+		for (int i = 0; i < w * h * cpp; i += w * cpp)
 		{
-			memcpy(newbytes.get() + i, bytes.get() + sourceindex, w * 4);
-			sourceindex -= w * 4;
+			memcpy(newbytes.get() + i, bytes.get() + sourceindex, w * cpp);
+			sourceindex -= w * cpp;
 		}
 
 		bytes = std::move(newbytes);
