@@ -7,6 +7,8 @@
 static const char *helptext =
 		"atlasizer layout_file output_file";
 
+void gui2();
+
 int main(int argc, char **argv)
 {
 	if (argc < 2)
@@ -15,7 +17,7 @@ int main(int argc, char **argv)
 		std::cerr << "This version of atlasizer does not include a GUI" << std::endl;
 		return 1;
 #else
-		gui();
+		gui2();
 		return 0;
 #endif
 	}
