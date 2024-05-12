@@ -1,11 +1,13 @@
 #include <iostream>
 #include <string.h>
-#include "layoutexporter.hpp"
 
-#include "atlasizer.hpp"
+#include "AtlasCompiler.hpp"
+#include "LayoutExporter.hpp"
 
 static const char *helptext =
 		"atlasizer layout_file output_file";
+
+void gui();
 
 int main(int argc, char **argv)
 {
@@ -32,7 +34,7 @@ int main(int argc, char **argv)
 			int padding;
 			const auto descriptors = LayoutExporter::import(argv[2], padding, false);
 			for (const auto &descriptor : descriptors)
-				std::cout << descriptor.filename << std::endl;
+				std::cout << descriptor.filename.string() << std::endl;
 
 			return 0;
 		}

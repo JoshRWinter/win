@@ -1,970 +1,504 @@
-// most of this code dirty nasty
-
-#ifndef NOGUI
-
-#include <win/Win.hpp>
-
-#ifdef WINPLAT_WINDOWS
-#include <Commdlg.h>
-#endif
+#include <thread>
 
 #include <win/Display.hpp>
-#include <win/gl/GL.hpp>
-#include <win/Event.hpp>
+#include <win/AssetRoll.hpp>
+#include <win/FileReadStream.hpp>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "ControlPanel.hpp"
+#include "ListPanel.hpp"
+#include "Platform.hpp"
+#include "LinuxPlatform.hpp"
+#include "WindowsPlatform.hpp"
+#include "FilePickerManager.hpp"
+#include "Renderer.hpp"
+#include "Atlasizer.hpp"
+#include "LayoutExporter.hpp"
 
-#include "atlasizer.hpp"
-#include "layoutexporter.hpp"
-
-using namespace win::gl;
-
-class GUIAtlasItem : public AtlasItem
+static Platform &get_platform()
 {
-public:
-	enum class Side { NONE, LEFT, RIGHT, BOTTOM, TOP };
+#if defined WINPLAT_LINUX
+	static LinuxPlatform platform;
+#elif defined WINPLAT_WINDOWS
+	static WindowsPlatform platform;
+#else
+#error "unimplemented"
+#endif
 
-	GUIAtlasItem(int original_index, const std::string &filename, int x, int y)
-		: AtlasItem(filename, x, y)
-		, original_index(original_index)
-	{
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
+	return platform;
+}
 
-		GLenum format;
-		if (targa.bpp() == 8)
-		{
-			GLint swizzle[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
-			glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
-			format = GL_RED;
-		}
-		else if (targa.bpp() == 24)
-			format = GL_BGR;
-		else if (targa.bpp() == 32)
-			format = GL_BGRA;
-		else
-			win::bug("Unsupported TARGA color depth: " + std::to_string(targa.bpp()));
-
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, format, GL_UNSIGNED_BYTE, targa.data());
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-		win::gl_check_error();
-	}
-
-	~GUIAtlasItem()
-	{
-		glDeleteTextures(1, &texture);
-	}
-
-	GUIAtlasItem(const GUIAtlasItem&) = delete;
-	GUIAtlasItem(GUIAtlasItem&&) = delete;
-	void operator=(const GUIAtlasItem&) = delete;
-	void operator=(GUIAtlasItem&&) = delete;
-
-	bool oob(int padding) const
-	{
-		return x < padding || y < padding;
-	}
-
-	bool colliding(const std::list<GUIAtlasItem> &items, int padding) const
-	{
-		for (const GUIAtlasItem &item : items)
-		{
-			if (this == &item)
-				continue;
-
-			if (colliding(item, padding))
-				return true;
-		}
-
-		return false;
-	}
-
-	bool colliding(const AtlasItem &item, int padding) const
-	{
-		return x + width + padding > item.x && x < item.x + item.width + padding && y + height + padding > item.y && y < item.y + item.height + padding;
-	}
-
-	void correct_bounds(int padding)
-	{
-		if (x < padding)
-			x = padding;
-		if (y < padding)
-			y = padding;
-	}
-
-	Side correct(const std::list<GUIAtlasItem> &items, int padding)
-	{
-		for (const GUIAtlasItem &item : items)
-		{
-			if (this == &item)
-				continue;
-
-			Side side;
-			side = correct(item, padding);
-
-			if (side != Side::NONE)
-				return side;
-		}
-
-		return Side::NONE;
-	}
-
-	Side correct(const AtlasItem &item, int padding)
-	{
-		if (!colliding(item, padding))
-			return Side::NONE;
-
-		const int ldiff = std::abs(x - (item.x + item.width + padding));
-		const int rdiff = std::abs((x + width) - (item.x + padding));
-		const int tdiff = std::abs((y + height) - (item.y + padding));
-		const int bdiff = std::abs(y - (item.y + item.height + padding));
-
-		int smallest = ldiff;
-		if (rdiff < smallest) smallest = rdiff;
-		if (tdiff < smallest) smallest = tdiff;
-		if (bdiff < smallest) smallest = bdiff;
-
-		if (smallest == ldiff)
-		{
-			x = item.x + item.width + padding;
-			return Side::LEFT;
-		}
-		else if (smallest == rdiff)
-		{
-			x = item.x - width - padding;
-			return Side::RIGHT;
-		}
-		else if (smallest == tdiff)
-		{
-			y = item.y - height - padding;
-			return Side::TOP;
-		}
-		else
-		{
-			y = item.y + item.height + padding;
-			return Side::BOTTOM;
-		}
-	}
-
-	int original_index;
-	unsigned texture;
-};
-
-struct DragBarrier
+static void get_platform_directories(const Platform &platform, std::filesystem::path &filepicker_state, std::filesystem::path &default_dir)
 {
-	DragBarrier() : active(false), location(0) {}
-	bool active;
-	int location;
-};
-
-static const char *helptext =
-	"atlasizer: Create a texture atlas. Drag items around, right-click and drag to pan.\n\nI: Import layout\nA: Add item\nS: Save\nE: Export\nDELETE: Delete item\nCTRL (hold): Snap Mode\nSHIFT (hold): Color Mode\n+: Zoom in\n-: Zoom out";
-
-static const char *vertexshader_atlasitem =
-	"#version 330 core\n"
-	"uniform mat4 projection;\n"
-	"uniform mat4 view;\n"
-	"layout (location = 0) in vec2 pos;\n"
-	"layout (location = 1) in vec2 texcoord;\n"
-	"out vec2 ftexcoord;\n"
-	"void main(){\n"
-	"ftexcoord = texcoord;\n"
-	"gl_Position = projection * view * vec4(pos.xy, 0.0, 1.0);\n"
-	"}",
-	*fragmentshader_atlasitem =
-	"#version 330 core\n"
-	"out vec4 color;\n"
-	"in vec2 ftexcoord;\n"
-	"in vec4 gl_FragCoord;\n"
-	"uniform int highlight_mode;\n"
-	"uniform int color_mode;\n"
-	"uniform sampler2D tex;\n"
-	"void main(){\n"
-	"if(color_mode == 0)\n"
-		"color = texture(tex, ftexcoord);\n"
-	"else if (color_mode == 1)\n"
-		"color = vec4(1.0, 0.0, 0.0, 1.0)\n;"
-	"else\n"
-		"color=vec4(0.8, 0.1, 0.1, 1.0);\n"
-	"if(highlight_mode == 1){\n" // colliding
-	"	color.r += float(int(gl_FragCoord.x) % 3 == 0);\n"
-	"	color.g -= 1.0;\n"
-	"	color.b -= 1.0;\n"
-	"}\n"
-	"else if(highlight_mode == 2){\n" // colliding, but unfocused
-	"	color.r += float(int(gl_FragCoord.x) % 3 == 0) / 3.0;\n"
-	"	color.g -= 0.5;\n"
-	"	color.b -= 0.5;\n"
-	"}\n"
-	"else if (highlight_mode == 3){\n" // selected, not colliding
-	"	color.r += 0.5;\n"
-	"	color.g += 0.5;\n"
-	"	color.b += 0.5;\n"
-	"}"
-	"}";
-
-static const char *vertexshader_guides =
-	"#version 330 core\n"
-	"uniform mat4 projection;\n"
-	"uniform mat4 view;\n"
-	"layout (location = 0) in vec2 pos;\n"
-	"void main(){\n"
-	"gl_Position = projection * view * vec4(pos.xy, 0.0, 1.0);\n"
-	"}",
-	*fragmentshader_guides =
-	"#version 330 core\n"
-	"uniform bool dirty;\n"
-	"out vec4 color;\n"
-	"void main(){\n"
-	"color = dirty ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);\n"
-	"}";
-
-static std::string pick_file(bool open, std::string default_file_name, std::string ext_filter)
-{
-	/*
-	static std::vector<std::string> files =
-	{
-		"/home/josh/programming/fishtank/assets_local/mine.tga",
-		"/home/josh/programming/fishtank/assets_local/platform_1.tga",
-		"/home/josh/programming/fishtank/assets_local/tank.tga",
-		"/home/josh/programming/fishtank/assets_local/turret.tga",
-		"/home/josh/programming/fishtank/assets_local/platform_3.tga",
-		"/home/josh/programming/fishtank/assets_local/artillery.tga"
-	};
-	static int index = 0;
-
-	return files.at((index++) % files.size());
-	*/
-
-#if defined WINPLAT_WINDOWS
-	std::string filter_description;
-	if (ext_filter == "tga")
-		filter_description = std::string("TARGA images") + (char)0 + "*.tga" + (char)0 + (char)0;
-	else if (ext_filter == "txt")
-		filter_description = std::string("Text files") + (char)0 + "*.txt" + (char)0 + (char)0;
-
-	char filebuf[1024] = "";
-	if (!open)
-		strncpy(filebuf, default_file_name.c_str(), sizeof(filebuf));
-	filebuf[sizeof(filebuf) - 1] = 0;
-
-	OPENFILENAMEA ofn;
-	memset(&ofn, 0, sizeof(ofn));
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = NULL;
-	ofn.hInstance = NULL;
-	ofn.lpstrFilter = filter_description.length() > 0 ? (filter_description).c_str() : NULL;
-	ofn.lpstrCustomFilter = NULL;
-	ofn.nMaxCustFilter = 0;
-	ofn.nFilterIndex = 0;
-	ofn.lpstrFile = filebuf;
-	ofn.nMaxFile = sizeof(filebuf);
-	ofn.lpstrFileTitle = NULL;
-	ofn.nMaxFileTitle = 0;
-	ofn.lpstrInitialDir = NULL;
-	ofn.lpstrInitialDir = NULL;
-	ofn.lpstrTitle = open ? "Open file" : "Save file";
-	ofn.Flags = OFN_DONTADDTORECENT | OFN_ENABLESIZING | OFN_EXPLORER | OFN_NOCHANGEDIR;
-	ofn.nFileOffset = 0;
-	ofn.nFileExtension = 0;
-	ofn.lpstrDefExt = !open ? ext_filter.c_str() : NULL;
-	ofn.lCustData = NULL;
-	ofn.lpfnHook = NULL;
-	ofn.lpTemplateName = NULL;
-
-	if (open)
-		ofn.Flags |= OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-	else
-		ofn.Flags |= OFN_OVERWRITEPROMPT;
-
-	if (open)
-	{
-		if (!GetOpenFileNameA(&ofn))
-			return "";
-	}
-	else
-	{
-		if (!GetSaveFileNameA(&ofn))
-			return "";
-	}
-
-	filebuf[sizeof(filebuf) - 1] = 0;
-
-	return filebuf;
-#elif defined WINPLAT_LINUX
-	std::string filename;
-	FILE *zenity;
-
-	std::string cmd;
-	if (open)
-		cmd = "zenity --title=\"Open TGA\" --file-selection --file-filter=\"*." + ext_filter + "\"";
-	else
-		cmd = "zenity --title=\"Save atlas layout\" --file-selection --save --confirm-overwrite --filename=\"" + (default_file_name.length() == 0 ? "atlas.txt" : default_file_name) + "\"";
-
-	if ((zenity = popen(cmd.c_str(), "r")) == NULL)
-	{
-		std::cerr << "zenity is required for dialogs" << std::endl;
-		return "";
-	}
-
-	char file[512];
-	fgets(file, 512, zenity);
-	if (pclose(zenity) == 0)
-		filename = file;
-	else
-		filename = ""; // this means no file was chosen
-
-	if (filename.length() > 0 && filename.at(filename.size() - 1) == '\n')
-		filename = filename.substr(0, filename.size() - 1);
-	return filename;
+#if defined WINPLAT_LINUX
+	filepicker_state = platform.expand_env("$HOME/.atlasizer-defaults");
+	default_dir = platform.expand_env("$HOME");
+#elif defined WINPLAT_WINDOWS
+	filepicker_state = platform.expand_env("%userprofile%\\.atlasizer-defaults.txt");
+	default_dir = platform.expand_env("%userprofile%\\desktop");
+#else
+#error "unimplemented"
 #endif
 }
 
-void msg_box(const std::string &msg, bool error)
+static bool in_box(int p_x, int p_y, const win::Box<int> &box)
 {
-#if defined WINPLAT_WINDOWS
-	MessageBox(NULL, msg.c_str(), error ? "Error" : "Info", error ? MB_ICONERROR : 0);
-#elif defined WINPLAT_LINUX
-	FILE *zenity;
-
-	std::string cmd;
-	if (error)
-		cmd = "zenity --no-wrap --error --text=\"" + msg + "\"";
-	else
-		cmd = "zenity --info --no-wrap --text=\"" + msg + "\"";
-
-	if ((zenity = popen(cmd.c_str(), "r")) == NULL)
-	{
-		std::cerr << "zenity is required for dialogs" << std::endl;
-		return;
-	}
-
-	pclose(zenity);
-#endif
-}
-
-static std::vector<float> regenverts(const std::list<GUIAtlasItem> &items)
-{
-	std::vector<float> verts;
-
-	for (const AtlasItem &item : items)
-	{
-		verts.push_back(item.x); verts.push_back(item.y + item.height); verts.push_back(0.0f); verts.push_back(1.0f);
-		verts.push_back(item.x); verts.push_back(item.y); verts.push_back(0.0f); verts.push_back(0.0f);
-		verts.push_back(item.x + item.width); verts.push_back(item.y); verts.push_back(1.0f); verts.push_back(0.0f);
-
-		verts.push_back(item.x); verts.push_back(item.y + item.height); verts.push_back(0.0f); verts.push_back(1.0f);
-		verts.push_back(item.x + item.width); verts.push_back(item.y); verts.push_back(1.0f); verts.push_back(0.0f);
-		verts.push_back(item.x + item.width); verts.push_back(item.y + item.height); verts.push_back(1.0f); verts.push_back(1.0f);
-	}
-
-	return verts;
-}
-
-static int get_index(const std::list<GUIAtlasItem> &items, const GUIAtlasItem &i)
-{
-	int index = 0;
-	for (const AtlasItem &item : items)
-	{
-		if (&item == &i)
-			return index;
-
-		++index;
-	}
-
-	return -1;
-}
-
-static GUIAtlasItem *get_item(std::list<GUIAtlasItem> &items, int index)
-{
-	int i = 0;
-	for (GUIAtlasItem &item : items)
-	{
-		if (i == index)
-			return &item;
-
-		++i;
-	}
-
-	return NULL;
-}
-
-static int select_item(std::list<GUIAtlasItem> &items, int x, int y, int &xoff, int &yoff)
-{
-	const AtlasItem *selected = NULL;
-	for (auto it = items.rbegin(); it != items.rend(); ++it)
-	{
-		if (x > it->x && x < it->x + it->width && y > it->y && y < it->y + it->height)
-		{
-			xoff = x - it->x;
-			yoff = y - it->y;
-
-			selected = &(*it);
-			break;
-		}
-	}
-
-	if (selected == NULL)
-		return -1;
-
-	items.sort([selected, &items](const GUIAtlasItem &a, const GUIAtlasItem &b)
-	{
-		const int a_index = get_index(items, a);
-		const int b_index = get_index(items, b);
-
-		if (&a == selected)
-			return false;
-		if (&b == selected)
-			return true;
-
-		return a_index < b_index;
-	});
-
-	return items.size() - 1;
-}
-
-static void screen_to_view(const float x, const float y, const int display_width, const int display_height, const int center_x, const int center_y, const float zoom, const float world_width, float &out_x, float &out_y)
-{
-	glm::vec4 mousepos((((float)x / display_width) * world_width) - (world_width / 2.0f), -(((y / display_height) * world_width) - (world_width	/ 2.0f)) * ((float)display_height / display_width), 0.0f, 1.0f);
-	auto view_transform = glm::scale(glm::translate(glm::identity<glm::mat4>(), glm::vec3(center_x, center_y, 0.0f)), glm::vec3(1.0f / zoom, 1.0f / zoom, 1.0f / zoom));
-	mousepos = view_transform * mousepos;
-
-	out_x = mousepos.x;
-	out_y = mousepos.y;
-}
-
-static void get_atlas_dims(const std::list<GUIAtlasItem> &items, int padding, int &width, int &height)
-{
-	width = 0;
-	height = 0;
-
-	for (const GUIAtlasItem &item : items)
-	{
-		if (item.x + item.width > width)
-			width = item.x + item.width;
-		if (item.y + item.height > height)
-			height = item.y + item.height;
-	}
-
-	width += padding;
-	height += padding;
+	return p_x >= box.x && p_x <= box.x + box.width && p_y >= box.y && p_y <= box.y + box.height;
 }
 
 void gui()
 {
-	win::DisplayOptions dp;
-	dp.caption = "Atlasizer";
-	dp.gl_major = 3;
-	dp.gl_minor = 3;
-	dp.width = 1600;
-	dp.height = 900;
+	win::DisplayOptions options;
+	options.width = 1400;
+	options.height = 800;
+	options.gl_major = 4;
+	options.gl_minor = 4;
+	options.caption = "Atlasizer";
 
-	win::Display display(dp);
-
-	std::list<GUIAtlasItem> items;
-	bool dirty = false; // workspace is modified
-	std::string current_save_file; // for save (without save as)
-	int selected_index = -1; // which of the items is selected (clicked)
-	int selected_xoff = 0, selected_yoff = 0; // help maintain grab point when dragging
-	float pan_oldmousex = 0.0f, pan_oldmousey = 0.0f; // help maintain grab point when panning
-	float pan_oldcenterx = 0.0f, pan_oldcentery = 0.0f; // help maintain grab point when panning
-	float mousex = 0, mousey = 0; // mouse position, in world coordinates
-	int mousex_raw = 0, mousey_raw = 0; // mouse position, in screen coordinates
-	DragBarrier left_barrier, right_barrier, down_barrier, up_barrier; // help implement snap mode
-	bool right_clicking = false;
-	bool left_clicking = false;
-	bool grabbing = false;
-	bool panning = false;
-	bool snapmode = false;
-	bool solidmode = false;
-	int padding = 0; // padding pixels
-	float zoom = 1.0; // zoom level
-	const float	zoom_inc = 0.1f;
-	float centerx = 400, centery = 200; // center of screen, in world coordinates
-
-	display.register_mouse_handler([&mousex_raw, &mousey_raw](int x, int y)
-	{
-		mousex_raw = x;
-		mousey_raw = y;
-	});
-
-	bool quit = false;
-	display.register_button_handler([&](win::Button button, bool press)
-	{
-		switch (button)
-		{
-		case win::Button::f1:
-			if (press)
-				msg_box(helptext, false);
-			break;
-		case win::Button::mouse_left:
-			left_clicking = press;
-			break;
-		case win::Button::mouse_right:
-			right_clicking = press;
-			break;
-		case win::Button::del:
-			if (selected_index >= 0)
-			{
-				int index = 0;
-				for (auto it = items.begin(); it != items.end();)
-				{
-					if (index == selected_index)
-					{
-						it = items.erase(it);
-						continue;
-					}
-
-					++index;
-					++it;
-				}
-
-				selected_index = -1;
-			}
-			break;
-		case win::Button::esc:
-			selected_index = -1;
-			break;
-		case win::Button::num_plus:
-			if (press)
-				zoom += zoom_inc;
-			break;
-		case win::Button::num_minus:
-			if (press)
-			{
-				if (zoom >= 0.1f)
-					zoom -= zoom_inc;
-			}
-			break;
-		case win::Button::lctrl:
-		case win::Button::rctrl:
-			snapmode = press;
-			break;
-		case win::Button::lshift:
-			solidmode = press;
-			break;
-		case win::Button::space:
-			if (press)
-			{
-				int height, width;
-				get_atlas_dims(items, padding, width, height);
-				int bytes = width * height * 4;
-				double mbytes = bytes / 1024.0 / 1024.0;
-				char str[50];
-				snprintf(str, sizeof(str), "%.2f", mbytes);
-				msg_box(std::to_string(items.size()) + " items.\n" + std::to_string(width) + "x" + std::to_string(height) + "\n" + str + " MBs", false);
-			}
-			break;
-		default: break;
-		}
-	});
-
-	display.register_character_handler([&](int c)
-	{
-		switch (c)
-		{
-		case 'Q':
-		case 'q':
-			quit = true;
-			break;
-		case 'a':
-		case 'A':
-			try
-			{
-				const std::string file = pick_file(true, "", "tga");
-				if (file.length() > 0)
-				{
-					items.emplace_back(items.size(), file, padding, padding);
-					dirty = true;
-				}
-			}
-			catch (const std::exception &e)
-			{
-				msg_box(e.what(), true);
-			}
-			break;
-		case 'e':
-			current_save_file = pick_file(false, current_save_file, "txt");
-			if (current_save_file.length() == 0)
-				break;
-		case 's':
-			if (current_save_file.length() < 1)
-			{
-				msg_box("No current save file", true);
-				break;
-			}
-			try
-			{
-				// sort by original index right before save
-				items.sort([](const GUIAtlasItem &a, const GUIAtlasItem &b) { return a.original_index < b.original_index; });
-
-				LayoutExporter exporter(current_save_file, padding);
-				for (const GUIAtlasItem &item : items)
-				{
-					AtlasItemDescriptor aid;
-					aid.filename = item.filename;
-					aid.x = item.x;
-					aid.y = item.y;
-					aid.width = item.width;
-					aid.height = item.height;
-
-					exporter.add(aid);
-				}
-
-				exporter.save();
-				selected_index = -1;
-				dirty = false;
-			}
-			catch (std::exception &e)
-			{
-				msg_box(e.what(), true);
-			}
-			break;
-		case 'i':
-		case 'I':
-			try
-			{
-				const std::string importfile = pick_file(true, "", "txt");
-				if (importfile.size() > 0)
-				{
-					items.clear();
-					int pad = 0;
-					for (const AtlasItemDescriptor &item : LayoutExporter::import(importfile, padding))
-						items.emplace_back(items.size(), item.filename, item.x, item.y);
-					dirty = false;
-					current_save_file = importfile;
-				}
-			}
-			catch (const std::exception &e)
-			{
-				current_save_file = "";
-				items.clear();
-				msg_box(e.what(), true);
-			}
-			break;
-		default:
-			if (c >= '0' && c <= '9')
-			{
-				if (padding != c - '0')
-					dirty = true;
-
-				padding = c - '0';
-			}
-			break;
-		}
-
-	});
-
-	display.register_window_handler([&quit](win::WindowEvent event)
-	{
-		if (event == win::WindowEvent::close)
-			quit = true;
-	});
-
-	// opengl nonsense
-
+	win::Display display(options);
 	win::load_gl_functions();
 
-	struct
+	const Platform &platform = get_platform();
+
+	std::filesystem::path filepicker_state, default_dir;
+	get_platform_directories(platform, filepicker_state, default_dir);
+
+	FilePickerManager filepicker(platform, filepicker_state, default_dir);
+	win::AssetRoll roll((platform.get_exe_path().parent_path() / "atlasizer.roll").string().c_str());
+	Renderer renderer(roll, display.width(), display.height());
+	Atlasizer atlasizer;
+
+	win::Box<int> cpanel_box(1, 1, display.width() - 2, 50 - 2);
+	ControlPanel cpanel(renderer, cpanel_box);
+	cpanel.enable_remove(false);
+	cpanel.enable_reload(false);
+	cpanel.enable_move_up(false);
+	cpanel.enable_move_down(false);
+
+	win::Box<int> lpanel_box(1, 50, 200, display.height() - 51);
+	ListPanel lpanel(renderer, lpanel_box);
+
+	// interface state
+	enum DragMode { none, pan, drag } drag_mode = DragMode::none;
+	int center_x = (display.width() / 2.0f) - 250, center_y = (display.height() / 2.0f) - 105;
+	win::Dimensions<int> canvas_dimensions;
+	std::optional<std::filesystem::path> current_save_file;
+	auto last_interaction = std::chrono::high_resolution_clock::now();
+	float zoom = 1.0f;
+	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
+	bool solidmode = false;
+	bool snapmode = false;
+	int selection_id = -1;
+	bool dirty = false;
+
+	auto recalculate_statistics = [&]()
 	{
-		struct // opengl state for drawing atlas items
+		int maxx = 0.0f, maxy = 0.0f;
+		for (const auto item : atlasizer.get_items_layout_order())
 		{
-			unsigned program;
-			unsigned vbo, vao;
-			int uniform_projection;
-			int uniform_view;
-			int uniform_highlight_mode;
-			int uniform_color_mode;
-		} atlasitems;
+			maxx = std::max(maxx, item->x + item->w);
+			maxy = std::max(maxy, item->y + item->h);
+		}
 
-		struct // opengl state for drawing the guide lines
-		{
-			unsigned program;
-			unsigned vbo, vao;
-			int uniform_projection;
-			int uniform_view;
-			int uniform_dirty;
-		} guides;
-	} renderstate;
+		canvas_dimensions.width = maxx;
+		canvas_dimensions.height = maxy;
 
-	glClearColor(0.05f, 0.05f, 0.05f, 1.0);
+		const int size = maxx * maxy * 4;
+		const float megabytes = size / 1024.0f / 1024.0f;
 
-	const float aspect_ratio = (float)display.height() / display.width();
-	const glm::mat4 projection = glm::ortho(-500.0f, 500.0f, -500.0f * aspect_ratio, 500.0f * aspect_ratio, -1.0f, 1.0f);
-
-	renderstate.atlasitems.program = win::load_gl_shaders(vertexshader_atlasitem, fragmentshader_atlasitem);
-	glUseProgram(renderstate.atlasitems.program);
-	renderstate.atlasitems.uniform_projection = glGetUniformLocation(renderstate.atlasitems.program, "projection");
-	renderstate.atlasitems.uniform_view = glGetUniformLocation(renderstate.atlasitems.program, "view");
-	renderstate.atlasitems.uniform_highlight_mode = glGetUniformLocation(renderstate.atlasitems.program, "highlight_mode");
-	renderstate.atlasitems.uniform_color_mode = glGetUniformLocation(renderstate.atlasitems.program, "color_mode");
-	if (renderstate.atlasitems.uniform_projection == -1)
-		win::bug("no uniform projection");
-	if (renderstate.atlasitems.uniform_view == -1)
-		win::bug("no uniform view");
-	if (renderstate.atlasitems.uniform_highlight_mode == -1)
-		win::bug("no uniform uniform_highlight_mode");
-	if (renderstate.atlasitems.uniform_color_mode == -1)
-		win::bug("no uniform uniform_solid");
-
-	glUniformMatrix4fv(renderstate.atlasitems.uniform_projection, 1, false, glm::value_ptr(projection));
-
-	glGenVertexArrays(1, &renderstate.atlasitems.vao);
-	glGenBuffers(1, &renderstate.atlasitems.vbo);
-
-	glBindVertexArray(renderstate.atlasitems.vao);
-	glBindBuffer(GL_ARRAY_BUFFER, renderstate.atlasitems.vbo);
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 4, NULL);
-	glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(float) * 4, (void*)(sizeof(float) * 2));
-
-	renderstate.guides.program = win::load_gl_shaders(vertexshader_guides, fragmentshader_guides);
-	glUseProgram(renderstate.guides.program);
-	renderstate.guides.uniform_projection = glGetUniformLocation(renderstate.guides.program, "projection");
-	renderstate.guides.uniform_view = glGetUniformLocation(renderstate.guides.program, "view");
-	renderstate.guides.uniform_dirty = glGetUniformLocation(renderstate.guides.program, "dirty");
-	if (renderstate.guides.uniform_projection == -1)
-		win::bug("no uniform projection");
-	if (renderstate.guides.uniform_view == -1)
-		win::bug("no uniform view");
-	if (renderstate.guides.uniform_dirty == -1)
-		win::bug("no uniform dirty");
-
-	glUniformMatrix4fv(renderstate.guides.uniform_projection, 1, false, glm::value_ptr(projection));
-
-	glGenVertexArrays(1, &renderstate.guides.vao);
-	glGenBuffers(1, &renderstate.guides.vbo);
-	glBindVertexArray(renderstate.guides.vao);
-	glBindBuffer(GL_ARRAY_BUFFER, renderstate.guides.vbo);
-
-	const float guide_width = 5.0f;
-	const float guide_length = 400.0f;
-	const float guide_start = 0.0f;
-	float guide_verts[] =
-	{
-		-guide_width, guide_length,
-		-guide_width, guide_start,
-		guide_start, guide_start,
-		-guide_width, guide_length,
-		guide_start, guide_start,
-		guide_start, guide_length,
-
-		guide_start, guide_start,
-		guide_start, -guide_width,
-		guide_length, -guide_width,
-		guide_start, guide_start,
-		guide_length, -guide_width,
-		guide_length, guide_start
+		char buf[100];
+		snprintf(buf, sizeof(buf), "%dx%d (%.1fMB)", maxx, maxy, megabytes);
+		cpanel.set_status(buf);
 	};
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, NULL);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(guide_verts), guide_verts, GL_STATIC_DRAW);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	while (!quit)
+	cpanel.on_import([&]()
 	{
-		display.process();
+		if (dirty && !platform.ask("Discard unsaved changes", "Discard unsaved changes in current layout?"))
+			return;
 
-		// processing
-		screen_to_view(mousex_raw, mousey_raw, display.width(), display.height(), centerx, centery, zoom, 1000.0, mousex, mousey);
-
-		if (left_clicking)
+		const auto &result = filepicker.import_layout();
+		if (result.has_value())
 		{
-			if (!grabbing)
 			{
-				if ((selected_index = select_item(items, mousex, mousey, selected_xoff, selected_yoff)) != -1)
+				// reset everything
+				std::vector<int> ids;
+				for (auto &item: atlasizer.get_items_layout_order())
 				{
-					grabbing = true;
+					renderer.remove_texture(item->texture);
+					ids.push_back(item->id);
 				}
+
+				for (auto id: ids)
+					atlasizer.remove(id);
+			}
+
+			lpanel.clear();
+			lpanel.set_selection(-1);
+
+			current_save_file = result.value();
+
+			int padding;
+			const auto layout = LayoutExporter::import(result.value(), padding);
+			for (const auto &item : layout)
+			{
+				const win::Targa tga(win::Stream(new win::FileReadStream(item.filename)));
+				const int id = atlasizer.add(renderer.add_texture(tga), item.filename, item.x, item.y, tga.width(), tga.height());
+				lpanel.add(id, item.filename.filename().string());
+			}
+
+			atlasizer.set_padding(padding);
+			cpanel.set_pad(padding);
+
+			if (!layout.empty())
+				cpanel.enable_reload(true);
+
+			recalculate_statistics();
+			dirty = false;
+		}
+	});
+
+	cpanel.on_export([&]()
+	{
+		std::filesystem::path savefile;
+
+		if (current_save_file.has_value())
+		{
+			savefile = current_save_file.value();
+		}
+		else
+		{
+			const auto result = filepicker.export_layout();
+			if (result.has_value())
+			{
+				savefile = result.value();
+				current_save_file = result.value();
+			}
+			else return;
+		}
+
+		LayoutExporter exporter(savefile, atlasizer.get_padding());
+
+		for (const auto &item : atlasizer.get_items_layout_order())
+		{
+			AtlasItemDescriptor aid;
+			aid.filename = item->texturepath;
+			aid.x = item->x;
+			aid.y = item->y;
+			aid.width = item->w;
+			aid.height = item->h;
+
+			exporter.add(aid);
+		}
+
+		exporter.save();
+
+		dirty = false;
+	});
+
+	cpanel.on_add([&]()
+	{
+		const auto &result = filepicker.import_image();
+		if (result.has_value())
+		{
+			for (const auto &f: result.value())
+			{
+				const win::Targa tga(win::Stream(new win::FileReadStream(f)));
+				const int id = atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
+				lpanel.add(id, f.filename().string());
+			}
+
+			lpanel.set_selection(-1);
+
+			recalculate_statistics();
+			dirty = true;
+		}
+
+		cpanel.enable_reload(true);
+	});
+
+	cpanel.on_remove([&]()
+	{
+		const auto items = atlasizer.get_items_layout_order();
+
+		if (items.size() == 1)
+			cpanel.enable_reload(false);
+
+		for (const auto &item : items)
+		{
+			if (item->id == selection_id)
+			{
+				renderer.remove_texture(item->texture);
+				atlasizer.remove(selection_id);
+				lpanel.remove(selection_id);
+				lpanel.set_selection(-1);
+				recalculate_statistics();
+				dirty = true;
+				return;
 			}
 		}
-		else grabbing = false;
 
-		if (right_clicking)
+		win::bug("No atlas item with id " + std::to_string(selection_id));
+	});
+
+	cpanel.on_reload([&]()
+	{
+		for (auto item : atlasizer.get_items_layout_order())
 		{
-			if (!left_clicking)
+			const win::Targa tga(win::Stream(new win::FileReadStream(item->texturepath)));
+			if (tga.width() != item->w || tga.height() != item->h)
 			{
-				if (!panning)
+				// read the associated texture from disk again
+				renderer.remove_texture(item->texture);
+				item->texture = renderer.add_texture(tga);
+				item->w = tga.width();
+				item->h = tga.height();
+
+				dirty = true;
+			}
+		}
+
+		atlasizer.check_validity();
+	});
+
+	cpanel.on_padding_up([&]()
+	{
+		const int p = atlasizer.get_padding() + 1;
+		atlasizer.set_padding(p);
+		cpanel.set_pad(p);
+
+		dirty = true;
+	});
+
+	cpanel.on_padding_down([&]()
+	{
+		const int p = atlasizer.get_padding() - 1;
+		if (p >= 0)
+		{
+			atlasizer.set_padding(p);
+			cpanel.set_pad(p);
+			dirty = true;
+		}
+	});
+
+	cpanel.on_move_up([&]()
+	{
+		atlasizer.move_up(selection_id);
+
+		lpanel.clear();
+		for (const auto item : atlasizer.get_items_layout_order())
+			lpanel.add(item->id, item->texturepath.filename().string());
+
+		// allow the on_select to decide movement button state
+		lpanel.set_selection(selection_id);
+
+		dirty = true;
+	});
+
+	cpanel.on_move_down([&]()
+	{
+		atlasizer.move_down(selection_id);
+
+		lpanel.clear();
+		for (const auto item : atlasizer.get_items_layout_order())
+			lpanel.add(item->id, item->texturepath.filename().string());
+
+		// allow the on_select to decide movement button state
+		lpanel.set_selection(selection_id);
+
+		dirty = true;
+	});
+
+	lpanel.on_select([&](int id)
+	{
+		selection_id = id;
+
+		cpanel.enable_remove(id != -1);
+
+		const auto &items = atlasizer.get_items_layout_order();
+
+		if (!items.empty())
+		{
+			const auto first = *items.begin();
+			const auto last = *(items.end() - 1);
+
+			cpanel.enable_move_up(id != -1 && first->id != id);
+			cpanel.enable_move_down(id != -1 && last->id != id);
+		}
+		else
+		{
+			cpanel.enable_move_up(false);
+			cpanel.enable_move_down(false);
+		}
+	});
+
+	display.register_button_handler([&](const win::Button button, const bool press)
+	{
+		last_interaction = std::chrono::high_resolution_clock::now();
+
+		switch (button)
+		{
+			case win::Button::mouse_right:
+				if (press)
 				{
-					panning = true;
-					pan_oldcenterx = centerx;
-					pan_oldcentery = centery;
-					pan_oldmousex = mousex;
-					pan_oldmousey = mousey;
+					if (!in_box(mouse_x, mouse_y, cpanel_box) && !in_box(mouse_x, mouse_y, lpanel_box) && drag_mode == DragMode::none)
+						drag_mode = DragMode::pan;
 				}
 				else
 				{
-					float converted_mousex, converted_mousey;
-					screen_to_view(mousex_raw, mousey_raw, display.width(), display.height(), pan_oldcenterx, pan_oldcentery, zoom, 1000.0f, converted_mousex, converted_mousey);
-
-					centerx = pan_oldcenterx - (converted_mousex - pan_oldmousex);
-					centery = pan_oldcentery - (converted_mousey - pan_oldmousey);
+					drag_mode = DragMode::none;
 				}
-			}
-		}
-		else
-			panning = false;
+				break;
+			case win::Button::mouse_left:
+				if (press)
+				{
+					if (in_box(mouse_x, mouse_y, cpanel_box))
+						cpanel.click(true);
+					else if (in_box(mouse_x, mouse_y, lpanel_box))
+						lpanel.click(true);
+					else if (drag_mode == DragMode::none)
+					{
+						drag_mode = DragMode::drag;
+						selection_id = atlasizer.start_drag(mouse_world_x, mouse_world_y);
+						lpanel.set_selection(selection_id);
+					}
+				}
+				else
+				{
+					if (drag_mode == DragMode::none)
+					{
+						cpanel.click(false);
+						lpanel.click(false);
+					}
+					else
+						drag_mode = DragMode::none;
+				}
+				break;
+			case win::Button::num_plus:
+				if (drag_mode == DragMode::none && press)
+				{
+					zoom += 0.1f;
+				}
+				break;
+			case win::Button::num_minus:
+				if (drag_mode == DragMode::none && press)
+				{
+					zoom -= 0.1f;
 
-		bool reset_barriers = false; // snapmode bs
-		if (grabbing)
+					if (zoom < 0.5f)
+						zoom = 0.5f;
+				}
+				break;
+			case win::Button::lshift:
+				solidmode = press;
+				break;
+			case win::Button::lctrl:
+				snapmode = press;
+				break;
+			default:
+				break;
+		}
+	});
+
+	display.register_mouse_handler([&](int x, int y)
+	{
+		last_interaction = std::chrono::high_resolution_clock::now();
+
+		const int prev_x = mouse_x;
+		const int prev_y = mouse_y;
+
+		mouse_x = x;
+		mouse_y = display.height() - y;
+
+		cpanel.mouse_move(mouse_x, mouse_y);
+		lpanel.mouse_move(mouse_x, mouse_y);
+
+		renderer.screen_to_world(mouse_x, mouse_y, mouse_world_x, mouse_world_y);
+
+		if (drag_mode == DragMode::pan)
 		{
-			dirty = true;
-			GUIAtlasItem *item	= get_item(items, selected_index);
-			if (item == NULL) win::bug("null item");
+			int prev_world_x, prev_world_y;
+			renderer.screen_to_world(prev_x, prev_y, prev_world_x, prev_world_y);
 
-			item->x = mousex - selected_xoff;
-			item->y = mousey - selected_yoff;
-
-			// this snap mode crap is terrible lmao
-			if (left_barrier.active)
-			{
-				if (item->x < left_barrier.location)
-					item->x = left_barrier.location;
-				else if (item->x > left_barrier.location)
-					left_barrier.active = false;
-			}
-			if (right_barrier.active)
-			{
-				if (item->x + item->width > right_barrier.location)
-					item->x = right_barrier.location - item->width;
-				else if (item->x + item->width < right_barrier.location)
-					right_barrier.active = false;
-			}
-			if (down_barrier.active)
-			{
-				if (item->y < down_barrier.location)
-					item->y = down_barrier.location;
-				else if (item->y > down_barrier.location)
-					down_barrier.active = false;
-			}
-			if (up_barrier.active)
-			{
-				if (item->y + item->height > up_barrier.location)
-					item->y = up_barrier.location - item->height;
-				else if (item->y + item->height < up_barrier.location)
-					up_barrier.active = false;
-			}
-
-			if (!snapmode)
-				reset_barriers = true;
-			else
-			{
-				item->correct_bounds(padding);
-				const GUIAtlasItem::Side side = item->correct(items, padding);
-				if (side == GUIAtlasItem::Side::LEFT)
-				{
-					left_barrier.active = true;
-					left_barrier.location = item->x;
-				}
-				else if (side == GUIAtlasItem::Side::RIGHT)
-				{
-					right_barrier.active = true;
-					right_barrier.location = item->x + item->width;
-				}
-				else if (side == GUIAtlasItem::Side::TOP)
-				{
-					up_barrier.active = true;
-					up_barrier.location = item->y + item->height;
-				}
-				else if (side == GUIAtlasItem::Side::BOTTOM)
-				{
-					down_barrier.active = true;
-					down_barrier.location = item->y;
-				}
-			}
+			center_x -= mouse_world_x - prev_world_x;
+			center_y -= mouse_world_y - prev_world_y;
 		}
-		else
-			reset_barriers = true;
-
-		if (reset_barriers)
+		else if (drag_mode == DragMode::drag)
 		{
-			left_barrier.active = false;
-			right_barrier.active = false;
-			down_barrier.active = false;
-			up_barrier.active = false;
+			atlasizer.continue_drag(mouse_world_x, mouse_world_y, snapmode);
+			if (selection_id != -1)
+			{
+				recalculate_statistics();
+				dirty = true;
+			}
 		}
+	});
 
-		// rendering
-		glClear(GL_COLOR_BUFFER_BIT);
+	recalculate_statistics();
 
-		// guides
-		glUseProgram(renderstate.guides.program);
-		glUniform1i(renderstate.guides.uniform_dirty, dirty ? 1 : 0);
-		glBindVertexArray(renderstate.guides.vao);
-		glDrawArrays(GL_TRIANGLES, 0, 12);
+	bool quit = false;
+	display.register_window_handler([&](win::WindowEvent event)
+	{
+		if (event == win::WindowEvent::close)
+		{
+			if (dirty && !platform.ask("Discard unsaved changes", "Discard unsaved changes in current layout?"))
+				return;
 
-		// atlas items
-		glm::mat4 view = glm::translate(glm::scale(glm::identity<glm::mat4>(), glm::vec3(zoom, zoom, zoom)), glm::vec3(-centerx, -centery, 0.0));
+			quit = true;
+		}
+	});
 
-		glUseProgram(renderstate.atlasitems.program);
-		glUniformMatrix4fv(renderstate.atlasitems.uniform_view, 1, false, glm::value_ptr(view));
+	while (!quit)
+	{
+		// if no activity in last 10 seconds, slow down this loop
+		if (std::chrono::duration<float, std::milli>(std::chrono::high_resolution_clock::now() - last_interaction).count() > 10000)
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-		glUseProgram(renderstate.guides.program);
-		glUniformMatrix4fv(renderstate.guides.uniform_view, 1, false, glm::value_ptr(view));
+		display.process();
 
-		const std::vector<float> verts = regenverts(items);
-		glBindBuffer(GL_ARRAY_BUFFER, renderstate.atlasitems.vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verts.size(), verts.data(), GL_STATIC_DRAW);
+		renderer.start_render();
 
-		glUseProgram(renderstate.atlasitems.program);
-		glBindVertexArray(renderstate.atlasitems.vao);
-		int index = 0;
+		// draw guides
+		const auto guide_color = dirty ? win::Color<unsigned char>(255, 0, 0, 255) : win::Color<unsigned char>(0, 255, 0, 255);
+		renderer.render(guide_color, -1, -1, 1, 400);
+		renderer.render(guide_color, -1, -1, 400, 1);
+
+		// draw bounding box
+		renderer.render(win::Color<unsigned char>(255, 255, 255, 5), 0, 0, canvas_dimensions.width, canvas_dimensions.height);
+
+		// draw items
+		const auto items = atlasizer.get_items_display_order();
 		for (const auto &item : items)
 		{
-			const bool oob = item.oob(padding);
-			const bool colliding = item.colliding(items, padding);
-			const bool selected = selected_index == index;
-
-			int highlight_mode = 0;
-			if (selected)
-				highlight_mode = 3;
-			if (selected && (colliding || oob))
-				highlight_mode = 1;
-			else if (colliding || oob)
-				highlight_mode = 2;
-
-			int color_mode = 0;
-			if (solidmode && selected_index == index)
-				color_mode = 1;
-			else if (solidmode)
-				color_mode = 2;
-
-			glUniform1i(renderstate.atlasitems.uniform_highlight_mode, highlight_mode);
-			glUniform1i(renderstate.atlasitems.uniform_color_mode, color_mode);
-			glBindTexture(GL_TEXTURE_2D, item.texture);
-			glDrawArrays(GL_TRIANGLES, index * 6, 6);
-			++index;
+			// sweet jebus
+			if (item->valid)
+				if (solidmode)
+					if (selection_id == item->id)
+						renderer.render(win::Color<unsigned char>(50, 100, 50, 255), item->x, item->y, item->w, item->h);
+					else
+						renderer.render(win::Color<unsigned char>(0, 100, 0, 255), item->x, item->y, item->w, item->h);
+				else
+					if (selection_id == item->id)
+						renderer.render(item->texture, win::Color<unsigned char>(20, 20, 20, 0), item->x, item->y);
+					else
+						renderer.render(item->texture, item->x, item->y);
+			else
+				if (solidmode)
+					if (selection_id == item->id)
+						renderer.render(win::Color<unsigned char>(100, 50, 50, 255), item->x, item->y, item->w, item->h);
+					else
+						renderer.render(win::Color<unsigned char>(100, 0, 0, 255), item->x, item->y, item->w, item->h);
+				else
+					if (selection_id == item->id)
+						renderer.render(item->texture, win::Color<unsigned char>(100, 50, 50, 0), item->x, item->y);
+					else
+						renderer.render(item->texture, win::Color<unsigned char>(100, 0, 0, 0), item->x, item->y);
 		}
 
-#ifndef NDEBUG
-		unsigned error;
-		if ((error = glGetError()) != 0)
-			win::bug(std::to_string(error));
-#endif
+		// draw gui panels
+		renderer.set_view(display.width() / 2, display.height() / 2, 1.0f);
+		cpanel.draw();
+		lpanel.draw();
+		renderer.set_view(center_x, center_y, zoom);
 
 		display.swap();
 	}
-
-	glDeleteVertexArrays(1, &renderstate.atlasitems.vao);
-	glDeleteBuffers(1, &renderstate.atlasitems.vbo);
-	glDeleteShader(renderstate.atlasitems.program);;
-
-	glDeleteShader(renderstate.guides.program);
-	glDeleteVertexArrays(1, &renderstate.guides.vao);
-	glDeleteBuffers(1, &renderstate.guides.vbo);
 }
-
-#endif

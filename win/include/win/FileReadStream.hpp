@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <filesystem>
 #include <fstream>
 
 #include <win/Win.hpp>
@@ -14,7 +14,7 @@ class FileReadStream : public StreamBase
 	WIN_NO_COPY_MOVE(FileReadStream);
 
 public:
-	explicit FileReadStream(const std::string &path);
+	explicit FileReadStream(const std::filesystem::path &path);
 
 	unsigned long long size() const override;
 
@@ -25,7 +25,7 @@ public:
 	unsigned long long tell() override;
 
 private:
-	std::string path;
+	std::filesystem::path path;
 	std::ifstream file;
 };
 

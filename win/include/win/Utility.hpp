@@ -37,6 +37,17 @@ template <typename T> struct Color
 	T red, green, blue, alpha;
 };
 
+template <typename T> struct Box
+{
+	Box()
+		: x(0), y(0), width(0), height(0) {}
+
+	Box(T x, T y, T width, T height)
+		: x(x), y(y), width(width), height(height) {}
+
+	T x, y, width, height;
+};
+
 template <typename T> struct Area
 {
 	Area()
