@@ -26,11 +26,13 @@ public:
 	int add_texture(win::Targa &tga);
 	void start_render();
 	void render(int texture, int x, int y);
+	void set_view(int centerx, int centery, float zoom);
 	void draw_text(const char *msg, int x, int y);
 	void draw_text(const char *msg, int x, int y, const win::Color<float> &color);
 
 private:
 	glm::mat4 projection;
+	glm::mat4 view;
 
 	std::unordered_map<int, Texture> texture_map;
 

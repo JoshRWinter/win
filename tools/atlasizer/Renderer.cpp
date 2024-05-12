@@ -10,6 +10,7 @@ using namespace win::gl;
 
 Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height)
 	: projection(glm::ortho((float)0, (float)viewport_width, (float)0, (float)viewport_height))
+	, view(glm::identity<glm::mat4>())
 	, font(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), 12, roll["NotoSans-Regular.ttf"])
 	, text_renderer(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), GL_TEXTURE1, true)
 {
@@ -81,7 +82,7 @@ void Renderer::render(int texture, int x, int y)
 	const auto translate = glm::translate(ident, glm::vec3(x + (tex.w / 2.0f), y + (tex.h / 2.0f), 0.0f));
 	const auto scale = glm::scale(ident, glm::vec3(tex.w, tex.h, 0.0f));
 
-	const auto mvp = projection * translate * scale;
+	const auto mvp = projection * view * translate * scale;
 
 	glUseProgram(program.get());
 	glBindVertexArray(vao.get());
@@ -92,6 +93,15 @@ void Renderer::render(int texture, int x, int y)
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	win::gl_check_error();
+}
+
+void Renderer::set_view(int centerx, int centery, float zoom)
+{
+	const auto ident = glm::identity<glm::mat4>();
+	const auto translate = glm::translate(ident, glm::vec3((float)-centerx, (float)-centery, 0.0f));
+	const auto scale = glm::scale(ident, glm::vec3(zoom, zoom, 0.0f));
+
+	view = translate * scale;
 }
 
 void Renderer::draw_text(const char *msg, int x, int y)
