@@ -8,8 +8,12 @@
 
 using namespace win::gl;
 
+int Renderer::next_id = 0;
+
 Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height)
-	: projection(glm::ortho((float)0, (float)viewport_width, (float)0, (float)viewport_height))
+	: viewport_width(viewport_width)
+	, viewport_height(viewport_height)
+	, projection(glm::ortho((float)0, (float)viewport_width, (float)0, (float)viewport_height))
 	, view(glm::identity<glm::mat4>())
 	, font(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), 12, roll["NotoSans-Regular.ttf"])
 	, text_renderer(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), GL_TEXTURE1, true)
@@ -49,9 +53,21 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
+void Renderer::screen_to_world(int mouse_x, int mouse_y, int &world_x, int &world_y) const
+{
+	const glm::vec4 ndc((mouse_x / (viewport_width / 2.0f)) - 1.0f, (mouse_y / (viewport_height / 2.0f)) - 1.0f, -1, 1);
+	const auto vp = projection * view;
+	const auto ivp = glm::inverse(vp);
+	const auto point = ivp * ndc;
+
+	world_x = std::roundf(point.x);
+	world_y = std::roundf(point.y);
+}
+
 int Renderer::add_texture(win::Targa &tga)
 {
-	const int key = texture_map.size();
+	const int key = next_id++;
+
 	auto &tex = texture_map[key];
 	tex.w = tga.width();
 	tex.h = tga.height();
@@ -99,7 +115,7 @@ void Renderer::set_view(int centerx, int centery, float zoom)
 {
 	const auto ident = glm::identity<glm::mat4>();
 	const auto translate = glm::translate(ident, glm::vec3((float)-centerx, (float)-centery, 0.0f));
-	const auto scale = glm::scale(ident, glm::vec3(zoom, zoom, 0.0f));
+	const auto scale = glm::scale(ident, glm::vec3(zoom, zoom, 1.0f));
 
 	view = translate * scale;
 }

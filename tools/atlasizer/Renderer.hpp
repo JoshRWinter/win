@@ -23,6 +23,7 @@ class Renderer
 public:
 	explicit Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height);
 
+	void screen_to_world(int mouse_x, int mouse_y, int &world_x, int &world_y) const;
 	int add_texture(win::Targa &tga);
 	void start_render();
 	void render(int texture, int x, int y);
@@ -31,8 +32,10 @@ public:
 	void draw_text(const char *msg, int x, int y, const win::Color<float> &color);
 
 private:
-	glm::mat4 projection;
-	glm::mat4 view;
+	static int next_id;
+
+	int viewport_width, viewport_height;
+	glm::mat4 projection, view;
 
 	std::unordered_map<int, Texture> texture_map;
 
