@@ -28,6 +28,7 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	, font(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), 12, roll["NotoSans-Regular.ttf"])
 	, text_renderer(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), GL_TEXTURE1, true)
 {
+	set_view(viewport_width / 2.0f, viewport_height / 2.0f, 1.0f);
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
 	program = win::GLProgram(win::load_gl_shaders(roll["vertex_shader.vert"], roll["fragment_shader.frag"]));
@@ -144,7 +145,7 @@ void Renderer::render(win::Color<unsigned char> rgba, int x, int y, int w, int h
 void Renderer::set_view(int centerx, int centery, float zoom)
 {
 	const auto ident = glm::identity<glm::mat4>();
-	const auto translate = glm::translate(ident, glm::vec3((float)-centerx, (float)-centery, 0.0f));
+	const auto translate = glm::translate(ident, glm::vec3((float)-(centerx - (viewport_width / 2.0f)), (float)-(centery - (viewport_height / 2.0f)), 0.0f));
 	const auto scale = glm::scale(ident, glm::vec3(zoom, zoom, 1.0f));
 
 	view = translate * scale;

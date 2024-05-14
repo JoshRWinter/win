@@ -23,7 +23,7 @@ void gui2()
 
 	// interface state
 	enum DragMode { none, pan, drag } drag_mode = DragMode::none;
-	int center_x = -150, center_y = -150;
+	int center_x = (display.width() / 2.0f) - 75, center_y = (display.height() / 2.0f) - 75;
 	float zoom = 1.0f;
 	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
 
