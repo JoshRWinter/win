@@ -14,6 +14,7 @@ struct AtlasItem
 	int y;
 	int w;
 	int h;
+	bool valid = true;
 };
 
 class Atlasizer
@@ -29,6 +30,8 @@ public:
 	const std::vector<AtlasItem> &get_items() const;
 
 private:
+	void check_validity();
+
 	std::vector<AtlasItem> items;
 
 	bool selection_active = false;

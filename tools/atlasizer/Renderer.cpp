@@ -35,8 +35,9 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	glUseProgram(program.get());
 
 	uniform_mvp = get_uniform(program, "mvp");
-	uniform_mode_solidcolor = get_uniform(program, "mode_solidcolor");
-	uniform_solidcolor = get_uniform(program, "solidcolor");
+	uniform_use_texture = get_uniform(program, "use_texture");
+	uniform_use_color = get_uniform(program, "use_color");
+	uniform_color = get_uniform(program, "color");
 
 	const float verts[]
 	{
@@ -104,42 +105,19 @@ void Renderer::render(int texture, int x, int y)
 {
 	const auto &tex = texture_map[texture];
 
-	const auto ident = glm::identity<glm::mat4>();
-	const auto translate = glm::translate(ident, glm::vec3(x + (tex.w / 2.0f), y + (tex.h / 2.0f), 0.0f));
-	const auto scale = glm::scale(ident, glm::vec3(tex.w, tex.h, 0.0f));
-
-	const auto mvp = projection * view * translate * scale;
-
-	glUseProgram(program.get());
-	glBindVertexArray(vao.get());
-	glUniform1i(uniform_mode_solidcolor, 0);
-	glBindTexture(GL_TEXTURE_2D, tex.tex.get());
-
-	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
-
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-
-	win::gl_check_error();
+	render(&tex, NULL, x, y, tex.w, tex.h);
 }
 
 void Renderer::render(win::Color<unsigned char> rgba, int x, int y, int w, int h)
 {
-	const auto ident = glm::identity<glm::mat4>();
-	const auto translate = glm::translate(ident, glm::vec3(x + (w / 2.0f), y + (h / 2.0f), 0.0f));
-	const auto scale = glm::scale(ident, glm::vec3(w, h, 1.0f));
+	render(NULL, &rgba, x, y, w, h);
+}
 
-	const auto mvp = projection * view * translate * scale;
+void Renderer::render(int texture, win::Color<unsigned char> rgba, int x, int y)
+{
+	const auto &tex = texture_map[texture];
 
-	glUseProgram(program.get());
-	glBindVertexArray(vao.get());
-	glUniform1i(uniform_mode_solidcolor, 1);
-	glUniform4f(uniform_solidcolor, rgba.red, rgba.green, rgba.blue, rgba.alpha);
-
-	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
-
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-
-	win::gl_check_error();
+	render(&tex, &rgba, x, y, tex.w, tex.h);
 }
 
 void Renderer::set_view(int centerx, int centery, float zoom)
@@ -160,4 +138,31 @@ void Renderer::draw_text(const char *msg, int x, int y, const win::Color<float> 
 {
 	text_renderer.draw(font, msg, x, y, color);
 	text_renderer.flush();
+}
+
+void Renderer::render(const Texture *texture, const win::Color<unsigned char> *color, int x, int y, int w, int h)
+{
+	const auto ident = glm::identity<glm::mat4>();
+	const auto translate = glm::translate(ident, glm::vec3(x + (w / 2.0f), y + (h / 2.0f), 0.0f));
+	const auto scale = glm::scale(ident, glm::vec3(w, h, 1.0f));
+
+	const auto mvp = projection * view * translate * scale;
+
+	glUseProgram(program.get());
+	glBindVertexArray(vao.get());
+
+	glUniform1i(uniform_use_texture, texture != NULL);
+	glUniform1i(uniform_use_color, color != NULL);
+
+	if (color != NULL)
+		glUniform4f(uniform_color, color->red / (float)std::numeric_limits<unsigned char>::max(), (float)color->green / std::numeric_limits<unsigned char>::max(), (float)color->blue / std::numeric_limits<unsigned char>::max(), (float)color->alpha / std::numeric_limits<unsigned char>::max());
+
+	if (texture != NULL)
+		glBindTexture(GL_TEXTURE_2D, texture->tex.get());
+
+	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	win::gl_check_error();
 }

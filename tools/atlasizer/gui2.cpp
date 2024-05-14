@@ -125,7 +125,12 @@ void gui2()
 
 		// items
 		for (const auto &item : atlasizer.get_items())
-			renderer.render(item.texture, item.x, item.y);
+		{
+			if (item.valid)
+				renderer.render(item.texture, item.x, item.y);
+			else
+				renderer.render(item.texture, win::Color<unsigned char>(100, 0, 0, 0), item.x, item.y);
+		}
 
 		renderer.draw_text("Atlasizer super alpha v0.000069", 5, display.height() - 15.0f);
 
