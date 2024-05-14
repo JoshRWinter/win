@@ -119,10 +119,15 @@ void gui2()
 
 		renderer.start_render();
 
+		// draw guides
+		renderer.render(win::Color<unsigned char>(0, 255, 0, 255), -1, -1, 1, 400);
+		renderer.render(win::Color<unsigned char>(0, 255, 0, 255), -1, -1, 400, 1);
+
+		// items
 		for (const auto &item : atlasizer.get_items())
 			renderer.render(item.texture, item.x, item.y);
 
-		renderer.draw_text("Atlasizer super alpha v0.000069", 250, 580);
+		renderer.draw_text("Atlasizer super alpha v0.000069", 5, display.height() - 15.0f);
 
 		display.swap();
 	}

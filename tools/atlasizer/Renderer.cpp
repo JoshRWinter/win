@@ -10,6 +10,16 @@ using namespace win::gl;
 
 int Renderer::next_id = 0;
 
+static GLint get_uniform(const win::GLProgram &program, const char *name)
+{
+	const auto loc = glGetUniformLocation(program.get(), name);
+
+	if (loc == -1)
+		win::bug("No uniform " + std::string(name));
+
+	return loc;
+}
+
 Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height)
 	: viewport_width(viewport_width)
 	, viewport_height(viewport_height)
@@ -23,10 +33,9 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	program = win::GLProgram(win::load_gl_shaders(roll["vertex_shader.vert"], roll["fragment_shader.frag"]));
 	glUseProgram(program.get());
 
-	uniform_mvp = glGetUniformLocation(program.get(), "mvp");
-
-	if (uniform_mvp == -1)
-		win::bug("No uniform mvp");
+	uniform_mvp = get_uniform(program, "mvp");
+	uniform_mode_solidcolor = get_uniform(program, "mode_solidcolor");
+	uniform_solidcolor = get_uniform(program, "solidcolor");
 
 	const float verts[]
 	{
@@ -102,7 +111,28 @@ void Renderer::render(int texture, int x, int y)
 
 	glUseProgram(program.get());
 	glBindVertexArray(vao.get());
+	glUniform1i(uniform_mode_solidcolor, 0);
 	glBindTexture(GL_TEXTURE_2D, tex.tex.get());
+
+	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	win::gl_check_error();
+}
+
+void Renderer::render(win::Color<unsigned char> rgba, int x, int y, int w, int h)
+{
+	const auto ident = glm::identity<glm::mat4>();
+	const auto translate = glm::translate(ident, glm::vec3(x + (w / 2.0f), y + (h / 2.0f), 0.0f));
+	const auto scale = glm::scale(ident, glm::vec3(w, h, 1.0f));
+
+	const auto mvp = projection * view * translate * scale;
+
+	glUseProgram(program.get());
+	glBindVertexArray(vao.get());
+	glUniform1i(uniform_mode_solidcolor, 1);
+	glUniform4f(uniform_solidcolor, rgba.red, rgba.green, rgba.blue, rgba.alpha);
 
 	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
 

@@ -27,6 +27,7 @@ public:
 	int add_texture(win::Targa &tga);
 	void start_render();
 	void render(int texture, int x, int y);
+	void render(win::Color<unsigned char> rgba, int x, int y, int w, int h);
 	void set_view(int centerx, int centery, float zoom);
 	void draw_text(const char *msg, int x, int y);
 	void draw_text(const char *msg, int x, int y, const win::Color<float> &color);
@@ -39,7 +40,7 @@ private:
 
 	std::unordered_map<int, Texture> texture_map;
 
-	int uniform_mvp;
+	GLint uniform_mvp, uniform_solidcolor, uniform_mode_solidcolor;
 
 	win::GLVertexArray vao;
 	win::GLBuffer vbo;
