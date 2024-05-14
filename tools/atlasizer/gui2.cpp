@@ -26,6 +26,7 @@ void gui2()
 	int center_x = (display.width() / 2.0f) - 75, center_y = (display.height() / 2.0f) - 75;
 	float zoom = 1.0f;
 	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
+	bool solidmode = false;
 
 	renderer.set_view(center_x, center_y, zoom);
 
@@ -79,6 +80,9 @@ void gui2()
 					renderer.set_view(center_x, center_y, zoom);
 				}
 				break;
+			case win::Button::lshift:
+				solidmode = press;
+				break;
 			case win::Button::d0: case win::Button::d1: case win::Button::d2: case win::Button::d3: case win::Button::d4:
 			case win::Button::d5: case win::Button::d6: case win::Button::d7: case win::Button::d8: case win::Button::d9:
 				atlasizer.set_padding((int)button - (int)win::Button::d0);
@@ -131,9 +135,15 @@ void gui2()
 		for (const auto &item : atlasizer.get_items())
 		{
 			if (item.valid)
-				renderer.render(item.texture, item.x, item.y);
+				if (solidmode)
+					renderer.render(win::Color<unsigned char>(0, 100, 0, 255), item.x, item.y, item.w, item.h);
+				else
+					renderer.render(item.texture, item.x, item.y);
 			else
-				renderer.render(item.texture, win::Color<unsigned char>(100, 0, 0, 0), item.x, item.y);
+				if (solidmode)
+					renderer.render(win::Color<unsigned char>(100, 0, 0, 255), item.x, item.y, item.w, item.h);
+				else
+					renderer.render(item.texture, win::Color<unsigned char>(100, 0, 0, 0), item.x, item.y);
 		}
 
 		renderer.draw_text("Atlasizer super alpha v0.000069", 5, display.height() - 15.0f);
