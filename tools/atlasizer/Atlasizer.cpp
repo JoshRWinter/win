@@ -63,6 +63,12 @@ void Atlasizer::continue_drag(int x, int y)
 	check_validity();
 }
 
+void Atlasizer::set_padding(int pad)
+{
+	padding = pad;
+	check_validity();
+}
+
 const std::vector<AtlasItem> &Atlasizer::get_items() const
 {
 	return items;
@@ -78,7 +84,7 @@ void Atlasizer::check_validity()
 			if (&item == &item2)
 				continue;
 
-			if (item.x + item.w > item2.x && item.x < item2.x + item2.w && item.y + item.h > item2.y && item.y < item2.y + item2.h)
+			if (item.x + item.w + padding > item2.x && item.x < item2.x + item2.w + padding && item.y + item.h + padding > item2.y && item.y < item2.y + item2.h + padding)
 			{
 				item.valid = false;
 				item2.valid = false;

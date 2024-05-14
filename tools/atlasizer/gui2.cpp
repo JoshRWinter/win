@@ -79,6 +79,10 @@ void gui2()
 					renderer.set_view(center_x, center_y, zoom);
 				}
 				break;
+			case win::Button::d0: case win::Button::d1: case win::Button::d2: case win::Button::d3: case win::Button::d4:
+			case win::Button::d5: case win::Button::d6: case win::Button::d7: case win::Button::d8: case win::Button::d9:
+				atlasizer.set_padding((int)button - (int)win::Button::d0);
+				break;
 			default:
 				break;
 		}

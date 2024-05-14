@@ -27,6 +27,7 @@ public:
 	void add(int texture, int w, int h);
 	void start_drag(int x, int y);
 	void continue_drag(int x, int y);
+	void set_padding(int pad);
 	const std::vector<AtlasItem> &get_items() const;
 
 private:
@@ -34,6 +35,7 @@ private:
 
 	std::vector<AtlasItem> items;
 
+	int padding = 0;
 	bool selection_active = false;
 	int grabx = 0, graby = 0;
 };
