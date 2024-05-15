@@ -46,7 +46,7 @@ void Atlasizer::start_drag(int x, int y)
 	}
 }
 
-void Atlasizer::continue_drag(int x, int y)
+void Atlasizer::continue_drag(int x, int y, bool snap)
 {
 	if (!selection_active)
 		return;
@@ -59,6 +59,72 @@ void Atlasizer::continue_drag(int x, int y)
 		item.x = 0;
 	if (item.y < 0)
 		item.y = 0;
+
+	if (snap)
+	{
+		// possibly delete drag barriers
+		if (left_barrier.has_value() && item.x > left_barrier.value())
+			left_barrier.reset();
+		if (right_barrier.has_value() && item.x < right_barrier.value())
+			right_barrier.reset();
+		if (bottom_barrier.has_value() && item.y > bottom_barrier.value())
+			bottom_barrier.reset();
+		if (top_barrier.has_value() && item.y < top_barrier.value())
+			top_barrier.reset();
+
+		// possibly force compliance with drag barriers
+		if (left_barrier.has_value() && item.x < left_barrier.value())
+			item.x = left_barrier.value();
+		if (right_barrier.has_value() && item.x > right_barrier.value())
+			item.x = right_barrier.value();
+		if (bottom_barrier.has_value() && item.y < bottom_barrier.value())
+			item.y = bottom_barrier.value();
+		if (top_barrier.has_value() && item.y > top_barrier.value())
+			item.y = top_barrier.value();
+
+		// possibly create drag barriers
+		for (const auto &item2 : items)
+		{
+			if (&item2 == &item)
+				continue;
+
+			if (collide(item, item2))
+			{
+				const auto side = collision_side(item, item2);
+
+				switch (side)
+				{
+					case CollisionSide::left:
+						item.x = item2.x + item2.w + padding;
+						right_barrier.reset();
+						left_barrier.emplace(item.x);
+						break;
+					case CollisionSide::right:
+						item.x = item2.x - (item.w + padding);
+						left_barrier.reset();
+						right_barrier.emplace(item.x);
+						break;
+					case CollisionSide::bottom:
+						item.y = item2.y + item2.h + padding;
+						top_barrier.reset();
+						bottom_barrier.emplace(item.y);
+						break;
+					case CollisionSide::top:
+						item.y = item2.y - (item.h + padding);
+						bottom_barrier.reset();
+						top_barrier.emplace(item.y);
+						break;
+				}
+			}
+		}
+	}
+	else
+	{
+		left_barrier.reset();
+		right_barrier.reset();
+		bottom_barrier.reset();
+		top_barrier.reset();
+	}
 
 	check_validity();
 }
@@ -84,11 +150,44 @@ void Atlasizer::check_validity()
 			if (&item == &item2)
 				continue;
 
-			if (item.x + item.w + padding > item2.x && item.x < item2.x + item2.w + padding && item.y + item.h + padding > item2.y && item.y < item2.y + item2.h + padding)
+			if (collide(item, item2))
 			{
 				item.valid = false;
 				item2.valid = false;
 			}
 		}
 	}
+}
+
+bool Atlasizer::collide(const AtlasItem &a, const AtlasItem &b) const
+{
+	return
+		a.x + a.w + padding > b.x &&
+		a.x < b.x + b.w + padding &&
+		a.y + a.h + padding > b.y &&
+		a.y < b.y + b.h + padding;
+}
+
+Atlasizer::CollisionSide Atlasizer::collision_side(const AtlasItem &a, const AtlasItem &b) const
+{
+	if (!collide(a, b))
+		win::bug("no collision");
+
+	const int left = std::abs(a.x - (b.x + b.w + padding));
+	const int right = std::abs((a.x + a.w + padding) - b.x);
+	const int bottom = std::abs(a.y - (b.y + b.h + padding));
+	const int top = std::abs((a.y + a.h + padding) - b.y);
+
+	const int min = std::min(left, std::min(right, std::min(bottom, top)));
+
+	if (min == left)
+		return CollisionSide::left;
+	else if (min == right)
+		return CollisionSide::right;
+	else if (min == bottom)
+		return CollisionSide::bottom;
+	else if (min == top)
+		return CollisionSide::top;
+	else
+		win::bug("no side");
 }

@@ -27,6 +27,7 @@ void gui2()
 	float zoom = 1.0f;
 	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
 	bool solidmode = false;
+	bool snapmode = false;
 
 	renderer.set_view(center_x, center_y, zoom);
 
@@ -83,6 +84,9 @@ void gui2()
 			case win::Button::lshift:
 				solidmode = press;
 				break;
+			case win::Button::lctrl:
+				snapmode = press;
+				break;
 			case win::Button::d0: case win::Button::d1: case win::Button::d2: case win::Button::d3: case win::Button::d4:
 			case win::Button::d5: case win::Button::d6: case win::Button::d7: case win::Button::d8: case win::Button::d9:
 				atlasizer.set_padding((int)button - (int)win::Button::d0);
@@ -110,7 +114,7 @@ void gui2()
 		}
 		else if (drag_mode == DragMode::drag)
 		{
-			atlasizer.continue_drag(mouse_world_x, mouse_world_y);
+			atlasizer.continue_drag(mouse_world_x, mouse_world_y, snapmode);
 		}
 	});
 
