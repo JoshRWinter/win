@@ -75,7 +75,7 @@ void Renderer::screen_to_world(int mouse_x, int mouse_y, int &world_x, int &worl
 	world_y = std::roundf(point.y);
 }
 
-int Renderer::add_texture(win::Targa &tga)
+int Renderer::add_texture(const win::Targa &tga)
 {
 	const int key = next_id++;
 
@@ -85,7 +85,22 @@ int Renderer::add_texture(win::Targa &tga)
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, tex.tex.get());
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.w, tex.h, 0, GL_BGRA, GL_UNSIGNED_BYTE, tga.data());
+
+	GLenum format;
+	if (tga.bpp() == 8)
+	{
+		GLint swizzle[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+		format = GL_RED;
+	}
+	else if (tga.bpp() == 24)
+		format = GL_BGR;
+	else if (tga.bpp() == 32)
+		format = GL_BGRA;
+	else
+		win::bug("Unsupported image color depth " + std::to_string(tga.bpp()));
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.w, tex.h, 0, format, GL_UNSIGNED_BYTE, tga.data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -158,7 +173,10 @@ void Renderer::render(const Texture *texture, const win::Color<unsigned char> *c
 		glUniform4f(uniform_color, color->red / (float)std::numeric_limits<unsigned char>::max(), (float)color->green / std::numeric_limits<unsigned char>::max(), (float)color->blue / std::numeric_limits<unsigned char>::max(), (float)color->alpha / std::numeric_limits<unsigned char>::max());
 
 	if (texture != NULL)
+	{
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture->tex.get());
+	}
 
 	glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
 
