@@ -30,6 +30,11 @@ void Atlasizer::remove(int id)
 
 void Atlasizer::start_drag(int x, int y)
 {
+	left_barrier.reset();
+	right_barrier.reset();
+	bottom_barrier.reset();
+	top_barrier.reset();
+
 	int index = -1;
 	for (int i = (int)items.size() - 1; i >= 0; --i)
 	{
@@ -145,6 +150,11 @@ void Atlasizer::continue_drag(int x, int y, bool snap)
 		bottom_barrier.reset();
 		top_barrier.reset();
 	}
+
+	if (item.x < 0)
+		item.x = 0;
+	if (item.y < 0)
+		item.y = 0;
 
 	check_validity();
 }
