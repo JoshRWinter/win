@@ -17,7 +17,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "atlasizer.hpp"
-#include "layoutexporter.hpp"
+#include "LayoutExporter.hpp"
 
 using namespace win::gl;
 

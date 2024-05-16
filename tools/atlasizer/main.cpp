@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string.h>
-#include "layoutexporter.hpp"
+#include "LayoutExporter.hpp"
 
 #include "atlasizer.hpp"
 

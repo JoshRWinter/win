@@ -2,15 +2,18 @@
 
 #include <vector>
 #include <optional>
+#include <filesystem>
 
 #include <win/Win.hpp>
 
-struct AtlasItem
+struct AtlasizerItem
 {
-	AtlasItem(int texture, int x, int y, int w, int h)
-		: texture(texture), x(x), y(y), w(w), h(h) {}
+	AtlasizerItem(int id, int texture, const std::filesystem::path &texturepath, int x, int y, int w, int h)
+		: id(id), texture(texture), texturepath(texturepath), x(x), y(y), w(w), h(h) {}
 
+	int id;
 	int texture;
+	std::filesystem::path texturepath;
 	int x;
 	int y;
 	int w;
@@ -27,18 +30,22 @@ class Atlasizer
 public:
 	Atlasizer() = default;
 
-	void add(int texture, int w, int h);
+	void add(int texture, const std::filesystem::path &texturepath, int x, int y, int w, int h);
+	void remove(int id);
 	void start_drag(int x, int y);
 	void continue_drag(int x, int y, bool snap);
 	void set_padding(int pad);
-	const std::vector<AtlasItem> &get_items() const;
+	int get_padding() const;
+	const std::vector<AtlasizerItem> &get_items() const;
 
 private:
 	void check_validity();
-	bool collide(const AtlasItem &a, const AtlasItem &b) const;
-	CollisionSide collision_side(const AtlasItem &a, const AtlasItem &b) const;
+	bool collide(const AtlasizerItem &a, const AtlasizerItem &b) const;
+	CollisionSide collision_side(const AtlasizerItem &a, const AtlasizerItem &b) const;
 
-	std::vector<AtlasItem> items;
+	static int next_atlasitem_id;
+
+	std::vector<AtlasizerItem> items;
 
 	int padding = 0;
 	bool selection_active = false;

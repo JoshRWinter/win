@@ -2,8 +2,10 @@
 #include <win/AssetRoll.hpp>
 #include <win/FileReadStream.hpp>
 
+#include "ZenityDialogManager.hpp"
 #include "Renderer.hpp"
 #include "Atlasizer.hpp"
+#include "LayoutExporter.hpp"
 
 void gui2()
 {
@@ -17,6 +19,7 @@ void gui2()
 	win::Display display(options);
 	win::load_gl_functions();
 
+	ZenityDialogManager dialog;
 	win::AssetRoll roll("atlasizer.roll");
 	Renderer renderer(roll, display.width(), display.height());
 	Atlasizer atlasizer;
@@ -28,6 +31,7 @@ void gui2()
 	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
 	bool solidmode = false;
 	bool snapmode = false;
+	std::filesystem::path current_save_file;
 
 	renderer.set_view(center_x, center_y, zoom);
 
@@ -60,13 +64,6 @@ void gui2()
 					drag_mode = DragMode::none;
 				}
 				break;
-			case win::Button::a:
-				if (press)
-				{
-					win::Targa tga(win::Stream(new win::FileReadStream("/home/josh/programming/darktimes/asset/texture/chair1.tga")));
-					atlasizer.add(renderer.add_texture(tga), tga.width(), tga.height());
-					break;
-				}
 			case win::Button::num_plus:
 				if (drag_mode == DragMode::none && press)
 				{
@@ -91,6 +88,85 @@ void gui2()
 			case win::Button::d5: case win::Button::d6: case win::Button::d7: case win::Button::d8: case win::Button::d9:
 				atlasizer.set_padding((int)button - (int)win::Button::d0);
 				break;
+			default:
+				break;
+		}
+	});
+
+	display.register_character_handler([&](char c)
+	{
+		switch (c)
+		{
+			case 'A':
+			case 'a':
+			{
+				const auto &result = dialog.import_image();
+				if (result.has_value())
+				{
+					for (const auto &f: result.value())
+					{
+						const win::Targa tga(win::Stream(new win::FileReadStream(f)));
+						atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
+					}
+				}
+				break;
+			}
+			case 'I':
+			case 'i':
+			{
+				const auto &result = dialog.import_layout();
+				if (result.has_value())
+				{
+					{
+						// reset everything
+						std::vector<int> ids;
+						for (auto &item: atlasizer.get_items())
+						{
+							renderer.remove_texture(item.texture);
+							ids.push_back(item.id);
+						}
+
+						for (auto id: ids)
+							atlasizer.remove(id);
+					}
+
+					int padding;
+					const auto layout = LayoutExporter::import(result.value(), padding);
+					for (const auto &item : layout)
+					{
+						const win::Targa tga(win::Stream(new win::FileReadStream(item.filename)));
+						atlasizer.add(renderer.add_texture(tga), item.filename, item.x, item.y, tga.width(), tga.height());
+					}
+
+					atlasizer.set_padding(padding);
+				}
+				break;
+			}
+			case 'E':
+			case 'e':
+			{
+				const auto &result = dialog.export_layout();
+				if (result.has_value())
+				{
+					current_save_file = result.value();
+					LayoutExporter exporter(current_save_file, atlasizer.get_padding());
+
+					for (const auto &item : atlasizer.get_items())
+					{
+						AtlasItemDescriptor aid;
+						aid.filename = item.texturepath;
+						aid.x = item.x;
+						aid.y = item.y;
+						aid.width = item.w;
+						aid.height = item.h;
+
+						exporter.add(aid);
+					}
+
+					exporter.save();
+				}
+				break;
+			}
 			default:
 				break;
 		}

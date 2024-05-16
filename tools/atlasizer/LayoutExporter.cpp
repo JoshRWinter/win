@@ -1,9 +1,9 @@
 #include <filesystem>
 #include <stdio.h>
 
-#include "layoutexporter.hpp"
+#include "LayoutExporter.hpp"
 
-LayoutExporter::LayoutExporter(const std::string &exportfile, int padding)
+LayoutExporter::LayoutExporter(const std::filesystem::path &exportfile, int padding)
 	: exportfile(exportfile)
 	, padding(padding)
 {
@@ -28,13 +28,13 @@ void LayoutExporter::save()
 	}
 }
 
-std::vector<AtlasItemDescriptor> LayoutExporter::import(const std::string &file, int &padding, bool translate_filenames)
+std::vector<AtlasItemDescriptor> LayoutExporter::import(const std::filesystem::path &file, int &padding, bool translate_filenames)
 {
 	std::vector<AtlasItemDescriptor> items;
 
 	std::ifstream in(file);
 	if (!in)
-		throw std::runtime_error("Couldn't open " + file + " for reading");
+		throw std::runtime_error("Couldn't open " + file.string() + " for reading");
 
 	std::string str_padding_line;
 	std::getline(in, str_padding_line);

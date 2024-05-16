@@ -1,11 +1,31 @@
 #include "Atlasizer.hpp"
 
-void Atlasizer::add(int texture, int w, int h)
+int Atlasizer::next_atlasitem_id = 0;
+
+void Atlasizer::add(int texture, const std::filesystem::path &texturepath, int x, int y, int w, int h)
 {
 	selection_active = false;
-	items.emplace_back(texture, 0, 0, w, h);
+
+	const int xpos = std::max(0, x);
+	const int ypos = std::max(0, y);
+
+	items.emplace_back(next_atlasitem_id++, texture, texturepath, xpos, ypos, w, h);
 
 	check_validity();
+}
+
+void Atlasizer::remove(int id)
+{
+	for (auto it = items.begin(); it != items.end(); ++it)
+	{
+		if (it->id == id)
+		{
+			items.erase(it);
+			return;
+		}
+	}
+
+	win::bug("No item in atlas with id " + std::to_string(id));
 }
 
 void Atlasizer::start_drag(int x, int y)
@@ -20,7 +40,7 @@ void Atlasizer::start_drag(int x, int y)
 			// move it to the back
 			if (i != items.size() - 1)
 			{
-				AtlasItem copy = item;
+				AtlasizerItem copy = item;
 				items.erase(items.begin() + i);
 				items.push_back(copy);
 			}
@@ -135,7 +155,12 @@ void Atlasizer::set_padding(int pad)
 	check_validity();
 }
 
-const std::vector<AtlasItem> &Atlasizer::get_items() const
+int Atlasizer::get_padding() const
+{
+	return padding;
+}
+
+const std::vector<AtlasizerItem> &Atlasizer::get_items() const
 {
 	return items;
 }
@@ -159,7 +184,7 @@ void Atlasizer::check_validity()
 	}
 }
 
-bool Atlasizer::collide(const AtlasItem &a, const AtlasItem &b) const
+bool Atlasizer::collide(const AtlasizerItem &a, const AtlasizerItem &b) const
 {
 	return
 		a.x + a.w + padding > b.x &&
@@ -168,7 +193,7 @@ bool Atlasizer::collide(const AtlasItem &a, const AtlasItem &b) const
 		a.y < b.y + b.h + padding;
 }
 
-Atlasizer::CollisionSide Atlasizer::collision_side(const AtlasItem &a, const AtlasItem &b) const
+Atlasizer::CollisionSide Atlasizer::collision_side(const AtlasizerItem &a, const AtlasizerItem &b) const
 {
 	if (!collide(a, b))
 		win::bug("no collision");

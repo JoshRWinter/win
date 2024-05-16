@@ -111,6 +111,12 @@ int Renderer::add_texture(const win::Targa &tga)
 	return key;
 }
 
+void Renderer::remove_texture(int texture)
+{
+	if (texture_map.erase(texture) == 0)
+		win::bug("No texture with id " + std::to_string(texture));
+}
+
 void Renderer::start_render()
 {
 	glClear(GL_COLOR_BUFFER_BIT);

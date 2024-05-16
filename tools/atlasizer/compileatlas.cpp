@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "atlasizer.hpp"
-#include "layoutexporter.hpp"
+#include "LayoutExporter.hpp"
 
 static const char magic[] = { 'A', 'T', 'L', 'A', 'S' };
 
@@ -93,7 +93,7 @@ void compileatlas(const std::string &layoutfile, const std::string &atlasfile)
 	{
 		AtlasItem &added = items.emplace_back(desc.filename, desc.x, desc.y);
 		if (added.width != desc.width || added.height != desc.height)
-			throw std::runtime_error("item " + desc.filename + " dimensions (" + std::to_string(added.width) + "x" + std::to_string(added.height) + ") do not match original dimensions (" + std::to_string(desc.width) + "x" + std::to_string(desc.height) + ")");
+			throw std::runtime_error("item " + desc.filename.string() + " dimensions (" + std::to_string(added.width) + "x" + std::to_string(added.height) + ") do not match original dimensions (" + std::to_string(desc.width) + "x" + std::to_string(desc.height) + ")");
 	}
 
 	validate_items(items);

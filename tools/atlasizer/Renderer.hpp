@@ -25,6 +25,7 @@ public:
 
 	void screen_to_world(int mouse_x, int mouse_y, int &world_x, int &world_y) const;
 	int add_texture(const win::Targa &tga);
+	void remove_texture(int texture);
 	void start_render();
 	void render(int texture, int x, int y);
 	void render(int texture, win::Color<unsigned char> rgba, int x, int y);
