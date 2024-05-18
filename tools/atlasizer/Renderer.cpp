@@ -29,7 +29,7 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	, text_renderer(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), GL_TEXTURE1, true)
 {
 	set_view(viewport_width / 2.0f, viewport_height / 2.0f, 1.0f);
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 
 	program = win::GLProgram(win::load_gl_shaders(roll["vertex_shader.vert"], roll["fragment_shader.frag"]));
 	glUseProgram(program.get());

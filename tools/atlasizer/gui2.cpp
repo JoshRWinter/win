@@ -211,8 +211,19 @@ void gui2()
 		renderer.render(win::Color<unsigned char>(0, 255, 0, 255), -1, -1, 1, 400);
 		renderer.render(win::Color<unsigned char>(0, 255, 0, 255), -1, -1, 400, 1);
 
+		const auto items = atlasizer.get_items();
+
+		// draw bounding box
+		int max_x = 0, max_y = 0;
+		for (const auto &item : items)
+		{
+			max_x = std::max(max_x, item.x + item.w);
+			max_y = std::max(max_y, item.y + item.h);
+		}
+		renderer.render(win::Color<unsigned char>(255, 255, 255, 5), 0, 0, max_x, max_y);
+
 		// items
-		for (const auto &item : atlasizer.get_items())
+		for (const auto &item : items)
 		{
 			if (item.valid)
 				if (solidmode)
