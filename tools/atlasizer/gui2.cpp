@@ -120,10 +120,10 @@ void gui2()
 					{
 						// reset everything
 						std::vector<int> ids;
-						for (auto &item: atlasizer.get_items())
+						for (auto &item: atlasizer.get_items_layout_order())
 						{
-							renderer.remove_texture(item.texture);
-							ids.push_back(item.id);
+							renderer.remove_texture(item->texture);
+							ids.push_back(item->id);
 						}
 
 						for (auto id: ids)
@@ -151,14 +151,14 @@ void gui2()
 					current_save_file = result.value();
 					LayoutExporter exporter(current_save_file, atlasizer.get_padding());
 
-					for (const auto &item : atlasizer.get_items())
+					for (const auto &item : atlasizer.get_items_layout_order())
 					{
 						AtlasItemDescriptor aid;
-						aid.filename = item.texturepath;
-						aid.x = item.x;
-						aid.y = item.y;
-						aid.width = item.w;
-						aid.height = item.h;
+						aid.filename = item->texturepath;
+						aid.x = item->x;
+						aid.y = item->y;
+						aid.width = item->w;
+						aid.height = item->h;
 
 						exporter.add(aid);
 					}
@@ -211,30 +211,30 @@ void gui2()
 		renderer.render(win::Color<unsigned char>(0, 255, 0, 255), -1, -1, 1, 400);
 		renderer.render(win::Color<unsigned char>(0, 255, 0, 255), -1, -1, 400, 1);
 
-		const auto items = atlasizer.get_items();
+		const auto items = atlasizer.get_items_display_order();
 
 		// draw bounding box
 		int max_x = 0, max_y = 0;
 		for (const auto &item : items)
 		{
-			max_x = std::max(max_x, item.x + item.w);
-			max_y = std::max(max_y, item.y + item.h);
+			max_x = std::max(max_x, item->x + item->w);
+			max_y = std::max(max_y, item->y + item->h);
 		}
 		renderer.render(win::Color<unsigned char>(255, 255, 255, 5), 0, 0, max_x, max_y);
 
 		// items
 		for (const auto &item : items)
 		{
-			if (item.valid)
+			if (item->valid)
 				if (solidmode)
-					renderer.render(win::Color<unsigned char>(0, 100, 0, 255), item.x, item.y, item.w, item.h);
+					renderer.render(win::Color<unsigned char>(0, 100, 0, 255), item->x, item->y, item->w, item->h);
 				else
-					renderer.render(item.texture, item.x, item.y);
+					renderer.render(item->texture, item->x, item->y);
 			else
 				if (solidmode)
-					renderer.render(win::Color<unsigned char>(100, 0, 0, 255), item.x, item.y, item.w, item.h);
+					renderer.render(win::Color<unsigned char>(100, 0, 0, 255), item->x, item->y, item->w, item->h);
 				else
-					renderer.render(item.texture, win::Color<unsigned char>(100, 0, 0, 0), item.x, item.y);
+					renderer.render(item->texture, win::Color<unsigned char>(100, 0, 0, 0), item->x, item->y);
 		}
 
 		renderer.draw_text("Atlasizer super alpha v0.000069", 5, display.height() - 15.0f);

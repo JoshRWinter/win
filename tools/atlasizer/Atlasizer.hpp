@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 #include <optional>
 #include <filesystem>
 
@@ -36,7 +37,8 @@ public:
 	void continue_drag(int x, int y, bool snap);
 	void set_padding(int pad);
 	int get_padding() const;
-	const std::vector<AtlasizerItem> &get_items() const;
+	const std::vector<AtlasizerItem*> &get_items_layout_order() const;
+	const std::vector<AtlasizerItem*> &get_items_display_order() const;
 
 private:
 	void check_validity();
@@ -45,7 +47,9 @@ private:
 
 	static int next_atlasitem_id;
 
-	std::vector<AtlasizerItem> items;
+	std::unordered_map<int, AtlasizerItem> items;
+	std::vector<AtlasizerItem*> items_layout_order;
+	std::vector<AtlasizerItem*> items_display_order;
 
 	int padding = 0;
 	bool selection_active = false;
