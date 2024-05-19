@@ -5,12 +5,12 @@
 
 std::optional<std::vector<std::filesystem::path>> ZenityDialogManager::import_image()
 {
-	return open_zenity("Import .tga (Targa) file", true, true, "tga", std::filesystem::path());
+	return file_dialog("Import .tga (Targa) file", true, true, "tga", std::filesystem::path());
 }
 
 std::optional<std::filesystem::path> ZenityDialogManager::import_layout()
 {
-	const auto &result = open_zenity("Import Atlas Layout (Text) file", true, true, "txt", std::filesystem::path());
+	const auto &result = file_dialog("Import Atlas Layout (Text) file", true, true, "txt", std::filesystem::path());
 
 	if (!result.has_value())
 		return std::nullopt;
@@ -20,7 +20,7 @@ std::optional<std::filesystem::path> ZenityDialogManager::import_layout()
 
 std::optional<std::filesystem::path> ZenityDialogManager::export_layout()
 {
-	const auto &result = open_zenity("Export Atlas Layout (Text) file", false, false, "txt", "atlas.txt");
+	const auto &result = file_dialog("Export Atlas Layout (Text) file", false, false, "txt", "atlas.txt");
 
 	if (!result.has_value())
 		return std::nullopt;
@@ -32,15 +32,29 @@ void ZenityDialogManager::show_message(const std::string &title, const std::stri
 {
 }
 
-std::optional<std::vector<std::filesystem::path>> ZenityDialogManager::open_zenity(const std::string &title, bool open, bool multiple, const std::string &extension_filter, const std::filesystem::path &default_filename)
+bool ZenityDialogManager::yesno(const std::string &title, const std::string &msg)
 {
-	std::string cmd;
+	return false;
+}
 
-	if (open)
-		cmd = R"(zenity --title=")" + title + R"(" --file-selection )" + (multiple ? "--multiple" : "") + R"( --file-filter="*.)" + extension_filter + "\"";
+std::optional<std::vector<std::filesystem::path>> ZenityDialogManager::file_dialog(const std::string &title, bool open, bool multiple, const std::string &extension_filter, const std::filesystem::path &default_filename)
+{
+	const std::string opt_save = open ? "" : " --save";
+	const std::string opt_multiple = multiple ? " --multiple" : "";
+	const std::string opt_extension = extension_filter.empty() ? "" : (" --file-filter=\"*." + extension_filter + "\"");
+	const std::string opt_filename = default_filename.empty() ? "" : (" --filename=\"" + default_filename.string() + "\"");
+
+	const std::string cmd = "zenity --title=\"" + title + "\" --file-selection" + opt_multiple + opt_save + opt_extension + opt_filename;
+	const auto result = run_cmd(cmd);
+
+	if (result.has_value())
+		return split(result.value(), '|');
 	else
-		cmd = R"(zenity --title="Save atlas layout" --file-selection --save --filename=")" + default_filename.string() + "\"";
+		return std::nullopt;
+}
 
+std::optional<std::string> ZenityDialogManager::run_cmd(const std::string &cmd)
+{
 	fprintf(stderr, "\"%s\"\n", cmd.c_str());
 
 	FILE *zenity;
@@ -60,9 +74,9 @@ std::optional<std::vector<std::filesystem::path>> ZenityDialogManager::open_zeni
 		file[len - 1] = 0;
 
 	if (pclose(zenity) == 0)
-		 return split(file, '|');
+		 return file;
 	else
-		return std::nullopt; // this means no file was chosen
+		return std::nullopt;
 }
 
 std::vector<std::filesystem::path> ZenityDialogManager::split(const std::string &s, const char c)
