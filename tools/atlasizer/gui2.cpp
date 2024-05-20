@@ -1,3 +1,9 @@
+#include <win/Win.hpp>
+
+#ifdef WINPLAT_LINUX
+#include <wordexp.h>
+#endif
+
 #include <win/Display.hpp>
 #include <win/AssetRoll.hpp>
 #include <win/FileReadStream.hpp>
@@ -6,6 +12,17 @@
 #include "Renderer.hpp"
 #include "Atlasizer.hpp"
 #include "LayoutExporter.hpp"
+
+static std::string expand_environment(const std::string &env)
+{
+#ifdef WINPLAT_LINUX
+	wordexp_t w;
+	wordexp(env.c_str(), &w, 0);
+	std::filesystem::path result = *w.we_wordv;
+	wordfree(&w);
+	return result;
+#endif
+}
 
 void gui2()
 {
@@ -19,7 +36,7 @@ void gui2()
 	win::Display display(options);
 	win::load_gl_functions();
 
-	ZenityDialogManager dialog;
+	ZenityDialogManager dialog(expand_environment("$HOME/.atlasizer-defaults"), expand_environment("$HOME"));
 	win::AssetRoll roll("atlasizer.roll");
 	Renderer renderer(roll, display.width(), display.height());
 	Atlasizer atlasizer;
