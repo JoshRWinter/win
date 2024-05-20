@@ -16,6 +16,8 @@ add_executable(
 	atlasizer/Renderer.cpp
 	atlasizer/Atlasizer.hpp
 	atlasizer/Atlasizer.cpp
+	atlasizer/ControlPanel.hpp
+	atlasizer/ControlPanel.cpp
 	atlasizer/Platform.hpp
 	atlasizer/LinuxPlatform.hpp
 	atlasizer/LinuxPlatform.cpp

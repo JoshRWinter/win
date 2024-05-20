@@ -8,6 +8,7 @@
 #include <win/gl/GL.hpp>
 #include <win/Targa.hpp>
 #include <win/gl/GLTextRenderer.hpp>
+#include <win/AssetRoll.hpp>
 
 struct Texture
 {
@@ -31,8 +32,8 @@ public:
 	void render(int texture, win::Color<unsigned char> rgba, int x, int y);
 	void render(win::Color<unsigned char> rgba, int x, int y, int w, int h);
 	void set_view(int centerx, int centery, float zoom);
-	void draw_text(const char *msg, int x, int y);
-	void draw_text(const char *msg, int x, int y, const win::Color<float> &color);
+	void draw_text(const char *msg, int x, int y, bool centered);
+	void draw_text(const char *msg, int x, int y, const win::Color<unsigned char> &color, bool centered);
 
 private:
 	void render(const Texture *texture, const win::Color<unsigned char> *color, int x, int y, int w, int h);

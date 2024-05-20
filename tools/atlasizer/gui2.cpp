@@ -2,6 +2,7 @@
 #include <win/AssetRoll.hpp>
 #include <win/FileReadStream.hpp>
 
+#include "ControlPanel.hpp"
 #include "Platform.hpp"
 #include "LinuxPlatform.hpp"
 #include "FilePickerManager.hpp"
@@ -36,17 +37,83 @@ void gui2()
 	win::AssetRoll roll("atlasizer.roll");
 	Renderer renderer(roll, display.width(), display.height());
 	Atlasizer atlasizer;
+	ControlPanel cpanel(renderer, 0, 0, display.width(), 50);
 
 	// interface state
 	enum DragMode { none, pan, drag } drag_mode = DragMode::none;
-	int center_x = (display.width() / 2.0f) - 75, center_y = (display.height() / 2.0f) - 75;
+	int center_x = (display.width() / 2.0f) - 75, center_y = (display.height() / 2.0f) - 105;
 	float zoom = 1.0f;
 	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
 	bool solidmode = false;
 	bool snapmode = false;
 	std::filesystem::path current_save_file;
 
-	renderer.set_view(center_x, center_y, zoom);
+	cpanel.on_import([&]()
+	{
+		const auto &result = filepicker.import_layout();
+		if (result.has_value())
+		{
+			{
+				// reset everything
+				std::vector<int> ids;
+				for (auto &item: atlasizer.get_items_layout_order())
+				{
+					renderer.remove_texture(item->texture);
+					ids.push_back(item->id);
+				}
+
+				for (auto id: ids)
+					atlasizer.remove(id);
+			}
+
+			int padding;
+			const auto layout = LayoutExporter::import(result.value(), padding);
+			for (const auto &item : layout)
+			{
+				const win::Targa tga(win::Stream(new win::FileReadStream(item.filename)));
+				atlasizer.add(renderer.add_texture(tga), item.filename, item.x, item.y, tga.width(), tga.height());
+			}
+
+			atlasizer.set_padding(padding);
+		}
+	});
+
+	cpanel.on_export([&]()
+	{
+		const auto &result = filepicker.export_layout();
+		if (result.has_value())
+		{
+			current_save_file = result.value();
+			LayoutExporter exporter(current_save_file, atlasizer.get_padding());
+
+			for (const auto &item : atlasizer.get_items_layout_order())
+			{
+				AtlasItemDescriptor aid;
+				aid.filename = item->texturepath;
+				aid.x = item->x;
+				aid.y = item->y;
+				aid.width = item->w;
+				aid.height = item->h;
+
+				exporter.add(aid);
+			}
+
+			exporter.save();
+		}
+	});
+
+	cpanel.on_add([&]()
+	{
+		const auto &result = filepicker.import_image();
+		if (result.has_value())
+		{
+			for (const auto &f: result.value())
+			{
+				const win::Targa tga(win::Stream(new win::FileReadStream(f)));
+				atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
+			}
+		}
+	});
 
 	display.register_button_handler([&](const win::Button button, const bool press)
 	{
@@ -64,6 +131,8 @@ void gui2()
 				}
 				break;
 			case win::Button::mouse_left:
+				cpanel.click(press);
+
 				if (press)
 				{
 					if (drag_mode == DragMode::none)
@@ -81,14 +150,12 @@ void gui2()
 				if (drag_mode == DragMode::none && press)
 				{
 					zoom += 0.1f;
-					renderer.set_view(center_x, center_y, zoom);
 				}
 				break;
 			case win::Button::num_minus:
 				if (drag_mode == DragMode::none && press)
 				{
 					zoom -= 0.1f;
-					renderer.set_view(center_x, center_y, zoom);
 				}
 				break;
 			case win::Button::lshift:
@@ -106,85 +173,6 @@ void gui2()
 		}
 	});
 
-	display.register_character_handler([&](char c)
-	{
-		switch (c)
-		{
-			case 'A':
-			case 'a':
-			{
-				const auto &result = filepicker.import_image();
-				if (result.has_value())
-				{
-					for (const auto &f: result.value())
-					{
-						const win::Targa tga(win::Stream(new win::FileReadStream(f)));
-						atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
-					}
-				}
-				break;
-			}
-			case 'I':
-			case 'i':
-			{
-				const auto &result = filepicker.import_layout();
-				if (result.has_value())
-				{
-					{
-						// reset everything
-						std::vector<int> ids;
-						for (auto &item: atlasizer.get_items_layout_order())
-						{
-							renderer.remove_texture(item->texture);
-							ids.push_back(item->id);
-						}
-
-						for (auto id: ids)
-							atlasizer.remove(id);
-					}
-
-					int padding;
-					const auto layout = LayoutExporter::import(result.value(), padding);
-					for (const auto &item : layout)
-					{
-						const win::Targa tga(win::Stream(new win::FileReadStream(item.filename)));
-						atlasizer.add(renderer.add_texture(tga), item.filename, item.x, item.y, tga.width(), tga.height());
-					}
-
-					atlasizer.set_padding(padding);
-				}
-				break;
-			}
-			case 'E':
-			case 'e':
-			{
-				const auto &result = filepicker.export_layout();
-				if (result.has_value())
-				{
-					current_save_file = result.value();
-					LayoutExporter exporter(current_save_file, atlasizer.get_padding());
-
-					for (const auto &item : atlasizer.get_items_layout_order())
-					{
-						AtlasItemDescriptor aid;
-						aid.filename = item->texturepath;
-						aid.x = item->x;
-						aid.y = item->y;
-						aid.width = item->w;
-						aid.height = item->h;
-
-						exporter.add(aid);
-					}
-
-					exporter.save();
-				}
-				break;
-			}
-			default:
-				break;
-		}
-	});
-
 	display.register_mouse_handler([&](int x, int y)
 	{
 		const int prev_x = mouse_x;
@@ -193,13 +181,14 @@ void gui2()
 		mouse_x = x;
 		mouse_y = display.height() - y;
 
+		cpanel.mouse_move(mouse_x, mouse_y);
+
 		renderer.screen_to_world(mouse_x, mouse_y, mouse_world_x, mouse_world_y);
 
 		if (drag_mode == DragMode::pan)
 		{
 			center_x -= mouse_x - prev_x;
 			center_y -= mouse_y - prev_y;
-			renderer.set_view(center_x, center_y, zoom);
 		}
 		else if (drag_mode == DragMode::drag)
 		{
@@ -250,7 +239,10 @@ void gui2()
 					renderer.render(item->texture, win::Color<unsigned char>(100, 0, 0, 0), item->x, item->y);
 		}
 
-		renderer.draw_text("Atlasizer super alpha v0.000069", 5, display.height() - 15.0f);
+		// draw control panel
+		renderer.set_view(display.width() / 2, display.height() / 2, 1.0f);
+		cpanel.draw();
+		renderer.set_view(center_x, center_y, zoom);
 
 		display.swap();
 	}

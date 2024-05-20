@@ -25,7 +25,7 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	, viewport_height(viewport_height)
 	, projection(glm::ortho((float)0, (float)viewport_width, (float)0, (float)viewport_height))
 	, view(glm::identity<glm::mat4>())
-	, font(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), 12, roll["NotoSans-Regular.ttf"])
+	, font(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), 16, roll["NotoSans-Regular.ttf"])
 	, text_renderer(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), GL_TEXTURE1, true)
 {
 	set_view(viewport_width / 2.0f, viewport_height / 2.0f, 1.0f);
@@ -150,14 +150,14 @@ void Renderer::set_view(int centerx, int centery, float zoom)
 	view = translate * scale;
 }
 
-void Renderer::draw_text(const char *msg, int x, int y)
+void Renderer::draw_text(const char *msg, int x, int y, bool centered)
 {
-	draw_text(msg, x, y, win::Color<float>(1.0f, 1.0f, 1.0f, 1.0f));
+	draw_text(msg, x, y, win::Color<unsigned char>(1.0f, 1.0f, 1.0f, 1.0f), centered);
 }
 
-void Renderer::draw_text(const char *msg, int x, int y, const win::Color<float> &color)
+void Renderer::draw_text(const char *msg, int x, int y, const win::Color<unsigned char> &color, bool centered)
 {
-	text_renderer.draw(font, msg, x, y, color);
+	text_renderer.draw(font, msg, x, y, win::Color<float>(color.red / 255.0f, color.green / 255.0f, color.blue / 255.0f, color.alpha / 255.0f), centered);
 	text_renderer.flush();
 }
 
