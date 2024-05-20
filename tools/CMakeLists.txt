@@ -16,9 +16,11 @@ add_executable(
 	atlasizer/Renderer.cpp
 	atlasizer/Atlasizer.hpp
 	atlasizer/Atlasizer.cpp
-	atlasizer/DialogManager.hpp
-	atlasizer/ZenityDialogManager.hpp
-	atlasizer/ZenityDialogManager.cpp
+	atlasizer/Platform.hpp
+	atlasizer/LinuxPlatform.hpp
+	atlasizer/LinuxPlatform.cpp
+	atlasizer/FilePickerManager.hpp
+	atlasizer/FilePickerManager.cpp
 	atlasizer/LayoutExporter.cpp
 	atlasizer/LayoutExporter.hpp
 	atlasizer/compileatlas.cpp

@@ -1,26 +1,21 @@
-#include <win/Win.hpp>
-
-#ifdef WINPLAT_LINUX
-#include <wordexp.h>
-#endif
-
 #include <win/Display.hpp>
 #include <win/AssetRoll.hpp>
 #include <win/FileReadStream.hpp>
 
-#include "ZenityDialogManager.hpp"
+#include "Platform.hpp"
+#include "LinuxPlatform.hpp"
+#include "FilePickerManager.hpp"
 #include "Renderer.hpp"
 #include "Atlasizer.hpp"
 #include "LayoutExporter.hpp"
 
-static std::string expand_environment(const std::string &env)
+static Platform &get_platform()
 {
 #ifdef WINPLAT_LINUX
-	wordexp_t w;
-	wordexp(env.c_str(), &w, 0);
-	std::filesystem::path result = *w.we_wordv;
-	wordfree(&w);
-	return result;
+	static LinuxPlatform platform;
+	return platform;
+#else
+#error "unimplemented"
 #endif
 }
 
@@ -36,7 +31,8 @@ void gui2()
 	win::Display display(options);
 	win::load_gl_functions();
 
-	ZenityDialogManager dialog(expand_environment("$HOME/.atlasizer-defaults"), expand_environment("$HOME"));
+	const Platform &platform = get_platform();
+	FilePickerManager filepicker(platform, platform.expand_env("$HOME/.atlasizer-defaults"), platform.expand_env("$HOME"));
 	win::AssetRoll roll("atlasizer.roll");
 	Renderer renderer(roll, display.width(), display.height());
 	Atlasizer atlasizer;
@@ -117,7 +113,7 @@ void gui2()
 			case 'A':
 			case 'a':
 			{
-				const auto &result = dialog.import_image();
+				const auto &result = filepicker.import_image();
 				if (result.has_value())
 				{
 					for (const auto &f: result.value())
@@ -131,7 +127,7 @@ void gui2()
 			case 'I':
 			case 'i':
 			{
-				const auto &result = dialog.import_layout();
+				const auto &result = filepicker.import_layout();
 				if (result.has_value())
 				{
 					{
@@ -162,7 +158,7 @@ void gui2()
 			case 'E':
 			case 'e':
 			{
-				const auto &result = dialog.export_layout();
+				const auto &result = filepicker.export_layout();
 				if (result.has_value())
 				{
 					current_save_file = result.value();
