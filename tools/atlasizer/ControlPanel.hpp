@@ -27,6 +27,16 @@ class ControlPanel
 		int x = 0, y = 0, w = 0, h = 0;
 	};
 
+	struct BorderBox
+	{
+		BorderBox() = default;
+		BorderBox(const std::string &text, win::Color<unsigned char> rgba, int x, int y, int w, int h, int weight) : text(text), rgba(rgba), x(x), y(y), w(w), h(h), weight(weight) {}
+
+		std::string text;
+		win::Color<unsigned char> rgba;
+		int x = 0, y = 0, w = 0, h = 0, weight = 0;
+	};
+
 public:
 	explicit ControlPanel(Renderer &renderer, int xpos, int ypos, int width, int height);
 
@@ -34,15 +44,18 @@ public:
 	void on_export(const std::function<void()> &fn);
 	void on_add(const std::function<void()> &fn);
 	void on_remove(const std::function<void()> &fn);
+	void on_padding_up(const std::function<void()> &fn);
+	void on_padding_down(const std::function<void()> &fn);
 
-	win::Area<int> get_area() const;
 	void mouse_move(int x, int y);
 	void click(bool down);
+	void set_pad(int p);
 	void draw();
 
 private:
 	void reflow();
-	void draw_button(const Button &button, int text_y_offset = 0);
+	void draw_button(const Button &button, int text_y_offset);
+	void draw_border_box(const BorderBox &bb, int text_y_offset);
 	bool mouse_is_over(const Button &button) const;
 
 	Renderer &renderer;
@@ -52,9 +65,12 @@ private:
 	int clicked = false;
 
 	Button load, save, add, remove, padding_up, padding_down;
+	BorderBox padding;
 
 	std::function<void()> fn_import = [](){};
 	std::function<void()> fn_export = [](){};
 	std::function<void()> fn_add = [](){};
 	std::function<void()> fn_remove = [](){};
+	std::function<void()> fn_padding_up = [](){};
+	std::function<void()> fn_padding_down = [](){};
 };

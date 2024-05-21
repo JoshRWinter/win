@@ -75,6 +75,7 @@ void gui2()
 			}
 
 			atlasizer.set_padding(padding);
+			cpanel.set_pad(padding);
 		}
 	});
 
@@ -112,6 +113,23 @@ void gui2()
 				const win::Targa tga(win::Stream(new win::FileReadStream(f)));
 				atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
 			}
+		}
+	});
+
+	cpanel.on_padding_up([&]()
+	{
+		const int p = atlasizer.get_padding() + 1;
+		atlasizer.set_padding(p);
+		cpanel.set_pad(p);
+	});
+
+	cpanel.on_padding_down([&]()
+	{
+		const int p = atlasizer.get_padding() - 1;
+		if (p >= 0)
+		{
+			atlasizer.set_padding(p);
+			cpanel.set_pad(p);
 		}
 	});
 
