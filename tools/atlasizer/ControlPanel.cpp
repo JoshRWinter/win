@@ -74,7 +74,7 @@ void ControlPanel::set_pad(int p)
 
 void ControlPanel::draw()
 {
-	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), xpos + 1, ypos + 1, width - 2, height - 2);
+	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), xpos, ypos, width, height);
 
 	int text_y_offset = -5;
 	draw_button(load, text_y_offset);

@@ -31,9 +31,9 @@ class Atlasizer
 public:
 	Atlasizer() = default;
 
-	void add(int texture, const std::filesystem::path &texturepath, int x, int y, int w, int h);
+	int add(int texture, const std::filesystem::path &texturepath, int x, int y, int w, int h);
 	void remove(int id);
-	void start_drag(int x, int y);
+	int start_drag(int x, int y);
 	void continue_drag(int x, int y, bool snap);
 	void set_padding(int pad);
 	int get_padding() const;

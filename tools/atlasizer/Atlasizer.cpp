@@ -4,7 +4,7 @@
 
 int Atlasizer::next_atlasitem_id = 0;
 
-void Atlasizer::add(int texture, const std::filesystem::path &texturepath, int x, int y, int w, int h)
+int Atlasizer::add(int texture, const std::filesystem::path &texturepath, int x, int y, int w, int h)
 {
 	selection_active = false;
 
@@ -17,6 +17,8 @@ void Atlasizer::add(int texture, const std::filesystem::path &texturepath, int x
 	items_display_order.push_back(&items.at(id));
 
 	check_validity();
+
+	return id;
 }
 
 void Atlasizer::remove(int id)
@@ -30,7 +32,7 @@ void Atlasizer::remove(int id)
 	items.erase(id);
 }
 
-void Atlasizer::start_drag(int x, int y)
+int Atlasizer::start_drag(int x, int y)
 {
 	left_barrier.reset();
 	right_barrier.reset();
@@ -54,12 +56,13 @@ void Atlasizer::start_drag(int x, int y)
 				items_display_order.push_back(item);
 			}
 
-			return;
+			return item->id;
 		}
 	}
 
 	// no selection
 	selection_active = false;
+	return -1;
 }
 
 void Atlasizer::continue_drag(int x, int y, bool snap)

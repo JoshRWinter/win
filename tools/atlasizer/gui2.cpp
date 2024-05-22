@@ -3,6 +3,7 @@
 #include <win/FileReadStream.hpp>
 
 #include "ControlPanel.hpp"
+#include "ListPanel.hpp"
 #include "Platform.hpp"
 #include "LinuxPlatform.hpp"
 #include "FilePickerManager.hpp"
@@ -37,7 +38,8 @@ void gui2()
 	win::AssetRoll roll("atlasizer.roll");
 	Renderer renderer(roll, display.width(), display.height());
 	Atlasizer atlasizer;
-	ControlPanel cpanel(renderer, 0, 0, display.width(), 50);
+	ControlPanel cpanel(renderer, 1, 1, display.width() - 2, 50 - 2);
+	ListPanel lpanel(renderer, 1, 50, 200, display.height() - 51);
 
 	// interface state
 	enum DragMode { none, pan, drag } drag_mode = DragMode::none;
@@ -46,6 +48,7 @@ void gui2()
 	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
 	bool solidmode = false;
 	bool snapmode = false;
+	int selection_id = -1;
 	std::filesystem::path current_save_file;
 
 	cpanel.on_import([&]()
@@ -66,12 +69,15 @@ void gui2()
 					atlasizer.remove(id);
 			}
 
+			lpanel.clear();
+
 			int padding;
 			const auto layout = LayoutExporter::import(result.value(), padding);
 			for (const auto &item : layout)
 			{
 				const win::Targa tga(win::Stream(new win::FileReadStream(item.filename)));
-				atlasizer.add(renderer.add_texture(tga), item.filename, item.x, item.y, tga.width(), tga.height());
+				const int id = atlasizer.add(renderer.add_texture(tga), item.filename, item.x, item.y, tga.width(), tga.height());
+				lpanel.add(id, item.filename.filename());
 			}
 
 			atlasizer.set_padding(padding);
@@ -111,7 +117,8 @@ void gui2()
 			for (const auto &f: result.value())
 			{
 				const win::Targa tga(win::Stream(new win::FileReadStream(f)));
-				atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
+				const int id = atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
+				lpanel.add(id, f.filename());
 			}
 		}
 	});
@@ -133,6 +140,11 @@ void gui2()
 		}
 	});
 
+	lpanel.on_select([&](int id)
+	{
+		selection_id = id;
+	});
+
 	display.register_button_handler([&](const win::Button button, const bool press)
 	{
 		switch (button)
@@ -150,13 +162,15 @@ void gui2()
 				break;
 			case win::Button::mouse_left:
 				cpanel.click(press);
+				lpanel.click(press);
 
 				if (press)
 				{
 					if (drag_mode == DragMode::none)
 					{
 						drag_mode = DragMode::drag;
-						atlasizer.start_drag(mouse_world_x, mouse_world_y);
+						selection_id = atlasizer.start_drag(mouse_world_x, mouse_world_y);
+						lpanel.set_selection(selection_id);
 					}
 				}
 				else
@@ -200,6 +214,7 @@ void gui2()
 		mouse_y = display.height() - y;
 
 		cpanel.mouse_move(mouse_x, mouse_y);
+		lpanel.mouse_move(mouse_x, mouse_y);
 
 		renderer.screen_to_world(mouse_x, mouse_y, mouse_world_x, mouse_world_y);
 
@@ -245,21 +260,35 @@ void gui2()
 		// items
 		for (const auto &item : items)
 		{
+			// sweet jebus
 			if (item->valid)
 				if (solidmode)
-					renderer.render(win::Color<unsigned char>(0, 100, 0, 255), item->x, item->y, item->w, item->h);
+					if (selection_id == item->id)
+						renderer.render(win::Color<unsigned char>(50, 100, 50, 255), item->x, item->y, item->w, item->h);
+					else
+						renderer.render(win::Color<unsigned char>(0, 100, 0, 255), item->x, item->y, item->w, item->h);
 				else
-					renderer.render(item->texture, item->x, item->y);
+					if (selection_id == item->id)
+						renderer.render(item->texture, win::Color<unsigned char>(20, 20, 20, 0), item->x, item->y);
+					else
+						renderer.render(item->texture, item->x, item->y);
 			else
 				if (solidmode)
-					renderer.render(win::Color<unsigned char>(100, 0, 0, 255), item->x, item->y, item->w, item->h);
+					if (selection_id == item->id)
+						renderer.render(win::Color<unsigned char>(100, 50, 50, 255), item->x, item->y, item->w, item->h);
+					else
+						renderer.render(win::Color<unsigned char>(100, 0, 0, 255), item->x, item->y, item->w, item->h);
 				else
-					renderer.render(item->texture, win::Color<unsigned char>(100, 0, 0, 0), item->x, item->y);
+					if (selection_id == item->id)
+						renderer.render(item->texture, win::Color<unsigned char>(100, 50, 50, 0), item->x, item->y);
+					else
+						renderer.render(item->texture, win::Color<unsigned char>(100, 0, 0, 0), item->x, item->y);
 		}
 
-		// draw control panel
+		// draw gui panels
 		renderer.set_view(display.width() / 2, display.height() / 2, 1.0f);
 		cpanel.draw();
+		lpanel.draw();
 		renderer.set_view(center_x, center_y, zoom);
 
 		display.swap();

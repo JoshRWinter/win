@@ -152,7 +152,7 @@ void Renderer::set_view(int centerx, int centery, float zoom)
 
 void Renderer::draw_text(const char *msg, int x, int y, bool centered)
 {
-	draw_text(msg, x, y, win::Color<unsigned char>(1.0f, 1.0f, 1.0f, 1.0f), centered);
+	draw_text(msg, x, y, win::Color<unsigned char>(0, 0, 0, 255), centered);
 }
 
 void Renderer::draw_text(const char *msg, int x, int y, const win::Color<unsigned char> &color, bool centered)
