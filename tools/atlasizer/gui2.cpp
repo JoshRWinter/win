@@ -21,6 +21,11 @@ static Platform &get_platform()
 #endif
 }
 
+static bool in_box(int p_x, int p_y, const win::Box<int> &box)
+{
+	return p_x >= box.x && p_x <= box.x + box.width && p_y >= box.y && p_y <= box.y + box.height;
+}
+
 void gui2()
 {
 	win::DisplayOptions options;
@@ -38,8 +43,12 @@ void gui2()
 	win::AssetRoll roll("atlasizer.roll");
 	Renderer renderer(roll, display.width(), display.height());
 	Atlasizer atlasizer;
-	ControlPanel cpanel(renderer, 1, 1, display.width() - 2, 50 - 2);
-	ListPanel lpanel(renderer, 1, 50, 200, display.height() - 51);
+
+	win::Box<int> cpanel_box(1, 1, display.width() - 2, 50 - 2);
+	ControlPanel cpanel(renderer, cpanel_box);
+
+	win::Box<int> lpanel_box(1, 50, 200, display.height() - 51);
+	ListPanel lpanel(renderer, lpanel_box);
 
 	// interface state
 	enum DragMode { none, pan, drag } drag_mode = DragMode::none;
@@ -152,7 +161,7 @@ void gui2()
 			case win::Button::mouse_right:
 				if (press)
 				{
-					if (drag_mode == DragMode::none)
+					if (!in_box(mouse_x, mouse_y, cpanel_box) && !in_box(mouse_x, mouse_y, lpanel_box) && drag_mode == DragMode::none)
 						drag_mode = DragMode::pan;
 				}
 				else
@@ -161,12 +170,13 @@ void gui2()
 				}
 				break;
 			case win::Button::mouse_left:
-				cpanel.click(press);
-				lpanel.click(press);
-
 				if (press)
 				{
-					if (drag_mode == DragMode::none)
+					if (in_box(mouse_x, mouse_y, cpanel_box))
+						cpanel.click(true);
+					else if (in_box(mouse_x, mouse_y, lpanel_box))
+						lpanel.click(true);
+					else if (drag_mode == DragMode::none)
 					{
 						drag_mode = DragMode::drag;
 						selection_id = atlasizer.start_drag(mouse_world_x, mouse_world_y);
@@ -175,7 +185,13 @@ void gui2()
 				}
 				else
 				{
-					drag_mode = DragMode::none;
+					if (drag_mode == DragMode::none)
+					{
+						cpanel.click(false);
+						lpanel.click(false);
+					}
+					else
+						drag_mode = DragMode::none;
 				}
 				break;
 			case win::Button::num_plus:

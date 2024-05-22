@@ -27,7 +27,7 @@ class ListPanel
 	inline static win::Color<unsigned char> entry_color_selected = win::Color<unsigned char>(255, 255, 255, 20);
 
 public:
-	ListPanel(Renderer &renderer, int xpos, int ypos, int width, int height);
+	ListPanel(Renderer &renderer, const win::Box<int> &box);
 
 	void add(int id, const std::string &text);
 	void remove(int id);
@@ -45,7 +45,7 @@ private:
 	bool mouse_is_over(const ListEntry &entry) const;
 
 	Renderer &renderer;
-	int xpos, ypos, width, height;
+	win::Box<int> box;
 
 	int mouse_x = 0, mouse_y = 0;
 	int selection_id = -1;

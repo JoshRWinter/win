@@ -1,11 +1,8 @@
 #include "ListPanel.hpp"
 
-ListPanel::ListPanel(Renderer &renderer, int xpos, int ypos, int width, int height)
+ListPanel::ListPanel(Renderer &renderer, const win::Box<int> &box)
 	: renderer(renderer)
-	, xpos(xpos)
-	, ypos(ypos)
-	, width(width)
-	, height(height)
+	, box(box)
 {}
 
 void ListPanel::add(int id, const std::string &text)
@@ -58,10 +55,10 @@ void ListPanel::click(bool down)
 
 void ListPanel::draw()
 {
-	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), xpos, ypos, width, height);
+	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), box.x, box.y, box.width, box.height);
 
 	if (items.empty())
-		renderer.draw_text("< No items >", xpos + (width / 2), (ypos + height) - 50, true);
+		renderer.draw_text("< No items >", box.x + (box.width / 2), (box.y + box.height) - 30, true);
 
 	for (const auto &item : items)
 	{
@@ -82,11 +79,11 @@ void ListPanel::reflow()
 	const auto copy = std::move(items);
 	items = std::move(std::vector<ListEntry>());
 
-	int y = ((ypos + height) - (entry_height)) - 1;
+	int y = ((box.y + box.height) - (entry_height)) - 1;
 	for (const auto &item : copy)
 	{
-		const int x = xpos + 1;
-		const int w = width - 2;
+		const int x = box.x + 1;
+		const int w = box.width - 2;
 		const int h = entry_height;
 
 		items.emplace_back(item.id, item.text, x, y, w, h);

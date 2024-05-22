@@ -1,11 +1,8 @@
 #include "ControlPanel.hpp"
 
-ControlPanel::ControlPanel(Renderer &renderer, int xpos, int ypos, int width, int height)
+ControlPanel::ControlPanel(Renderer &renderer, const win::Box<int> &box)
 	: renderer(renderer)
-	, xpos(xpos)
-	, ypos(ypos)
-	, width(width)
-	, height(height)
+	, box(box)
 {
 	reflow();
 }
@@ -74,7 +71,7 @@ void ControlPanel::set_pad(int p)
 
 void ControlPanel::draw()
 {
-	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), xpos, ypos, width, height);
+	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), box.x, box.y, box.width, box.height);
 
 	int text_y_offset = -5;
 	draw_button(load, text_y_offset);
@@ -96,8 +93,8 @@ void ControlPanel::reflow()
 	constexpr int small_button_width = 15;
 	constexpr int small_button_height = 12;
 
-	int x = xpos + spacing;
-	int centerline_y = ypos + (height / 2);
+	int x = box.x + spacing;
+	int centerline_y = box.y + (box.height / 2);
 
 	load = Button("Import", x, centerline_y - (button_height / 2), button_width, button_height);
 	x += load.w + spacing;

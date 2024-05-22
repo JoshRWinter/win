@@ -38,7 +38,7 @@ class ControlPanel
 	};
 
 public:
-	explicit ControlPanel(Renderer &renderer, int xpos, int ypos, int width, int height);
+	explicit ControlPanel(Renderer &renderer, const win::Box<int> &box);
 
 	void on_import(const std::function<void()> &fn);
 	void on_export(const std::function<void()> &fn);
@@ -59,7 +59,7 @@ private:
 	bool mouse_is_over(const Button &button) const;
 
 	Renderer &renderer;
-	int xpos, ypos, width, height;
+	win::Box<int> box;
 
 	int mouse_x = 0, mouse_y = 0;
 	int clicked = false;
