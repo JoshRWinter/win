@@ -13,6 +13,7 @@ class ControlPanel
 	static constexpr int spacing = 10;
 
 	inline static const win::Color<unsigned char> button_color = win::Color<unsigned char>(255, 255, 255, 50);
+	inline static const win::Color<unsigned char> button_disabled = win::Color<unsigned char>(255, 255, 255, 10);
 	inline static const win::Color<unsigned char> button_color_highlight = win::Color<unsigned char>(255, 255, 255, 80);
 	inline static const win::Color<unsigned char> button_color_click = win::Color<unsigned char>(255, 255, 255, 40);
 
@@ -25,6 +26,7 @@ class ControlPanel
 
 		std::string text;
 		int x = 0, y = 0, w = 0, h = 0;
+		bool enabled = true;
 	};
 
 	struct BorderBox
@@ -46,6 +48,7 @@ public:
 	void on_remove(const std::function<void()> &fn);
 	void on_padding_up(const std::function<void()> &fn);
 	void on_padding_down(const std::function<void()> &fn);
+	void enable_remove(bool enable);
 
 	void mouse_move(int x, int y);
 	void click(bool down);

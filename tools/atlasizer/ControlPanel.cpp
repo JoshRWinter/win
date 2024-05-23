@@ -37,6 +37,11 @@ void ControlPanel::on_padding_down(const std::function<void()> &fn)
 	fn_padding_down = fn;
 }
 
+void ControlPanel::enable_remove(bool enable)
+{
+	remove.enabled = enable;
+}
+
 void ControlPanel::mouse_move(int x, int y)
 {
 	mouse_x = x;
@@ -49,17 +54,17 @@ void ControlPanel::click(bool down)
 
 	if (!down)
 	{
-		if (mouse_is_over(load))
+		if (mouse_is_over(load) && load.enabled)
 			fn_import();
-		else if (mouse_is_over(save))
+		else if (mouse_is_over(save) && save.enabled)
 			fn_export();
-		else if (mouse_is_over(add))
+		else if (mouse_is_over(add) && add.enabled)
 			fn_add();
-		else if(mouse_is_over(remove))
+		else if(mouse_is_over(remove) && remove.enabled)
 			fn_remove();
-		else if (mouse_is_over(padding_up))
+		else if (mouse_is_over(padding_up) && padding_up.enabled)
 			fn_padding_up();
-		else if (mouse_is_over(padding_down))
+		else if (mouse_is_over(padding_down) && padding_down.enabled)
 			fn_padding_down();
 	}
 }
@@ -117,7 +122,7 @@ void ControlPanel::reflow()
 
 void ControlPanel::draw_button(const ControlPanel::Button &button, int text_y_offset)
 {
-	const auto color = mouse_is_over(button) ? (clicked ? button_color_click : button_color_highlight) : button_color;
+	const auto color = button.enabled ? mouse_is_over(button) ? (clicked ? button_color_click : button_color_highlight) : button_color : button_disabled;
 	renderer.render(color, button.x, button.y, button.w, button.h);
 	renderer.draw_text(button.text.c_str(), button.x + (button.w / 2), button.y + (button.h / 2) + text_y_offset, text_color, true);
 }

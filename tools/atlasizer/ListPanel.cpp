@@ -18,6 +18,7 @@ void ListPanel::remove(int id)
 		if (it->id == id)
 		{
 			items.erase(it);
+			reflow();
 			return;
 		}
 	}

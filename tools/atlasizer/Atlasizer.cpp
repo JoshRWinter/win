@@ -30,6 +30,8 @@ void Atlasizer::remove(int id)
 	items_display_order.erase(std::find(items_display_order.begin(), items_display_order.end(), &item));
 	items_layout_order.erase(std::find(items_layout_order.begin(), items_layout_order.end(), &item));
 	items.erase(id);
+
+	check_validity();
 }
 
 int Atlasizer::start_drag(int x, int y)

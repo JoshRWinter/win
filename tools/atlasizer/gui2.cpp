@@ -46,6 +46,7 @@ void gui2()
 
 	win::Box<int> cpanel_box(1, 1, display.width() - 2, 50 - 2);
 	ControlPanel cpanel(renderer, cpanel_box);
+	cpanel.enable_remove(false);
 
 	win::Box<int> lpanel_box(1, 50, 200, display.height() - 51);
 	ListPanel lpanel(renderer, lpanel_box);
@@ -91,6 +92,9 @@ void gui2()
 
 			atlasizer.set_padding(padding);
 			cpanel.set_pad(padding);
+			cpanel.enable_remove(false);
+
+			selection_id = -1;
 		}
 	});
 
@@ -132,6 +136,25 @@ void gui2()
 		}
 	});
 
+	cpanel.on_remove([&]()
+	{
+		const auto items = atlasizer.get_items_layout_order();
+		for (const auto &item : items)
+		{
+			if (item->id == selection_id)
+			{
+				renderer.remove_texture(item->texture);
+				atlasizer.remove(selection_id);
+				lpanel.remove(selection_id);
+				selection_id = -1;
+				cpanel.enable_remove(false);
+				return;
+			}
+		}
+
+		win::bug("No atlas item with id " + std::to_string(selection_id));
+	});
+
 	cpanel.on_padding_up([&]()
 	{
 		const int p = atlasizer.get_padding() + 1;
@@ -152,6 +175,7 @@ void gui2()
 	lpanel.on_select([&](int id)
 	{
 		selection_id = id;
+		cpanel.enable_remove(true);
 	});
 
 	display.register_button_handler([&](const win::Button button, const bool press)
@@ -181,6 +205,7 @@ void gui2()
 						drag_mode = DragMode::drag;
 						selection_id = atlasizer.start_drag(mouse_world_x, mouse_world_y);
 						lpanel.set_selection(selection_id);
+						cpanel.enable_remove(selection_id != -1);
 					}
 				}
 				else
