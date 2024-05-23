@@ -150,6 +150,20 @@ void Renderer::set_view(int centerx, int centery, float zoom)
 	view = translate * scale;
 }
 
+void Renderer::set_drawbox(int x, int y, int w, int h)
+{
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(x, y, w, h);
+}
+
+void Renderer::set_drawbox(bool enable)
+{
+	if (enable)
+		win::bug("watchu doin setting this to true boii?");
+
+	glDisable(GL_SCISSOR_TEST);
+}
+
 void Renderer::draw_text(const char *msg, int x, int y, bool centered)
 {
 	draw_text(msg, x, y, win::Color<unsigned char>(0, 0, 0, 255), centered);
@@ -159,6 +173,11 @@ void Renderer::draw_text(const char *msg, int x, int y, const win::Color<unsigne
 {
 	text_renderer.draw(font, msg, x, y, win::Color<float>(color.red / 255.0f, color.green / 255.0f, color.blue / 255.0f, color.alpha / 255.0f), centered);
 	text_renderer.flush();
+}
+
+int Renderer::text_len(const char *msg)
+{
+	return (int)win::GLTextRenderer::text_width(font, msg);
 }
 
 void Renderer::render(const Texture *texture, const win::Color<unsigned char> *color, int x, int y, int w, int h)

@@ -32,8 +32,11 @@ public:
 	void render(int texture, win::Color<unsigned char> rgba, int x, int y);
 	void render(win::Color<unsigned char> rgba, int x, int y, int w, int h);
 	void set_view(int centerx, int centery, float zoom);
+	void set_drawbox(int x, int y, int w, int h);
+	void set_drawbox(bool enable);
 	void draw_text(const char *msg, int x, int y, bool centered);
 	void draw_text(const char *msg, int x, int y, const win::Color<unsigned char> &color, bool centered);
+	int text_len(const char *msg);
 
 private:
 	void render(const Texture *texture, const win::Color<unsigned char> *color, int x, int y, int w, int h);

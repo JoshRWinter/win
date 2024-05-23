@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <functional>
+#include <chrono>
 
 #include <win/Win.hpp>
 
@@ -46,6 +47,11 @@ private:
 
 	Renderer &renderer;
 	win::Box<int> box;
+
+	std::chrono::time_point<std::chrono::high_resolution_clock> last_point = std::chrono::high_resolution_clock::now();
+
+	int highlighted_item_id = -1;
+	float text_xoffset = 0.0f;
 
 	int mouse_x = 0, mouse_y = 0;
 	int selection_id = -1;

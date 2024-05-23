@@ -56,6 +56,35 @@ void ListPanel::click(bool down)
 
 void ListPanel::draw()
 {
+	// figure out how long since last frame, necessary to figure out
+	const auto current_point = std::chrono::high_resolution_clock::now();
+	const auto delta_milliseconds = std::chrono::duration<float, std::milli>(current_point - last_point).count();
+	last_point = current_point;
+
+	// first, handle item highlighting and marquee effect
+	bool found = false;
+	for (const auto &item : items)
+	{
+		if (mouse_is_over(item))
+		{
+			found = true;
+			if (highlighted_item_id != item.id)
+			{
+				highlighted_item_id = item.id;
+				text_xoffset = 0;
+			}
+			else
+			{
+				const int text_len = renderer.text_len(item.text.c_str());
+				if (((item.x + 6) + text_xoffset) + text_len > (item.x + item.w) - 6)
+					text_xoffset -= (delta_milliseconds / 16.66f) * 2;
+			}
+		}
+	}
+	if (!found)
+		highlighted_item_id = -1;
+
+	// now, draw the panel
 	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), box.x, box.y, box.width, box.height);
 
 	if (items.empty())
@@ -66,7 +95,10 @@ void ListPanel::draw()
 		const auto color = item.id == selection_id ? (mouse_is_over(item) ? entry_color_selected : entry_color_selected) : (mouse_is_over(item) ? entry_color_highlighted : entry_color);
 
 		renderer.render(color, item.x, item.y, item.w, item.h);
-		renderer.draw_text(item.text.c_str(), item.x + 6, item.y + 8, false);
+
+		renderer.set_drawbox(item.x + 6, item.y, item.w - 12, item.h);
+		renderer.draw_text(item.text.c_str(), (item.x + 6) + (mouse_is_over(item) ? text_xoffset : 0), item.y + 8, false);
+		renderer.set_drawbox(false);
 	}
 }
 
