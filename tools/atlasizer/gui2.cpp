@@ -261,8 +261,11 @@ void gui2()
 
 		if (drag_mode == DragMode::pan)
 		{
-			center_x -= mouse_x - prev_x;
-			center_y -= mouse_y - prev_y;
+			int prev_world_x, prev_world_y;
+			renderer.screen_to_world(prev_x, prev_y, prev_world_x, prev_world_y);
+
+			center_x -= mouse_world_x - prev_world_x;
+			center_y -= mouse_world_y - prev_world_y;
 		}
 		else if (drag_mode == DragMode::drag)
 		{

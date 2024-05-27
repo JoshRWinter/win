@@ -144,10 +144,11 @@ void Renderer::render(int texture, win::Color<unsigned char> rgba, int x, int y)
 void Renderer::set_view(int centerx, int centery, float zoom)
 {
 	const auto ident = glm::identity<glm::mat4>();
-	const auto translate = glm::translate(ident, glm::vec3((float)-(centerx - (viewport_width / 2.0f)), (float)-(centery - (viewport_height / 2.0f)), 0.0f));
+	const auto translate1 = glm::translate(ident, glm::vec3(-(float)centerx, -(float)centery, 0.0f));
+	const auto translate2 = glm::translate(ident, glm::vec3(viewport_width / 2.0f, viewport_height / 2.0f, 0.0f));
 	const auto scale = glm::scale(ident, glm::vec3(zoom, zoom, 1.0f));
 
-	view = translate * scale;
+	view = translate2 * scale * translate1;
 }
 
 void Renderer::set_drawbox(int x, int y, int w, int h)
