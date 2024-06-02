@@ -61,6 +61,8 @@ void ListPanel::draw()
 	const auto delta_milliseconds = std::chrono::duration<float, std::milli>(current_point - last_point).count();
 	last_point = current_point;
 
+	const float frequency_multiplier = (delta_milliseconds / 16.666f);
+
 	// first, handle item highlighting and marquee effect
 	bool found = false;
 	for (const auto &item : items)
@@ -77,12 +79,38 @@ void ListPanel::draw()
 			{
 				const int text_len = renderer.text_len(item.text.c_str());
 				if (((item.x + 6) + text_xoffset) + text_len > (item.x + item.w) - 6)
-					text_xoffset -= (delta_milliseconds / 16.66f) * 2;
+					text_xoffset -= frequency_multiplier * 2;
 			}
 		}
 	}
 	if (!found)
 		highlighted_item_id = -1;
+
+	// handle scrolling
+	if (items.empty())
+		scroll_yoffset = 0.0f;
+	else if (mouse_x >= box.x && mouse_x < box.x + box.width && mouse_y >= box.y && mouse_y < box.y + box.height)
+	{
+		const int scroll_zone = 40;
+		const float step = frequency_multiplier * 5.0f;
+
+		if (mouse_y > (box.y + box.height) - scroll_zone)
+			scroll_yoffset -= step;
+		else if (mouse_y < box.y + scroll_zone)
+			scroll_yoffset += step;
+
+		const auto &first = *items.begin();
+		const auto &last = *(items.end() - 1);
+
+		const int list_top = first.y + first.h;
+		const int list_height = list_top - last.y;
+		const int scroll_yoffset_max = (box.y + list_height) - (box.y + box.height);
+
+		scroll_yoffset = std::min(scroll_yoffset, (float)scroll_yoffset_max);
+		scroll_yoffset = std::max(scroll_yoffset, 0.0f);
+	}
+
+	const win::Box<int> base_drawbox(box.x, box.y, box.width, box.height);
 
 	// now, draw the panel
 	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), box.x, box.y, box.width, box.height);
@@ -94,12 +122,15 @@ void ListPanel::draw()
 	{
 		const auto color = item.id == selection_id ? (mouse_is_over(item) ? entry_color_selected : entry_color_selected) : (mouse_is_over(item) ? entry_color_highlighted : entry_color);
 
-		renderer.render(color, item.x, item.y, item.w, item.h);
+		renderer.set_drawbox(base_drawbox);
+		renderer.render(color, item.x, item.y + scroll_yoffset, item.w, item.h);
 
-		renderer.set_drawbox(item.x + 6, item.y, item.w - 12, item.h);
-		renderer.draw_text(item.text.c_str(), (item.x + 6) + (mouse_is_over(item) ? text_xoffset : 0), item.y + 8, false);
-		renderer.set_drawbox(false);
+		const win::Box<int> text_drawbox(item.x + 6, item.y + scroll_yoffset, item.w - 12, item.h);
+		renderer.set_drawbox(drawbox_intersection(base_drawbox, text_drawbox));
+		renderer.draw_text(item.text.c_str(), (item.x + 6) + (mouse_is_over(item) ? text_xoffset : 0), (item.y + 8) + scroll_yoffset, false);
 	}
+
+	renderer.disable_drawbox();
 }
 
 void ListPanel::on_select(const std::function<void(int id)> &fn)
@@ -126,5 +157,19 @@ void ListPanel::reflow()
 
 bool ListPanel::mouse_is_over(const ListEntry &entry) const
 {
-	return mouse_x >= entry.x && mouse_x <= entry.x + entry.w && mouse_y >= entry.y && mouse_y <= entry.y + entry.h;
+	return mouse_x >= box.x && mouse_y >= box.y && mouse_x < box.x + box.width && mouse_y < box.y + box.height &&
+	mouse_x >= entry.x && mouse_x < entry.x + entry.w && mouse_y >= entry.y + scroll_yoffset && mouse_y < (entry.y + entry.h) + scroll_yoffset;
+}
+
+win::Box<int> ListPanel::drawbox_intersection(const win::Box<int> &base, const win::Box<int> &box)
+{
+	const int left = std::max(base.x, box.x);
+	const int bottom = std::max(base.y, box.y);
+	const int right = std::min(base.x + base.width, box.x + box.width);
+	const int top = std::min(base.y + base.height, box.y + box.height);
+
+	const int width = std::max(0, right - left);
+	const int height = std::max(0, top - bottom);
+
+	return win::Box<int>(left, bottom, width, height);
 }

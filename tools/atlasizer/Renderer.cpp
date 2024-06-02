@@ -151,17 +151,15 @@ void Renderer::set_view(int centerx, int centery, float zoom)
 	view = translate2 * scale * translate1;
 }
 
-void Renderer::set_drawbox(int x, int y, int w, int h)
+void Renderer::set_drawbox(const win::Box<int> &box)
 {
 	glEnable(GL_SCISSOR_TEST);
-	glScissor(x, y, w, h);
+	glScissor(box.x, box.y, box.width, box.height);
+	win::gl_check_error();
 }
 
-void Renderer::set_drawbox(bool enable)
+void Renderer::disable_drawbox()
 {
-	if (enable)
-		win::bug("watchu doin setting this to true boii?");
-
 	glDisable(GL_SCISSOR_TEST);
 }
 

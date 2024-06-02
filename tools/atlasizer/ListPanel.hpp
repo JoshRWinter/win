@@ -44,6 +44,7 @@ public:
 private:
 	void reflow();
 	bool mouse_is_over(const ListEntry &entry) const;
+	static win::Box<int> drawbox_intersection(const win::Box<int> &base, const win::Box<int> &box);
 
 	Renderer &renderer;
 	win::Box<int> box;
@@ -52,6 +53,7 @@ private:
 
 	int highlighted_item_id = -1;
 	float text_xoffset = 0.0f;
+	float scroll_yoffset = 0.0f;
 
 	int mouse_x = 0, mouse_y = 0;
 	int selection_id = -1;
