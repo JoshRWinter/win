@@ -61,7 +61,7 @@ void gui2()
 	bool solidmode = false;
 	bool snapmode = false;
 	int selection_id = -1;
-	std::filesystem::path current_save_file;
+	std::optional<std::filesystem::path> current_save_file;
 
 	cpanel.on_import([&]()
 	{
@@ -84,6 +84,8 @@ void gui2()
 			lpanel.clear();
 			lpanel.set_selection(-1);
 
+			current_save_file = result.value();
+
 			int padding;
 			const auto layout = LayoutExporter::import(result.value(), padding);
 			for (const auto &item : layout)
@@ -100,26 +102,38 @@ void gui2()
 
 	cpanel.on_export([&]()
 	{
-		const auto &result = filepicker.export_layout();
-		if (result.has_value())
+		std::filesystem::path savefile;
+
+		if (current_save_file.has_value())
 		{
-			current_save_file = result.value();
-			LayoutExporter exporter(current_save_file, atlasizer.get_padding());
-
-			for (const auto &item : atlasizer.get_items_layout_order())
-			{
-				AtlasItemDescriptor aid;
-				aid.filename = item->texturepath;
-				aid.x = item->x;
-				aid.y = item->y;
-				aid.width = item->w;
-				aid.height = item->h;
-
-				exporter.add(aid);
-			}
-
-			exporter.save();
+			savefile = current_save_file.value();
 		}
+		else
+		{
+			const auto result = filepicker.export_layout();
+			if (result.has_value())
+			{
+				savefile = result.value();
+				current_save_file = result.value();
+			}
+			else return;
+		}
+
+		LayoutExporter exporter(savefile, atlasizer.get_padding());
+
+		for (const auto &item : atlasizer.get_items_layout_order())
+		{
+			AtlasItemDescriptor aid;
+			aid.filename = item->texturepath;
+			aid.x = item->x;
+			aid.y = item->y;
+			aid.width = item->w;
+			aid.height = item->h;
+
+			exporter.add(aid);
+		}
+
+		exporter.save();
 	});
 
 	cpanel.on_add([&]()
