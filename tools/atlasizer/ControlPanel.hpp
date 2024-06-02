@@ -48,7 +48,11 @@ public:
 	void on_remove(const std::function<void()> &fn);
 	void on_padding_up(const std::function<void()> &fn);
 	void on_padding_down(const std::function<void()> &fn);
+	void on_move_up(const std::function<void()> &fn);
+	void on_move_down(const std::function<void()> &fn);
 	void enable_remove(bool enable);
+	void enable_move_up(bool enable);
+	void enable_move_down(bool enable);
 
 	void mouse_move(int x, int y);
 	void click(bool down);
@@ -67,7 +71,7 @@ private:
 	int mouse_x = 0, mouse_y = 0;
 	int clicked = false;
 
-	Button load, save, add, remove, padding_up, padding_down;
+	Button load, save, add, remove, padding_up, padding_down, move_up, move_down;
 	BorderBox padding;
 
 	std::function<void()> fn_import = [](){};
@@ -76,4 +80,6 @@ private:
 	std::function<void()> fn_remove = [](){};
 	std::function<void()> fn_padding_up = [](){};
 	std::function<void()> fn_padding_down = [](){};
+	std::function<void()> fn_move_up = [](){};
+	std::function<void()> fn_move_down = [](){};
 };

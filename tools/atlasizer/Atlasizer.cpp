@@ -34,6 +34,58 @@ void Atlasizer::remove(int id)
 	check_validity();
 }
 
+void Atlasizer::move_up(int id)
+{
+	if (items_layout_order.empty())
+		win::bug("Can't move up, no items");
+
+	if ((*items_layout_order.begin())->id == id)
+		win::bug("Can't move up, already first item");
+
+	int index = 0;
+	for (const auto item : items_layout_order)
+	{
+		if (item->id == id)
+		{
+			const auto tmp = items_layout_order[index];
+			items_layout_order[index] = items_layout_order[index - 1];
+			items_layout_order[index - 1] = tmp;
+
+			return;
+		}
+
+		++index;
+	}
+
+	win::bug("Can't move up: no item " + std::to_string(id));
+}
+
+void Atlasizer::move_down(int id)
+{
+	if (items.empty())
+		win::bug("Can't move down, no items");
+
+	if ((*(items_layout_order.end() - 1))->id == id)
+		win::bug("Can't move down, already last item");
+
+	int index = 0;
+	for (const auto item : items_layout_order)
+	{
+		if (item->id == id)
+		{
+			const auto tmp = items_layout_order[index];
+			items_layout_order[index] = items_layout_order[index + 1];
+			items_layout_order[index + 1] = tmp;
+
+			return;
+		}
+
+		++index;
+	}
+
+	win::bug("Can't move down: no item " + std::to_string(id));
+}
+
 int Atlasizer::start_drag(int x, int y)
 {
 	left_barrier.reset();

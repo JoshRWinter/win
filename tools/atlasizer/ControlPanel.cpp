@@ -37,9 +37,29 @@ void ControlPanel::on_padding_down(const std::function<void()> &fn)
 	fn_padding_down = fn;
 }
 
+void ControlPanel::on_move_up(const std::function<void()> &fn)
+{
+	fn_move_up = fn;
+}
+
+void ControlPanel::on_move_down(const std::function<void()> &fn)
+{
+	fn_move_down = fn;
+}
+
 void ControlPanel::enable_remove(bool enable)
 {
 	remove.enabled = enable;
+}
+
+void ControlPanel::enable_move_up(bool enable)
+{
+	move_up.enabled = enable;
+}
+
+void ControlPanel::enable_move_down(bool enable)
+{
+	move_down.enabled = enable;
 }
 
 void ControlPanel::mouse_move(int x, int y)
@@ -66,6 +86,10 @@ void ControlPanel::click(bool down)
 			fn_padding_up();
 		else if (mouse_is_over(padding_down) && padding_down.enabled)
 			fn_padding_down();
+		else if (mouse_is_over(move_up) && move_up.enabled)
+			fn_move_up();
+		else if (mouse_is_over(move_down) && move_down.enabled)
+			fn_move_down();
 	}
 }
 
@@ -85,6 +109,8 @@ void ControlPanel::draw()
 	draw_button(remove, text_y_offset);
 	draw_button(padding_up, text_y_offset - 3);
 	draw_button(padding_down, text_y_offset);
+	draw_button(move_up, text_y_offset);
+	draw_button(move_down, text_y_offset);
 
 	// draw padding box
 	draw_border_box(padding, text_y_offset);
@@ -118,6 +144,13 @@ void ControlPanel::reflow()
 
 	padding_up = Button("^", x, centerline_y + 2, small_button_width, small_button_height);
 	padding_down = Button("v", x,centerline_y - small_button_height - 2, small_button_width, small_button_height);
+	x += padding_up.w + (spacing * 2);
+
+	move_up = Button("Up", x, centerline_y - (button_height / 2), button_width, button_height);
+	x += move_up.w + spacing;
+
+	move_down = Button("Down", x, centerline_y - (button_height / 2), button_width, button_height);
+	x += move_down.w + spacing;
 }
 
 void ControlPanel::draw_button(const ControlPanel::Button &button, int text_y_offset)

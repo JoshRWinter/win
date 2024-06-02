@@ -33,6 +33,8 @@ public:
 
 	int add(int texture, const std::filesystem::path &texturepath, int x, int y, int w, int h);
 	void remove(int id);
+	void move_up(int id);
+	void move_down(int id);
 	int start_drag(int x, int y);
 	void continue_drag(int x, int y, bool snap);
 	void set_padding(int pad);
