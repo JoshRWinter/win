@@ -62,6 +62,7 @@ void gui2()
 	bool snapmode = false;
 	int selection_id = -1;
 	std::optional<std::filesystem::path> current_save_file;
+	bool dirty = false;
 
 	cpanel.on_import([&]()
 	{
@@ -97,6 +98,8 @@ void gui2()
 
 			atlasizer.set_padding(padding);
 			cpanel.set_pad(padding);
+
+			dirty = false;
 		}
 	});
 
@@ -134,6 +137,8 @@ void gui2()
 		}
 
 		exporter.save();
+
+		dirty = false;
 	});
 
 	cpanel.on_add([&]()
@@ -149,6 +154,8 @@ void gui2()
 			}
 
 			lpanel.set_selection(-1);
+
+			dirty = true;
 		}
 	});
 
@@ -163,6 +170,7 @@ void gui2()
 				atlasizer.remove(selection_id);
 				lpanel.remove(selection_id);
 				lpanel.set_selection(-1);
+				dirty = true;
 				return;
 			}
 		}
@@ -175,6 +183,8 @@ void gui2()
 		const int p = atlasizer.get_padding() + 1;
 		atlasizer.set_padding(p);
 		cpanel.set_pad(p);
+
+		dirty = true;
 	});
 
 	cpanel.on_padding_down([&]()
@@ -184,6 +194,7 @@ void gui2()
 		{
 			atlasizer.set_padding(p);
 			cpanel.set_pad(p);
+			dirty = true;
 		}
 	});
 
@@ -197,6 +208,8 @@ void gui2()
 
 		// allow the on_select to decide movement button state
 		lpanel.set_selection(selection_id);
+
+		dirty = true;
 	});
 
 	cpanel.on_move_down([&]()
@@ -209,6 +222,8 @@ void gui2()
 
 		// allow the on_select to decide movement button state
 		lpanel.set_selection(selection_id);
+
+		dirty = true;
 	});
 
 	lpanel.on_select([&](int id)
@@ -261,6 +276,9 @@ void gui2()
 						drag_mode = DragMode::drag;
 						selection_id = atlasizer.start_drag(mouse_world_x, mouse_world_y);
 						lpanel.set_selection(selection_id);
+
+						if (selection_id != -1)
+							dirty = true;
 					}
 				}
 				else
@@ -291,10 +309,6 @@ void gui2()
 				break;
 			case win::Button::lctrl:
 				snapmode = press;
-				break;
-			case win::Button::d0: case win::Button::d1: case win::Button::d2: case win::Button::d3: case win::Button::d4:
-			case win::Button::d5: case win::Button::d6: case win::Button::d7: case win::Button::d8: case win::Button::d9:
-				atlasizer.set_padding((int)button - (int)win::Button::d0);
 				break;
 			default:
 				break;
@@ -342,8 +356,9 @@ void gui2()
 		renderer.start_render();
 
 		// draw guides
-		renderer.render(win::Color<unsigned char>(0, 255, 0, 255), -1, -1, 1, 400);
-		renderer.render(win::Color<unsigned char>(0, 255, 0, 255), -1, -1, 400, 1);
+		const auto guide_color = dirty ? win::Color<unsigned char>(255, 0, 0, 255) : win::Color<unsigned char>(0, 255, 0, 255);
+		renderer.render(guide_color, -1, -1, 1, 400);
+		renderer.render(guide_color, -1, -1, 400, 1);
 
 		const auto items = atlasizer.get_items_display_order();
 
