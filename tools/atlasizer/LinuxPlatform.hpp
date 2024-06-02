@@ -15,7 +15,6 @@ public:
 	std::string expand_env(const std::string &env) const override;
 
 private:
-	static std::optional<std::string> run_cmd(const std::string &cmd);
 	static std::vector<std::filesystem::path> split(const std::string &s, char c);
 };
 

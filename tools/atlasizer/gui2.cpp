@@ -66,6 +66,9 @@ void gui2()
 
 	cpanel.on_import([&]()
 	{
+		if (dirty && !platform.ask("Discard unsaved changes", "Discard unsaved changes in current layout?"))
+			return;
+
 		const auto &result = filepicker.import_layout();
 		if (result.has_value())
 		{
@@ -343,10 +346,15 @@ void gui2()
 	});
 
 	bool quit = false;
-	display.register_window_handler([&quit](win::WindowEvent event)
+	display.register_window_handler([&](win::WindowEvent event)
 	{
 		if (event == win::WindowEvent::close)
+		{
+			if (dirty && !platform.ask("Discard unsaved changes", "Discard unsaved changes in current layout?"))
+				return;
+
 			quit = true;
+		}
 	});
 
 	while (!quit)
