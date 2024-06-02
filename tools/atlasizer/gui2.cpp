@@ -63,17 +63,6 @@ void gui2()
 	int selection_id = -1;
 	std::filesystem::path current_save_file;
 
-	auto handle_movement_buttons = [&]()
-	{
-		const auto &items = atlasizer.get_items_layout_order();
-
-		const auto &first = *items.begin();
-		const auto &last = *(items.end() - 1);
-
-		cpanel.enable_move_up(selection_id != -1 && first->id != selection_id);
-		cpanel.enable_move_down(selection_id != -1 && last->id != selection_id);
-	};
-
 	cpanel.on_import([&]()
 	{
 		const auto &result = filepicker.import_layout();
@@ -93,6 +82,7 @@ void gui2()
 			}
 
 			lpanel.clear();
+			lpanel.set_selection(-1);
 
 			int padding;
 			const auto layout = LayoutExporter::import(result.value(), padding);
@@ -105,11 +95,6 @@ void gui2()
 
 			atlasizer.set_padding(padding);
 			cpanel.set_pad(padding);
-			cpanel.enable_remove(false);
-			cpanel.enable_move_up(false);
-			cpanel.enable_move_down(false);
-
-			selection_id = -1;
 		}
 	});
 
@@ -148,6 +133,8 @@ void gui2()
 				const int id = atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
 				lpanel.add(id, f.filename());
 			}
+
+			lpanel.set_selection(-1);
 		}
 	});
 
@@ -161,10 +148,7 @@ void gui2()
 				renderer.remove_texture(item->texture);
 				atlasizer.remove(selection_id);
 				lpanel.remove(selection_id);
-				selection_id = -1;
-				cpanel.enable_remove(false);
-				cpanel.enable_move_up(false);
-				cpanel.enable_move_down(false);
+				lpanel.set_selection(-1);
 				return;
 			}
 		}
@@ -197,7 +181,8 @@ void gui2()
 		for (const auto item : atlasizer.get_items_layout_order())
 			lpanel.add(item->id, item->texturepath.filename());
 
-		handle_movement_buttons();
+		// allow the on_select to decide movement button state
+		lpanel.set_selection(selection_id);
 	});
 
 	cpanel.on_move_down([&]()
@@ -208,15 +193,31 @@ void gui2()
 		for (const auto item : atlasizer.get_items_layout_order())
 			lpanel.add(item->id, item->texturepath.filename());
 
-		handle_movement_buttons();
+		// allow the on_select to decide movement button state
+		lpanel.set_selection(selection_id);
 	});
 
 	lpanel.on_select([&](int id)
 	{
 		selection_id = id;
-		cpanel.enable_remove(true);
 
-		handle_movement_buttons();
+		cpanel.enable_remove(id != -1);
+
+		const auto &items = atlasizer.get_items_layout_order();
+
+		if (!items.empty())
+		{
+			const auto first = *items.begin();
+			const auto last = *(items.end() - 1);
+
+			cpanel.enable_move_up(id != -1 && first->id != id);
+			cpanel.enable_move_down(id != -1 && last->id != id);
+		}
+		else
+		{
+			cpanel.enable_move_up(false);
+			cpanel.enable_move_down(false);
+		}
 	});
 
 	display.register_button_handler([&](const win::Button button, const bool press)
@@ -246,8 +247,6 @@ void gui2()
 						drag_mode = DragMode::drag;
 						selection_id = atlasizer.start_drag(mouse_world_x, mouse_world_y);
 						lpanel.set_selection(selection_id);
-						cpanel.enable_remove(selection_id != -1);
-						handle_movement_buttons();
 					}
 				}
 				else

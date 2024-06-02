@@ -34,6 +34,7 @@ void ListPanel::clear()
 void ListPanel::set_selection(int id)
 {
 	selection_id = id;
+	fn_select(id);
 }
 
 void ListPanel::mouse_move(int x, int y)
