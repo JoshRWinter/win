@@ -29,8 +29,8 @@ static bool in_box(int p_x, int p_y, const win::Box<int> &box)
 void gui2()
 {
 	win::DisplayOptions options;
-	options.width = 800;
-	options.height = 600;
+	options.width = 1400;
+	options.height = 800;
 	options.gl_major = 4;
 	options.gl_minor = 4;
 	options.caption = "Atlasizer";
@@ -55,7 +55,7 @@ void gui2()
 
 	// interface state
 	enum DragMode { none, pan, drag } drag_mode = DragMode::none;
-	int center_x = (display.width() / 2.0f) - 75, center_y = (display.height() / 2.0f) - 105;
+	int center_x = (display.width() / 2.0f) - 250, center_y = (display.height() / 2.0f) - 105;
 	float zoom = 1.0f;
 	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
 	bool solidmode = false;
