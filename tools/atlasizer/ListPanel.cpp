@@ -114,7 +114,7 @@ void ListPanel::draw()
 	const win::Box<int> base_drawbox(box.x, box.y, box.width, box.height);
 
 	// now, draw the panel
-	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), box.x, box.y, box.width, box.height);
+	renderer.render(win::Color<unsigned char>(40, 40, 40, 200), box.x, box.y, box.width, box.height);
 
 	if (items.empty())
 		renderer.draw_text("< No items >", box.x + (box.width / 2), (box.y + box.height) - 30, true);

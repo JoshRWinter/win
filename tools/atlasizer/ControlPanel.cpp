@@ -50,7 +50,7 @@ void ControlPanel::set_status(const std::string &s)
 
 void ControlPanel::draw()
 {
-	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), box.x, box.y, box.width, box.height);
+	renderer.render(win::Color<unsigned char>(40, 40, 40, 200), box.x, box.y, box.width, box.height);
 
 	int text_y_offset = -5;
 	draw_button(load, text_y_offset);

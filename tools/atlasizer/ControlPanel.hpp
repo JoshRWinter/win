@@ -12,10 +12,10 @@ class ControlPanel
 
 	static constexpr int spacing = 10;
 
-	inline static const win::Color<unsigned char> button_color = win::Color<unsigned char>(255, 255, 255, 50);
-	inline static const win::Color<unsigned char> button_disabled = win::Color<unsigned char>(255, 255, 255, 10);
-	inline static const win::Color<unsigned char> button_color_highlight = win::Color<unsigned char>(255, 255, 255, 80);
-	inline static const win::Color<unsigned char> button_color_click = win::Color<unsigned char>(255, 255, 255, 40);
+	inline static const win::Color<unsigned char> button_color = win::Color<unsigned char>(90, 90, 90, 200);
+	inline static const win::Color<unsigned char> button_disabled = win::Color<unsigned char>(50, 50, 50, 200);
+	inline static const win::Color<unsigned char> button_color_highlight = win::Color<unsigned char>(130, 130, 130, 200);
+	inline static const win::Color<unsigned char> button_color_click = win::Color<unsigned char>(70, 70, 70, 200);
 
 	inline static const win::Color<unsigned char> text_color = win::Color<unsigned char>(0, 0, 0, 255);
 

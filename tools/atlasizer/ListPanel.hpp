@@ -23,9 +23,9 @@ class ListPanel
 
 	constexpr static int entry_height = 30;
 
-	inline static win::Color<unsigned char> entry_color = win::Color<unsigned char>(255, 255, 255, 50);
-	inline static win::Color<unsigned char> entry_color_highlighted = win::Color<unsigned char>(255, 255, 255, 80);
-	inline static win::Color<unsigned char> entry_color_selected = win::Color<unsigned char>(255, 255, 255, 20);
+	inline static win::Color<unsigned char> entry_color = win::Color<unsigned char>(90, 90, 90, 200);
+	inline static win::Color<unsigned char> entry_color_highlighted = win::Color<unsigned char>(130, 130, 130, 200);
+	inline static win::Color<unsigned char> entry_color_selected = win::Color<unsigned char>(70, 70, 70, 200);
 
 public:
 	ListPanel(Renderer &renderer, const win::Box<int> &box);
