@@ -9,7 +9,7 @@ add_executable(roll-recipe-tests roll/recipe/tests/test.hpp roll/recipe/tests/pa
 add_executable(
 	atlasizer
 	atlasizer/main.cpp
-	atlasizer/gui2.cpp
+	atlasizer/gui.cpp
 	atlasizer/Renderer.hpp
 	atlasizer/Renderer.cpp
 	atlasizer/Atlasizer.hpp
