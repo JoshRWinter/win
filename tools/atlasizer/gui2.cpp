@@ -26,7 +26,7 @@ static bool in_box(int p_x, int p_y, const win::Box<int> &box)
 	return p_x >= box.x && p_x <= box.x + box.width && p_y >= box.y && p_y <= box.y + box.height;
 }
 
-void gui2()
+void gui()
 {
 	win::DisplayOptions options;
 	options.width = 1400;
@@ -326,6 +326,9 @@ void gui2()
 				if (drag_mode == DragMode::none && press)
 				{
 					zoom -= 0.1f;
+
+					if (zoom < 0.5f)
+						zoom = 0.5f;
 				}
 				break;
 			case win::Button::lshift:

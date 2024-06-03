@@ -8,9 +8,7 @@ add_executable(roll-recipe-tests roll/recipe/tests/test.hpp roll/recipe/tests/pa
 
 add_executable(
 	atlasizer
-	atlasizer/atlasizer.hpp
 	atlasizer/main.cpp
-	atlasizer/gui.cpp
 	atlasizer/gui2.cpp
 	atlasizer/Renderer.hpp
 	atlasizer/Renderer.cpp
@@ -27,7 +25,8 @@ add_executable(
 	atlasizer/FilePickerManager.cpp
 	atlasizer/LayoutExporter.cpp
 	atlasizer/LayoutExporter.hpp
-	atlasizer/compileatlas.cpp
+	atlasizer/AtlasCompiler.hpp
+	atlasizer/AtlasCompiler.cpp
 )
 
 if (NOGUI)
