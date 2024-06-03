@@ -56,6 +56,7 @@ void gui2()
 	// interface state
 	enum DragMode { none, pan, drag } drag_mode = DragMode::none;
 	int center_x = (display.width() / 2.0f) - 250, center_y = (display.height() / 2.0f) - 105;
+	win::Dimensions<int> canvas_dimensions;
 	float zoom = 1.0f;
 	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
 	bool solidmode = false;
@@ -63,6 +64,26 @@ void gui2()
 	int selection_id = -1;
 	std::optional<std::filesystem::path> current_save_file;
 	bool dirty = false;
+
+	auto recalculate_statistics = [&]()
+	{
+		int maxx = 0.0f, maxy = 0.0f;
+		for (const auto item : atlasizer.get_items_layout_order())
+		{
+			maxx = std::max(maxx, item->x + item->w);
+			maxy = std::max(maxy, item->y + item->h);
+		}
+
+		canvas_dimensions.width = maxx;
+		canvas_dimensions.height = maxy;
+
+		const int size = maxx * maxy * 4;
+		const float megabytes = size / 1024.0f / 1024.0f;
+
+		char buf[100];
+		snprintf(buf, sizeof(buf), "%dx%d (%.1fMB)", maxx, maxy, megabytes);
+		cpanel.set_status(buf);
+	};
 
 	cpanel.on_import([&]()
 	{
@@ -102,6 +123,7 @@ void gui2()
 			atlasizer.set_padding(padding);
 			cpanel.set_pad(padding);
 
+			recalculate_statistics();
 			dirty = false;
 		}
 	});
@@ -158,6 +180,7 @@ void gui2()
 
 			lpanel.set_selection(-1);
 
+			recalculate_statistics();
 			dirty = true;
 		}
 	});
@@ -173,6 +196,7 @@ void gui2()
 				atlasizer.remove(selection_id);
 				lpanel.remove(selection_id);
 				lpanel.set_selection(-1);
+				recalculate_statistics();
 				dirty = true;
 				return;
 			}
@@ -279,9 +303,6 @@ void gui2()
 						drag_mode = DragMode::drag;
 						selection_id = atlasizer.start_drag(mouse_world_x, mouse_world_y);
 						lpanel.set_selection(selection_id);
-
-						if (selection_id != -1)
-							dirty = true;
 					}
 				}
 				else
@@ -342,8 +363,15 @@ void gui2()
 		else if (drag_mode == DragMode::drag)
 		{
 			atlasizer.continue_drag(mouse_world_x, mouse_world_y, snapmode);
+			if (selection_id != -1)
+			{
+				recalculate_statistics();
+				dirty = true;
+			}
 		}
 	});
+
+	recalculate_statistics();
 
 	bool quit = false;
 	display.register_window_handler([&](win::WindowEvent event)
@@ -368,18 +396,11 @@ void gui2()
 		renderer.render(guide_color, -1, -1, 1, 400);
 		renderer.render(guide_color, -1, -1, 400, 1);
 
-		const auto items = atlasizer.get_items_display_order();
-
 		// draw bounding box
-		int max_x = 0, max_y = 0;
-		for (const auto &item : items)
-		{
-			max_x = std::max(max_x, item->x + item->w);
-			max_y = std::max(max_y, item->y + item->h);
-		}
-		renderer.render(win::Color<unsigned char>(255, 255, 255, 5), 0, 0, max_x, max_y);
+		renderer.render(win::Color<unsigned char>(255, 255, 255, 5), 0, 0, canvas_dimensions.width, canvas_dimensions.height);
 
-		// items
+		// draw items
+		const auto items = atlasizer.get_items_display_order();
 		for (const auto &item : items)
 		{
 			// sweet jebus

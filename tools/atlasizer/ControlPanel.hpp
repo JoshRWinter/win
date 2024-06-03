@@ -42,6 +42,12 @@ class ControlPanel
 public:
 	explicit ControlPanel(Renderer &renderer, const win::Box<int> &box);
 
+	void mouse_move(int x, int y);
+	void click(bool down);
+	void set_pad(int p);
+	void set_status(const std::string &s);
+	void draw();
+
 	void on_import(const std::function<void()> &fn);
 	void on_export(const std::function<void()> &fn);
 	void on_add(const std::function<void()> &fn);
@@ -54,11 +60,6 @@ public:
 	void enable_move_up(bool enable);
 	void enable_move_down(bool enable);
 
-	void mouse_move(int x, int y);
-	void click(bool down);
-	void set_pad(int p);
-	void draw();
-
 private:
 	void reflow();
 	void draw_button(const Button &button, int text_y_offset);
@@ -67,6 +68,8 @@ private:
 
 	Renderer &renderer;
 	win::Box<int> box;
+
+	std::string status;
 
 	int mouse_x = 0, mouse_y = 0;
 	int clicked = false;

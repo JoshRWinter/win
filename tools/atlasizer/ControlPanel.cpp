@@ -7,6 +7,67 @@ ControlPanel::ControlPanel(Renderer &renderer, const win::Box<int> &box)
 	reflow();
 }
 
+void ControlPanel::mouse_move(int x, int y)
+{
+	mouse_x = x;
+	mouse_y = y;
+}
+
+void ControlPanel::click(bool down)
+{
+	clicked = down;
+
+	if (!down)
+	{
+		if (mouse_is_over(load) && load.enabled)
+			fn_import();
+		else if (mouse_is_over(save) && save.enabled)
+			fn_export();
+		else if (mouse_is_over(add) && add.enabled)
+			fn_add();
+		else if(mouse_is_over(remove) && remove.enabled)
+			fn_remove();
+		else if (mouse_is_over(padding_up) && padding_up.enabled)
+			fn_padding_up();
+		else if (mouse_is_over(padding_down) && padding_down.enabled)
+			fn_padding_down();
+		else if (mouse_is_over(move_up) && move_up.enabled)
+			fn_move_up();
+		else if (mouse_is_over(move_down) && move_down.enabled)
+			fn_move_down();
+	}
+}
+
+void ControlPanel::set_pad(int p)
+{
+	padding.text = std::to_string(p);
+}
+
+void ControlPanel::set_status(const std::string &s)
+{
+	status = s;
+}
+
+void ControlPanel::draw()
+{
+	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), box.x, box.y, box.width, box.height);
+
+	int text_y_offset = -5;
+	draw_button(load, text_y_offset);
+	draw_button(save, text_y_offset);
+	draw_button(add, text_y_offset);
+	draw_button(remove, text_y_offset);
+	draw_button(padding_up, text_y_offset - 3);
+	draw_button(padding_down, text_y_offset);
+	draw_button(move_up, text_y_offset);
+	draw_button(move_down, text_y_offset);
+
+	// draw padding box
+	draw_border_box(padding, text_y_offset);
+
+	renderer.draw_text(status.c_str(), ((box.x + box.width) - renderer.text_len(status.c_str())) - 22, box.y + 18, false);
+}
+
 void ControlPanel::on_import(const std::function<void()> &fn)
 {
 	fn_import = fn;
@@ -60,60 +121,6 @@ void ControlPanel::enable_move_up(bool enable)
 void ControlPanel::enable_move_down(bool enable)
 {
 	move_down.enabled = enable;
-}
-
-void ControlPanel::mouse_move(int x, int y)
-{
-	mouse_x = x;
-	mouse_y = y;
-}
-
-void ControlPanel::click(bool down)
-{
-	clicked = down;
-
-	if (!down)
-	{
-		if (mouse_is_over(load) && load.enabled)
-			fn_import();
-		else if (mouse_is_over(save) && save.enabled)
-			fn_export();
-		else if (mouse_is_over(add) && add.enabled)
-			fn_add();
-		else if(mouse_is_over(remove) && remove.enabled)
-			fn_remove();
-		else if (mouse_is_over(padding_up) && padding_up.enabled)
-			fn_padding_up();
-		else if (mouse_is_over(padding_down) && padding_down.enabled)
-			fn_padding_down();
-		else if (mouse_is_over(move_up) && move_up.enabled)
-			fn_move_up();
-		else if (mouse_is_over(move_down) && move_down.enabled)
-			fn_move_down();
-	}
-}
-
-void ControlPanel::set_pad(int p)
-{
-	padding.text = std::to_string(p);
-}
-
-void ControlPanel::draw()
-{
-	renderer.render(win::Color<unsigned char>(255, 255, 255, 20), box.x, box.y, box.width, box.height);
-
-	int text_y_offset = -5;
-	draw_button(load, text_y_offset);
-	draw_button(save, text_y_offset);
-	draw_button(add, text_y_offset);
-	draw_button(remove, text_y_offset);
-	draw_button(padding_up, text_y_offset - 3);
-	draw_button(padding_down, text_y_offset);
-	draw_button(move_up, text_y_offset);
-	draw_button(move_down, text_y_offset);
-
-	// draw padding box
-	draw_border_box(padding, text_y_offset);
 }
 
 void ControlPanel::reflow()
