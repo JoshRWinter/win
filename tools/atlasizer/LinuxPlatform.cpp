@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include <wordexp.h>
+#include <unistd.h>
 
 #include "LinuxPlatform.hpp"
 
@@ -41,10 +42,6 @@ std::optional<std::vector<std::filesystem::path>> LinuxPlatform::file_picker(con
 		return std::nullopt;
 }
 
-void LinuxPlatform::info_message(const std::string &title, const std::string &msg) const
-{
-}
-
 bool LinuxPlatform::ask(const std::string &title, const std::string &msg) const
 {
 	const std::string cmd = "zenity --question --default-cancel --text=\"" + msg + "\" --title=\"" + title + "\"";
@@ -66,6 +63,17 @@ std::string LinuxPlatform::expand_env(const std::string &env) const
 	std::filesystem::path result = *w.we_wordv;
 	wordfree(&w);
 	return result;
+}
+
+std::filesystem::path LinuxPlatform::get_exe_path() const
+{
+	char buf[1024];
+	ssize_t len = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+	if (len == -1)
+		win::bug("Couldn't open /proc/self/exe");
+
+	buf[len] = 0;
+	return buf;
 }
 
 std::vector<std::filesystem::path> LinuxPlatform::split(const std::string &s, const char c)

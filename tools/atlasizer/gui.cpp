@@ -40,7 +40,7 @@ void gui()
 
 	const Platform &platform = get_platform();
 	FilePickerManager filepicker(platform, platform.expand_env("$HOME/.atlasizer-defaults"), platform.expand_env("$HOME"));
-	win::AssetRoll roll("atlasizer.roll");
+	win::AssetRoll roll((platform.get_exe_path().parent_path() / "atlasizer.roll").string().c_str());
 	Renderer renderer(roll, display.width(), display.height());
 	Atlasizer atlasizer;
 
