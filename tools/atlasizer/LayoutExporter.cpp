@@ -18,7 +18,7 @@ void LayoutExporter::save()
 {
 	std::ofstream out(exportfile);
 	if (!out)
-		throw std::runtime_error("Couldn't open " + exportfile + " for writing");
+		throw std::runtime_error("Couldn't open " + exportfile.string() + " for writing");
 
 	out << "$padding " + std::to_string(padding) << std::endl;
 

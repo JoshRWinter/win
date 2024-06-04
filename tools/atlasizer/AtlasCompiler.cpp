@@ -30,7 +30,7 @@ static void validate_items(const std::vector<AtlasItem> &items)
 	for (const AtlasItem &item : items)
 	{
 		if (item.x < 0 || item.y < 0)
-			throw std::runtime_error("item " + item.filename + " is out-of-bounds (" + std::to_string(item.x) + ", " + std::to_string(item.y) + ")");
+			throw std::runtime_error("item " + item.filename.string() + " is out-of-bounds (" + std::to_string(item.x) + ", " + std::to_string(item.y) + ")");
 	}
 }
 
@@ -103,9 +103,9 @@ static void bitblt(const AtlasItem &item, unsigned char *atlas, int width, int h
 	for (int row = 0; row < item.height; ++row)
 	{
 		if (dest + (item.width * 4) > width * height * 4)
-			throw std::runtime_error("internal error: destination overwrite on " + item.filename);
+			throw std::runtime_error("internal error: destination overwrite on " + item.filename.string());
 		if (source + (item.width * 4) > item.width * item.height * 4)
-			throw std::runtime_error("internal error: source overread on " + item.filename);
+			throw std::runtime_error("internal error: source overread on " + item.filename.string());
 
 		memcpy(atlas + dest, img + source, item.width * 4);
 

@@ -6,6 +6,7 @@
 #include "ListPanel.hpp"
 #include "Platform.hpp"
 #include "LinuxPlatform.hpp"
+#include "WindowsPlatform.hpp"
 #include "FilePickerManager.hpp"
 #include "Renderer.hpp"
 #include "Atlasizer.hpp"
@@ -13,12 +14,15 @@
 
 static Platform &get_platform()
 {
-#ifdef WINPLAT_LINUX
+#if defined WINPLAT_LINUX
 	static LinuxPlatform platform;
-	return platform;
+#elif defined WINPLAT_WINDOWS
+	static WindowsPlatform platform;
 #else
 #error "unimplemented"
 #endif
+
+	return platform;
 }
 
 static bool in_box(int p_x, int p_y, const win::Box<int> &box)
@@ -117,7 +121,7 @@ void gui()
 			{
 				const win::Targa tga(win::Stream(new win::FileReadStream(item.filename)));
 				const int id = atlasizer.add(renderer.add_texture(tga), item.filename, item.x, item.y, tga.width(), tga.height());
-				lpanel.add(id, item.filename.filename());
+				lpanel.add(id, item.filename.filename().string());
 			}
 
 			atlasizer.set_padding(padding);
@@ -175,7 +179,7 @@ void gui()
 			{
 				const win::Targa tga(win::Stream(new win::FileReadStream(f)));
 				const int id = atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
-				lpanel.add(id, f.filename());
+				lpanel.add(id, f.filename().string());
 			}
 
 			lpanel.set_selection(-1);
@@ -231,7 +235,7 @@ void gui()
 
 		lpanel.clear();
 		for (const auto item : atlasizer.get_items_layout_order())
-			lpanel.add(item->id, item->texturepath.filename());
+			lpanel.add(item->id, item->texturepath.filename().string());
 
 		// allow the on_select to decide movement button state
 		lpanel.set_selection(selection_id);
@@ -245,7 +249,7 @@ void gui()
 
 		lpanel.clear();
 		for (const auto item : atlasizer.get_items_layout_order())
-			lpanel.add(item->id, item->texturepath.filename());
+			lpanel.add(item->id, item->texturepath.filename().string());
 
 		// allow the on_select to decide movement button state
 		lpanel.set_selection(selection_id);

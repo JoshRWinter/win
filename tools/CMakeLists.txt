@@ -21,6 +21,8 @@ add_executable(
 	atlasizer/Platform.hpp
 	atlasizer/LinuxPlatform.hpp
 	atlasizer/LinuxPlatform.cpp
+	atlasizer/WindowsPlatform.hpp
+	atlasizer/WindowsPlatform.cpp
 	atlasizer/FilePickerManager.hpp
 	atlasizer/FilePickerManager.cpp
 	atlasizer/LayoutExporter.cpp

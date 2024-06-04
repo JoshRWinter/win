@@ -5,12 +5,12 @@
 namespace win
 {
 
-FileReadStream::FileReadStream(const std::string &path)
+FileReadStream::FileReadStream(const std::filesystem::path &path)
 	: path(path)
 {
 	file = std::move(std::ifstream(path, std::ifstream::binary));
 	if (!file.good())
-		win::bug("FileReadStream: can't read " + path);
+		win::bug("FileReadStream: can't read " + path.string());
 }
 
 unsigned long long FileReadStream::size() const

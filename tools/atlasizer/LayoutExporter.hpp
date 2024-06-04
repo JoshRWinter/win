@@ -9,7 +9,7 @@
 class AtlasItem
 {
 public:
-	AtlasItem(const std::string &filepath, int x, int y)
+	AtlasItem(const std::filesystem::path &filepath, int x, int y)
 		: filename(filepath)
 		, targa(win::Stream(new win::FileReadStream(filepath)))
 		, x(x)
@@ -21,7 +21,7 @@ public:
 	}
 
 public:
-	std::string filename;
+	std::filesystem::path filename;
 	win::Targa targa;
 	int x;
 	int y;
@@ -54,7 +54,7 @@ private:
 	static void get_fields(const std::string&, std::vector<std::string>&);
 	static std::vector<std::string> get_fields(const std::string&);
 
-	std::string exportfile;
+	std::filesystem::path exportfile;
 	int padding;
 	std::vector<AtlasItemDescriptor> items;
 };
