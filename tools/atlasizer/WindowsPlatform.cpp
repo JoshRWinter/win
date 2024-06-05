@@ -103,7 +103,10 @@ std::string WindowsPlatform::expand_env(const std::string &env) const
 
 std::filesystem::path WindowsPlatform::get_exe_path() const
 {
-	return "";
+	char buf[1024];
+	GetModuleFileNameA(NULL, buf, sizeof(buf));
+
+	return buf;
 }
 
 std::vector<std::filesystem::path> WindowsPlatform::split(const char *buf, const char c)
