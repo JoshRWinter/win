@@ -88,7 +88,7 @@ std::optional<std::vector<std::filesystem::path>> WindowsPlatform::file_picker(c
 
 bool WindowsPlatform::ask(const std::string &title, const std::string &msg) const
 {
-	return false;
+	return MessageBoxA(NULL, msg.c_str(), title.c_str(), MB_YESNO | MB_DEFBUTTON2) == IDYES;
 }
 
 std::string WindowsPlatform::expand_env(const std::string &env) const
