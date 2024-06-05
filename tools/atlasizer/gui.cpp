@@ -25,6 +25,19 @@ static Platform &get_platform()
 	return platform;
 }
 
+static void get_platform_directories(const Platform &platform, std::filesystem::path &filepicker_state, std::filesystem::path &default_dir)
+{
+#if defined WINPLAT_LINUX
+	filepicker_state = platform.expand_env("$HOME/.atlasizer-defaults");
+	default_dir = platform.expand_env("$HOME");
+#elif defined WINPLAT_WINDOWS
+	filepicker_state = platform.expand_env("%userprofile%\\.atlasizer-defaults.txt");
+	default_dir = platform.expand_env("%userprofile%\\desktop");
+#else
+#error "unimplemented"
+#endif
+}
+
 static bool in_box(int p_x, int p_y, const win::Box<int> &box)
 {
 	return p_x >= box.x && p_x <= box.x + box.width && p_y >= box.y && p_y <= box.y + box.height;
@@ -43,7 +56,11 @@ void gui()
 	win::load_gl_functions();
 
 	const Platform &platform = get_platform();
-	FilePickerManager filepicker(platform, platform.expand_env("$HOME/.atlasizer-defaults"), platform.expand_env("$HOME"));
+
+	std::filesystem::path filepicker_state, default_dir;
+	get_platform_directories(platform, filepicker_state, default_dir);
+
+	FilePickerManager filepicker(platform, filepicker_state, default_dir);
 	win::AssetRoll roll((platform.get_exe_path().parent_path() / "atlasizer.roll").string().c_str());
 	Renderer renderer(roll, display.width(), display.height());
 	Atlasizer atlasizer;

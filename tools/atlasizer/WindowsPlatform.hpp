@@ -15,7 +15,7 @@ public:
 	std::filesystem::path get_exe_path() const override;
 
 private:
-	static std::vector<std::filesystem::path> split(const std::string &s, char c);
+	static std::vector<std::filesystem::path> split(const char *buf, char c);
 };
 
 #endif
