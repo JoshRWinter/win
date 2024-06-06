@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 			int padding;
 			const auto descriptors = LayoutExporter::import(argv[2], padding, false);
 			for (const auto &descriptor : descriptors)
-				std::cout << descriptor.filename << std::endl;
+				std::cout << descriptor.filename.string() << std::endl;
 
 			return 0;
 		}
