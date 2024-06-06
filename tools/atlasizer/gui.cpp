@@ -1,3 +1,5 @@
+#include <thread>
+
 #include <win/Display.hpp>
 #include <win/AssetRoll.hpp>
 #include <win/FileReadStream.hpp>
@@ -78,12 +80,13 @@ void gui()
 	enum DragMode { none, pan, drag } drag_mode = DragMode::none;
 	int center_x = (display.width() / 2.0f) - 250, center_y = (display.height() / 2.0f) - 105;
 	win::Dimensions<int> canvas_dimensions;
+	std::optional<std::filesystem::path> current_save_file;
+	auto last_interaction = std::chrono::high_resolution_clock::now();
 	float zoom = 1.0f;
 	int mouse_x = 0, mouse_y = 0, mouse_world_x = 0, mouse_world_y = 0;
 	bool solidmode = false;
 	bool snapmode = false;
 	int selection_id = -1;
-	std::optional<std::filesystem::path> current_save_file;
 	bool dirty = false;
 
 	auto recalculate_statistics = [&]()
@@ -299,6 +302,8 @@ void gui()
 
 	display.register_button_handler([&](const win::Button button, const bool press)
 	{
+		last_interaction = std::chrono::high_resolution_clock::now();
+
 		switch (button)
 		{
 			case win::Button::mouse_right:
@@ -365,6 +370,8 @@ void gui()
 
 	display.register_mouse_handler([&](int x, int y)
 	{
+		last_interaction = std::chrono::high_resolution_clock::now();
+
 		const int prev_x = mouse_x;
 		const int prev_y = mouse_y;
 
@@ -411,6 +418,10 @@ void gui()
 
 	while (!quit)
 	{
+		// if no activity in last 10 seconds, slow down this loop
+		if (std::chrono::duration<float, std::milli>(std::chrono::high_resolution_clock::now() - last_interaction).count() > 10000)
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
 		display.process();
 
 		renderer.start_render();
