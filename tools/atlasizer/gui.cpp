@@ -70,6 +70,7 @@ void gui()
 	win::Box<int> cpanel_box(1, 1, display.width() - 2, 50 - 2);
 	ControlPanel cpanel(renderer, cpanel_box);
 	cpanel.enable_remove(false);
+	cpanel.enable_reload(false);
 	cpanel.enable_move_up(false);
 	cpanel.enable_move_down(false);
 
@@ -147,6 +148,9 @@ void gui()
 			atlasizer.set_padding(padding);
 			cpanel.set_pad(padding);
 
+			if (!layout.empty())
+				cpanel.enable_reload(true);
+
 			recalculate_statistics();
 			dirty = false;
 		}
@@ -207,11 +211,17 @@ void gui()
 			recalculate_statistics();
 			dirty = true;
 		}
+
+		cpanel.enable_reload(true);
 	});
 
 	cpanel.on_remove([&]()
 	{
 		const auto items = atlasizer.get_items_layout_order();
+
+		if (items.size() == 1)
+			cpanel.enable_reload(false);
+
 		for (const auto &item : items)
 		{
 			if (item->id == selection_id)
@@ -227,6 +237,26 @@ void gui()
 		}
 
 		win::bug("No atlas item with id " + std::to_string(selection_id));
+	});
+
+	cpanel.on_reload([&]()
+	{
+		for (auto item : atlasizer.get_items_layout_order())
+		{
+			const win::Targa tga(win::Stream(new win::FileReadStream(item->texturepath)));
+			if (tga.width() != item->w || tga.height() != item->h)
+			{
+				// read the associated texture from disk again
+				renderer.remove_texture(item->texture);
+				item->texture = renderer.add_texture(tga);
+				item->w = tga.width();
+				item->h = tga.height();
+
+				dirty = true;
+			}
+		}
+
+		atlasizer.check_validity();
 	});
 
 	cpanel.on_padding_up([&]()

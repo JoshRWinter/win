@@ -27,6 +27,8 @@ void ControlPanel::click(bool down)
 			fn_add();
 		else if(mouse_is_over(remove) && remove.enabled)
 			fn_remove();
+		else if(mouse_is_over(reload) && reload.enabled)
+			fn_reload();
 		else if (mouse_is_over(padding_up) && padding_up.enabled)
 			fn_padding_up();
 		else if (mouse_is_over(padding_down) && padding_down.enabled)
@@ -57,6 +59,7 @@ void ControlPanel::draw()
 	draw_button(save, text_y_offset);
 	draw_button(add, text_y_offset);
 	draw_button(remove, text_y_offset);
+	draw_button(reload, text_y_offset);
 	draw_button(padding_up, text_y_offset - 3);
 	draw_button(padding_down, text_y_offset);
 	draw_button(move_up, text_y_offset);
@@ -88,6 +91,11 @@ void ControlPanel::on_remove(const std::function<void()> &fn)
 	fn_remove = fn;
 }
 
+void ControlPanel::on_reload(const std::function<void()> &fn)
+{
+	fn_reload = fn;
+}
+
 void ControlPanel::on_padding_up(const std::function<void()> &fn)
 {
 	fn_padding_up = fn;
@@ -111,6 +119,11 @@ void ControlPanel::on_move_down(const std::function<void()> &fn)
 void ControlPanel::enable_remove(bool enable)
 {
 	remove.enabled = enable;
+}
+
+void ControlPanel::enable_reload(bool enable)
+{
+	reload.enabled = enable;
 }
 
 void ControlPanel::enable_move_up(bool enable)
@@ -144,7 +157,10 @@ void ControlPanel::reflow()
 	x += add.w + spacing;
 
 	remove = Button("Remove", x, centerline_y - (button_height / 2), button_width, button_height);
-	x += remove.w + (spacing * 2);
+	x += remove.w + spacing;
+
+	reload = Button("Reload", x, centerline_y - (button_height / 2), button_width, button_height);
+	x += reload.w + (spacing * 2);
 
 	padding = BorderBox("0", win::Color<unsigned char>(255, 255, 255, 40), x, centerline_y - (button_height / 2), button_height, button_height, 1);
 	x += padding.w + (spacing / 2);

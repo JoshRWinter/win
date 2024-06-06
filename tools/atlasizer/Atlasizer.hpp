@@ -41,9 +41,9 @@ public:
 	int get_padding() const;
 	const std::vector<AtlasizerItem*> &get_items_layout_order() const;
 	const std::vector<AtlasizerItem*> &get_items_display_order() const;
+	void check_validity();
 
 private:
-	void check_validity();
 	bool collide(const AtlasizerItem &a, const AtlasizerItem &b) const;
 	CollisionSide collision_side(const AtlasizerItem &a, const AtlasizerItem &b) const;
 
