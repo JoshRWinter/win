@@ -244,16 +244,15 @@ void gui()
 		for (auto item : atlasizer.get_items_layout_order())
 		{
 			const win::Targa tga(win::Stream(new win::FileReadStream(item->texturepath)));
-			if (tga.width() != item->w || tga.height() != item->h)
-			{
-				// read the associated texture from disk again
-				renderer.remove_texture(item->texture);
-				item->texture = renderer.add_texture(tga);
-				item->w = tga.width();
-				item->h = tga.height();
 
+			if (tga.width() != item->w || tga.height() != item->h)
 				dirty = true;
-			}
+
+			// read the associated texture from disk again
+			renderer.remove_texture(item->texture);
+			item->texture = renderer.add_texture(tga);
+			item->w = tga.width();
+			item->h = tga.height();
 		}
 
 		atlasizer.check_validity();

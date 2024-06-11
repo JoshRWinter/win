@@ -79,7 +79,7 @@ void ListPanel::draw()
 			else
 			{
 				const int text_len = renderer.text_len(item.text.c_str());
-				if (((item.x + 6) + text_xoffset) + text_len > (item.x + item.w) - 6)
+				if (((item.x + 38) + text_xoffset) + text_len > (item.x + item.w) - 6)
 					text_xoffset -= frequency_multiplier * 2;
 			}
 		}
@@ -119,16 +119,26 @@ void ListPanel::draw()
 	if (items.empty())
 		renderer.draw_text("< No items >", box.x + (box.width / 2), (box.y + box.height) - 30, true);
 
+	int index = 0;
 	for (const auto &item : items)
 	{
-		const auto color = item.id == selection_id ? (mouse_is_over(item) ? entry_color_selected : entry_color_selected) : (mouse_is_over(item) ? entry_color_highlighted : entry_color);
+		if (item.y + item.h + scroll_yoffset > base_drawbox.y && item.y + scroll_yoffset < base_drawbox.y + base_drawbox.height)
+		{
+			const auto color = item.id == selection_id ? (mouse_is_over(item) ? entry_color_selected : entry_color_selected) : (mouse_is_over(item) ? entry_color_highlighted : entry_color);
 
-		renderer.set_drawbox(base_drawbox);
-		renderer.render(color, item.x, item.y + scroll_yoffset, item.w, item.h);
+			renderer.set_drawbox(base_drawbox);
+			renderer.render(color, item.x, item.y + scroll_yoffset, item.w, item.h);
 
-		const win::Box<int> text_drawbox(item.x + 6, item.y + scroll_yoffset, item.w - 12, item.h);
-		renderer.set_drawbox(drawbox_intersection(base_drawbox, text_drawbox));
-		renderer.draw_text(item.text.c_str(), (item.x + 6) + (mouse_is_over(item) ? text_xoffset : 0), (item.y + 8) + scroll_yoffset, false);
+			char textbuf[10];
+			snprintf(textbuf, sizeof(textbuf), "%d", index);
+			renderer.draw_text(textbuf, item.x + 18, (item.y + 8) + scroll_yoffset, win::Color<unsigned char>(30, 30, 30, 255), true);
+
+			const win::Box<int> text_drawbox(item.x + 38, item.y + scroll_yoffset, item.w - 12, item.h);
+			renderer.set_drawbox(drawbox_intersection(base_drawbox, text_drawbox));
+			renderer.draw_text(item.text.c_str(), (item.x + 38) + (mouse_is_over(item) ? text_xoffset : 0), (item.y + 8) + scroll_yoffset, false);
+		}
+
+		++index;
 	}
 
 	renderer.disable_drawbox();

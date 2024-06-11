@@ -98,7 +98,7 @@ std::vector<std::filesystem::path> LinuxPlatform::split(const std::string &s, co
 
 RunCmdResult run_cmd(const std::string &cmd)
 {
-	fprintf(stderr, "\"%s\"\n", cmd.c_str());
+	//fprintf(stderr, "\"%s\"\n", cmd.c_str());
 
 	FILE *proc;
 	if ((proc = popen(cmd.c_str(), "r")) == NULL)
