@@ -60,7 +60,7 @@ struct BlockKey
 	{}
 
 	bool operator==(BlockKey rhs) const { return x == rhs.x && y == rhs.y; }
-	bool operator!=(BlockKey rhs) const { return x != rhs.x || y != rhs.y; }
+	bool operator!=(BlockKey rhs) const { return !operator==(rhs); }
 
 	std::uint16_t x;
 	std::uint16_t y;
@@ -285,12 +285,13 @@ public:
 		for (auto &block: map)
 			block.items.reserve(20);
 
+		vacuum_queue.clear();
 		vacuum_queue.reserve(map_width * map_height);
 	}
 
 	void add(const BlockMapLocation &loc, T &id)
 	{
-		insert_or_delete<true>(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id);
+		add(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id);
 	}
 
 	void move(const BlockMapLocation &old_loc, const BlockMapLocation &new_loc, T &id)
@@ -304,13 +305,13 @@ public:
 		if (old_key1 == new_key1 && old_key2 == new_key2)
 			return; // object is still in the same block. no update needed
 
-		insert_or_delete<false>(old_key1, old_key2, id);
-		insert_or_delete<true>(new_key1, new_key2, id);
+		remove(old_key1, old_key2, id);
+		add(new_key1, new_key2, id);
 	}
 
 	void remove(const BlockMapLocation &loc, T &id)
 	{
-		insert_or_delete<false>(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id);
+		remove(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id);
 	}
 
 	impl::BlockMapIterable<T> iterate(const BlockMapLocation &loc)
@@ -323,7 +324,7 @@ public:
 	}
 
 private:
-	template<bool add> void insert_or_delete(impl::BlockKey a, impl::BlockKey b, T &id)
+	void add(impl::BlockKey a, impl::BlockKey b, T &id)
 	{
 		for (auto x = a.x; x <= b.x; ++x)
 		{
@@ -331,36 +332,42 @@ private:
 			{
 				const auto idx = index(impl::BlockKey(x, y));
 
-				if constexpr (add)
-				{
 #ifndef NDEBUG
-					map.at(idx).items.push_back(&id);
+				map.at(idx).items.push_back(&id);
 #else
-					map[idx].items.push_back(&id);
+				map[idx].items.push_back(&id);
 #endif
-				}
-				else
-				{
+			}
+		}
+	}
+
+	void remove(impl::BlockKey a, impl::BlockKey b, T &id)
+	{
+		for (auto x = a.x; x <= b.x; ++x)
+		{
+			for (auto y = a.y; y <= b.y; ++y)
+			{
+				const auto idx = index(impl::BlockKey(x, y));
+
 #ifndef NDEBUG
-					auto &block = map.at(idx);
+				auto &block = map.at(idx);
 #else
-					auto &block = map[idx];
+				auto &block = map[idx];
 #endif
 
-					for (auto &item : block.items)
+				for (auto &item : block.items)
+				{
+					if (item == &id)
 					{
-						if (item == &id)
-						{
-							item = NULL;
-							if (++block.ghosts == vacuum_threshold)
-								vacuum_queue.push_back(idx);
+						item = NULL;
+						if (++block.ghosts == vacuum_threshold)
+							vacuum_queue.push_back(idx);
 
-							return;
-						}
+						return;
 					}
-
-					win::bug("Blockmap missing item");
 				}
+
+				win::bug("Blockmap missing item");
 			}
 		}
 	}
