@@ -107,7 +107,6 @@ public:
 
 	void operator++() { next(); }
 
-	//bool operator==(const BlockMapIterator<T> &rhs) const { return end == rhs.end; }//return block_index == rhs.block_index && map_index == rhs.map_index; }
 	bool operator!=(const BlockMapIterator<T> &rhs) const { return block_index != rhs.block_index || map_index != rhs.map_index; }
 
 private:
@@ -280,7 +279,10 @@ public:
 		this->map_height = std::ceil(map_top - map_bottom) / block_size;
 
 		open_iterables = 0;
-		map.clear();
+
+		for (auto &item : map)
+			item.items.clear();
+
 		map.resize(map_width * map_height);
 		for (auto &block: map)
 			block.items.reserve(20);
