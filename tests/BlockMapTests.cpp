@@ -445,12 +445,57 @@ void dedupe_tests()
 	}
 }
 
+void remove_tests()
+{
+	{
+		win::BlockMap<int> map;
+		map.reset(1, 0, 2, 0, 2);
+
+		int id = 0;
+		map.add(win::BlockMapLocation(0.5f, 0.5f, 1.0f, 1.0f), id); // straddles all 4 blocks halfway
+
+		{
+			// test the lower left block
+			const auto all_items = to_list(map, win::BlockMapLocation(0.5f, 0.5, 0.0f, 0.0f));
+			assert(all_items.size() == 1);
+		}
+
+		// remove the item
+		map.remove(win::BlockMapLocation(0.5f, 0.5f, 1.0f, 1.0f), id);
+
+		{
+			// test the lower left block
+			const auto all_items = to_list(map, win::BlockMapLocation(0.5f, 0.5, 0.0f, 0.0f));
+			assert(all_items.size() == 0);
+		}
+
+		{
+			// test the lower right block
+			const auto all_items = to_list(map, win::BlockMapLocation(1.5f, 0.5, 0.0f, 0.0f));
+			assert(all_items.size() == 0);
+		}
+
+		{
+			// test the upper left block
+			const auto all_items = to_list(map, win::BlockMapLocation(0.5f, 1.5, 0.0f, 0.0f));
+			assert(all_items.size() == 0);
+		}
+
+		{
+			// test the upper right block
+			const auto all_items = to_list(map, win::BlockMapLocation(1.5f, 1.5, 0.0f, 0.0f));
+			assert(all_items.size() == 0);
+		}
+	}
+}
+
 int main()
 {
 	basic_tests();
 	move_tests();
 	vacuum_tests();
 	dedupe_tests();
+	remove_tests();
 
 	fprintf(stderr, "all %d tests ran successfully\n", successfull);
 }

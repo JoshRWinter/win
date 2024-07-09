@@ -305,7 +305,7 @@ public:
 		const auto new_key2 = sample(new_loc.x + new_loc.w, new_loc.y + new_loc.h);
 
 		if (old_key1 == new_key1 && old_key2 == new_key2)
-			return; // object is still in the same block. no update needed
+			return; // object is still in the same location. no update needed
 
 		remove(old_key1, old_key2, id);
 		add(new_key1, new_key2, id);
@@ -357,6 +357,7 @@ private:
 				auto &block = map[idx];
 #endif
 
+				bool found = false;
 				for (auto &item : block.items)
 				{
 					if (item == &id)
@@ -365,11 +366,12 @@ private:
 						if (++block.ghosts == vacuum_threshold)
 							vacuum_queue.push_back(idx);
 
-						return;
+						found = true;
 					}
 				}
 
-				win::bug("Blockmap missing item");
+				if (!found)
+					win::bug("Blockmap missing item");
 			}
 		}
 	}
