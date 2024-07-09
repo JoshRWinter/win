@@ -40,7 +40,7 @@ static std::vector<int> to_list(win::BlockMap<int> &map, const win::BlockMapLoca
 {
 	std::vector<int> result;
 
-	for (auto item : map.iterate(loc))
+	for (auto item : map.query(loc))
 	{
 		result.push_back(item);
 	}

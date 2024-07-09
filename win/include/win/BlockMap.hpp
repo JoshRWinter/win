@@ -316,7 +316,7 @@ public:
 		remove(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id);
 	}
 
-	impl::BlockMapIterable<T> iterate(const BlockMapLocation &loc)
+	impl::BlockMapIterable<T> query(const BlockMapLocation &loc)
 	{
 
 		const auto key1 = sample(loc.x, loc.y);
