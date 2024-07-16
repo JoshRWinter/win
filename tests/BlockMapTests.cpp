@@ -489,6 +489,179 @@ void remove_tests()
 	}
 }
 
+void out_of_bounds_tests()
+{
+	// add items wayy out of bounds, and check that they are unreachable by all query operations
+	{
+		win::BlockMap<int> map;
+		map.reset(1, 0, 2, 0, 2);
+
+		int id = 0;
+		map.add(win::BlockMapLocation(-10.0f, -10.0f, 2.0f, 2.0f), id); // beyond lower left corner
+		map.add(win::BlockMapLocation(10.0f, -10.0f, 2.0f, 2.0f), id); // beyond lower right corner
+		map.add(win::BlockMapLocation(10.0f, 10.0f, 2.0f, 2.0f), id); // beyond upper right corner
+		map.add(win::BlockMapLocation(-10.0f, 10.0f, 2.0f, 2.0f), id); // beyond upper left corner
+
+		map.add(win::BlockMapLocation(-10.0f, 0.0f, 2.0f, 2.0f), id); // beyond the left edge
+		map.add(win::BlockMapLocation(10.0f, 0.0f, 2.0f, 2.0f), id); // beyond the right edge
+		map.add(win::BlockMapLocation(0.0f, 10.0f, 2.0f, 2.0f), id); // beyond the top edge
+		map.add(win::BlockMapLocation(0.0f, -10.0f, 2.0f, 2.0f), id); // beyond the bottom edge
+
+		// query the whole range
+		const auto all_items = to_list(map, win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f));
+		assert(all_items.size() == 0);
+
+		// remove some of the items, ensure no crash?
+		map.remove(win::BlockMapLocation(-10.0f, -10.0f, 2.0f, 2.0f), id);
+		map.remove(win::BlockMapLocation(10.0f, 10.0f, 2.0f, 2.0f), id);
+	}
+
+	// add a normal item, then query wayy out of bounds for it
+	{
+		win::BlockMap<int> map;
+		map.reset(1, 0, 2, 0, 2);
+
+		int id = 0;
+		map.add(win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f), id); // covers the whole map
+
+		// query beyond lower left corner
+		{
+			const auto all_items = to_list(map, win::BlockMapLocation(-10.0f, -10.0f, 2.0f, 2.0f));
+			assert(all_items.size() == 0);
+		}
+
+		// query beyond lower right corner
+		{
+			const auto all_items = to_list(map, win::BlockMapLocation(10.0f, -10.0f, 2.0f, 2.0f));
+			assert(all_items.size() == 0);
+		}
+
+		// query beyond upper right corner
+		{
+			const auto all_items = to_list(map, win::BlockMapLocation(10.0f, 10.0f, 2.0f, 2.0f));
+			assert(all_items.size() == 0);
+		}
+
+		// query beyond upper left corner
+		{
+			const auto all_items = to_list(map, win::BlockMapLocation(-10.0f, 10.0f, 2.0f, 2.0f));
+			assert(all_items.size() == 0);
+		}
+	}
+
+	// add a normal item, query partially out of bounds for it
+	{
+		win::BlockMap<int> map;
+		map.reset(1, 0, 2, 0, 2);
+
+		int id = 99;
+		map.add(win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f), id); // covers the whole map
+
+		// query overlapping lower left corner
+		{
+			const auto all_items = to_list(map, win::BlockMapLocation(-10.0f, -10.0f, 11.0f, 11.0f));
+			assert(all_items.size() == 1);
+			assert(all_items.at(0) == 99);
+		}
+
+		// query overlapping lower right corner
+		{
+			const auto all_items = to_list(map, win::BlockMapLocation(1.0f, -10.0f, 11.0f, 11.0f));
+			assert(all_items.size() == 1);
+			assert(all_items.at(0) == 99);
+		}
+
+		// query overlapping upper right corner
+		{
+			const auto all_items = to_list(map, win::BlockMapLocation(1.0f, 1.0f, 10.0f, 10.0f));
+			assert(all_items.size() == 1);
+			assert(all_items.at(0) == 99);
+		}
+
+		// query overlapping upper left corner
+		{
+			const auto all_items = to_list(map, win::BlockMapLocation(-10.0f, 1.0f, 11.0f, 11.0f));
+			assert(all_items.size() == 1);
+			assert(all_items.at(0) == 99);
+		}
+	}
+
+	// add a items that are partially out of bounds, then remove them
+	{
+		{
+			win::BlockMap<int> map;
+			map.reset(1, 0, 2, 0, 2);
+
+			int id = 99;
+			map.add(win::BlockMapLocation(-1.0f, -1.0f, 2.0f, 2.0f), id); // overlaps the lower left corner
+
+			const auto all_items = to_list(map, win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f)); // covers the whole map
+			assert(all_items.size() == 1);
+			assert(all_items.at(0) == 99);
+
+			// remove the item
+			map.remove(win::BlockMapLocation(-1.0f, -1.0f, 2.0f, 2.0f), id); // overlaps the lower left corner
+
+			const auto all_items2 = to_list(map, win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f)); // covers the whole map
+			assert(all_items2.empty());
+		}
+
+		{
+			win::BlockMap<int> map;
+			map.reset(1, 0, 2, 0, 2);
+
+			int id = 99;
+			map.add(win::BlockMapLocation(1.0f, -1.0f, 2.0f, 2.0f), id); // overlaps the lower right corner
+
+			const auto all_items = to_list(map, win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f)); // covers the whole map
+			assert(all_items.size() == 1);
+			assert(all_items.at(0) == 99);
+
+			// remove the item
+			map.remove(win::BlockMapLocation(1.0f, -1.0f, 2.0f, 2.0f), id); // overlaps the lower right corner
+
+			const auto all_items2 = to_list(map, win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f)); // covers the whole map
+			assert(all_items2.empty());
+		}
+
+		{
+			win::BlockMap<int> map;
+			map.reset(1, 0, 2, 0, 2);
+
+			int id = 99;
+			map.add(win::BlockMapLocation(1.0f, 1.0f, 2.0f, 2.0f), id); // overlaps the upper right corner
+
+			const auto all_items = to_list(map, win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f)); // covers the whole map
+			assert(all_items.size() == 1);
+			assert(all_items.at(0) == 99);
+
+			// remove the item
+			map.remove(win::BlockMapLocation(1.0f, 1.0f, 2.0f, 2.0f), id); // overlaps the upper right corner
+
+			const auto all_items2 = to_list(map, win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f)); // covers the whole map
+			assert(all_items2.empty());
+		}
+
+		{
+			win::BlockMap<int> map;
+			map.reset(1, 0, 2, 0, 2);
+
+			int id = 99;
+			map.add(win::BlockMapLocation(-1.0f, 1.0f, 2.0f, 2.0f), id); // overlaps the upper left corner
+
+			const auto all_items = to_list(map, win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f)); // covers the whole map
+			assert(all_items.size() == 1);
+			assert(all_items.at(0) == 99);
+
+			// remove the item
+			map.remove(win::BlockMapLocation(-1.0f, 1.0f, 2.0f, 2.0f), id); // overlaps the upper left corner
+
+			const auto all_items2 = to_list(map, win::BlockMapLocation(0.0f, 0.0f, 2.0f, 2.0f)); // covers the whole map
+			assert(all_items2.empty());
+		}
+	}
+}
+
 int main()
 {
 	basic_tests();
@@ -496,6 +669,7 @@ int main()
 	vacuum_tests();
 	dedupe_tests();
 	remove_tests();
+	out_of_bounds_tests();
 
 	fprintf(stderr, "all %d tests ran successfully\n", successfull);
 }

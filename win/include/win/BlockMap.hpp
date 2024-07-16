@@ -56,14 +56,14 @@ private:
 
 struct BlockKey
 {
-	BlockKey(std::uint16_t x, std::uint16_t y) : x(x), y(y)
+	BlockKey(std::int16_t x, std::int16_t y) : x(x), y(y)
 	{}
 
 	bool operator==(BlockKey rhs) const { return x == rhs.x && y == rhs.y; }
 	bool operator!=(BlockKey rhs) const { return !operator==(rhs); }
 
-	std::uint16_t x;
-	std::uint16_t y;
+	std::int16_t x;
+	std::int16_t y;
 };
 
 template<typename T> class BlockMapIterable;
@@ -74,89 +74,78 @@ template<typename T> class BlockMapIterator
 	friend class BlockMapIterable<T>;
 
 public:
-	BlockMapIterator(const BlockMap<T> &map, BlockKey key1, BlockKey key2, std::unordered_set<T*> *deduper, bool end = false)
-		: x(key1.x)
-		, y(key1.y)
-		, key1(key1)
+	BlockMapIterator(const BlockMap<T> &map, BlockKey key1, BlockKey key2, BlockKey starting_key, std::unordered_set<const T*> *deduper)
+		: key1(key1)
 		, key2(key2)
+		, current_key(starting_key)
 		, map(map)
 		, deduper(deduper)
 	{
-		if (end)
-		{
-			map_index = map.index(key2);
-			block_index = map.map[map_index].items.size();
-		}
-		else
-		{
-			map_index = map.index(key1);
-			block_index = -1;
+		this->map_index = map.index(starting_key);
+		this->block_index = 0;
 
-			next();
-		}
+		seek_to_next_valid();
 	}
 
-	T &operator*()
+	T &operator*() { return *dereference(); }
+	bool operator!=(const BlockMapIterator<T> &rhs) const { return map_index != rhs.map_index || block_index != rhs.block_index; }
+
+	void operator++()
 	{
-#ifndef NDEBUG
-		return *map.map.at(map_index).items.at(block_index);
-#else
-		return *map.map[map_index].items[block_index];
-#endif
+		++block_index;
+		seek_to_next_valid();
 	}
-
-	void operator++() { next(); }
-
-	bool operator!=(const BlockMapIterator<T> &rhs) const { return block_index != rhs.block_index || map_index != rhs.map_index; }
 
 private:
-	void next()
+	void seek_to_next_valid()
 	{
-		bool map_exhausted = is_map_exhausted();
-		bool block_exhausted;
+		if (is_exhausted())
+			return;
 
-		do
+		while (block_index >= block_item_count())
+		{
+			++current_key.x;
+
+			if (current_key.x > key2.x)
+			{
+				current_key.x = key1.x;
+				++current_key.y;
+
+				map_index = map.index(current_key);
+				block_index = 0;
+
+				if (is_exhausted())
+					return;
+			}
+			else
+			{
+				map_index = map.index(current_key);
+				block_index = 0;
+			}
+		}
+
+		if (is_ghost() || is_dupe())
 		{
 			++block_index;
-			block_exhausted = is_block_exhausted();
+			seek_to_next_valid(); // go go gadget tail call recursion?
+		}
+	}
 
-			while (block_exhausted && !map_exhausted)
-			{
-				block_index = 0;
-				++x;
-				if (x > key2.x)
-				{
-					x = key1.x;
-					++y;
-				}
-
-				map_index = map.index(BlockKey(x, y));
-
-				map_exhausted = is_map_exhausted();
-				block_exhausted = is_block_exhausted();
-			}
-
-		} while (!block_exhausted && (is_ghost() || is_dupe()));
+	bool is_exhausted() const
+	{
+		return current_key.y > key2.y; // this iterator has completely exhausted its items
 	}
 
 	bool is_ghost() const
 	{
-#ifndef NDEBUG
-		return map.map.at(map_index).items.at(block_index) == NULL;
-#else
-		return map.map[map_index].items[block_index] == NULL;
-#endif
+		return dereference() == NULL;
 	}
 
 	bool is_dupe() const
 	{
 		if (deduper != NULL)
 		{
-#ifndef NDEBUG
-			T *value = map.map.at(map_index).items.at(block_index);
-#else
-			T *value = map.map[map_index].items[block_index];
-#endif
+			const auto *value = dereference();
 
 			if (deduper->count(value) == 1)
 			{
@@ -172,23 +161,39 @@ private:
 			return false;
 	}
 
-	bool is_block_exhausted() const
+	int block_item_count() const
 	{
 #ifndef NDEBUG
-		return block_index == map.map.at(map_index).items.size();
+		return map.map.at(map_index).items.size();
 #else
-		return block_index == map.map[map_index].items.size();
+		return map.map[map_index].items.size();
 #endif
 	}
 
-	bool is_map_exhausted() const { return x == key2.x && y == key2.y; }
+	T *dereference()
+	{
+#ifndef NDEBUG
+		return map.map.at(map_index).items.at(block_index);
+#else
+		return map.map[map_index].items[block_index];
+#endif
+	}
+
+	const T *dereference() const
+	{
+#ifndef NDEBUG
+		return map.map.at(map_index).items.at(block_index);
+#else
+		return map.map[map_index].items[block_index];
+#endif
+	}
 
 	int block_index;
 	int map_index;
-	int x, y;
 	const BlockKey key1, key2;
+	BlockKey current_key;
 	const BlockMap<T> &map;
-	std::unordered_set<T*> *deduper;
+	std::unordered_set<const T*> *deduper;
 };
 
 template<typename T> class BlockMapIterable
@@ -199,8 +204,10 @@ public:
 	BlockMapIterable(BlockMap<T> &map, BlockKey key1, BlockKey key2)
 		: key1(key1)
 		, key2(key2)
+		, corrected_key1(std::max(key1.x, (short)0), std::max(key1.y, (short)0))
+		, corrected_key2(std::min(key2.x, (short)(map.map_width - 1)), std::min(key2.y, (short)(map.map_height - 1)))
 		, map(map)
-		, deduper(key1 != key2 ? &map.pool.acquire() : NULL)
+		, deduper(corrected_key1 != corrected_key2 ? &map.pool.acquire() : NULL)
 	{
 		++map.open_iterables;
 	}
@@ -217,12 +224,25 @@ public:
 		}
 	}
 
-	BlockMapIterator<T> begin() const { return BlockMapIterator<T>(map, key1, key2, deduper); }
-	BlockMapIterator<T> end() const { return BlockMapIterator<T>(map, key1, key2, NULL, true); }
+	BlockMapIterator<T> begin() const
+	{
+		if (key1.x >= map.map_width || key1.y >= map.map_height || key2.x < 0 || key2.y < 0)
+			return end(); // the sample location that spawned this iterable does not overlap the map at all
+		else
+		{
+			return BlockMapIterator<T>(map, corrected_key1, corrected_key2, corrected_key1, deduper);
+		}
+	}
+
+	BlockMapIterator<T> end() const
+	{
+		BlockKey one_past_the_end(corrected_key1.x, corrected_key2.y + 1);
+		return BlockMapIterator<T>(map, corrected_key1, corrected_key2, one_past_the_end, NULL);
+	}
 
 private:
-	const BlockKey key1, key2;
-	std::unordered_set<T*> *const deduper;
+	const BlockKey key1, key2, corrected_key1, corrected_key2;
+	std::unordered_set<const T*> *const deduper;
 	BlockMap<T> &map;
 };
 
@@ -278,6 +298,12 @@ public:
 		this->map_width = std::ceil(map_right - map_left) / block_size;
 		this->map_height = std::ceil(map_top - map_bottom) / block_size;
 
+		if (this->map_width < 1 || this->map_height < 1)
+			win::bug("BlockMap: to small");
+
+		if (this->map_width > std::numeric_limits<std::int16_t>::max() || this->map_height > std::numeric_limits<std::int16_t>::max())
+			win::bug("BlockMap: exceeds integer limits.");
+
 		open_iterables = 0;
 
 		for (auto &item : map)
@@ -328,9 +354,9 @@ public:
 private:
 	void add(impl::BlockKey a, impl::BlockKey b, T &id)
 	{
-		for (auto x = a.x; x <= b.x; ++x)
+		for (auto x = std::max(a.x, (short)0); x <= std::min(b.x, (short)(map_width - 1)); ++x)
 		{
-			for (auto y = a.y; y <= b.y; ++y)
+			for (auto y = std::max(a.y, (short)0); y <= std::min(b.y, (short)(map_height - 1)); ++y)
 			{
 				const auto idx = index(impl::BlockKey(x, y));
 
@@ -345,9 +371,9 @@ private:
 
 	void remove(impl::BlockKey a, impl::BlockKey b, T &id)
 	{
-		for (auto x = a.x; x <= b.x; ++x)
+		for (auto x = std::max(a.x, (short)0); x <= std::min(b.x, (short)(map_width - 1)); ++x)
 		{
-			for (auto y = a.y; y <= b.y; ++y)
+			for (auto y = std::max(a.y, (short)0); y <= std::min(b.y, (short)(map_height - 1)); ++y)
 			{
 				const auto idx = index(impl::BlockKey(x, y));
 
@@ -396,15 +422,8 @@ private:
 
 	impl::BlockKey sample(float x, float y) const
 	{
-#ifndef NDEBUG
-		if (x < map_left || x > map_right)
-			win::bug("BlockMap: x out of bounds (x=" + std::to_string(x) + ", map_left=" + std::to_string(map_left) + ", map_right=" + std::to_string(map_right) + ")");
-		if (y < map_bottom || y > map_top)
-			win::bug("BlockMap: y out of bounds (y=" + std::to_string(y) + ", map_bottom=" + std::to_string(map_bottom) + ", map_top=" + std::to_string(map_top) + ")");
-#endif
-
-		const std::uint16_t blockx = std::floor((x - map_left) / block_size);
-		const std::uint16_t blocky = std::floor((y - map_bottom) / block_size);
+		const std::int16_t blockx = std::floor((x - map_left) / block_size);
+		const std::int16_t blocky = std::floor((y - map_bottom) / block_size);
 
 		return impl::BlockKey(blockx, blocky);
 	}
@@ -417,7 +436,7 @@ private:
 	float block_size, map_left, map_right, map_bottom, map_top;
 	int map_width, map_height;
 	std::vector<impl::Block<T>> map;
-	impl::BlockMapDeduperPool<std::unordered_set<T*>, 4> pool;
+	impl::BlockMapDeduperPool<std::unordered_set<const T*>, 4> pool;
 	int open_iterables;
 	std::vector<int> vacuum_queue;
 };
