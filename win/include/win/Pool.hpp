@@ -85,11 +85,13 @@ public:
 
 	Pool()
 		: count(0)
-		, partition_head(new impl::PoolPartition<T, initial_capacity>())
 		, head(NULL)
 		, tail(NULL)
 	{
 		static_assert(initial_capacity > 0, "Capacity must be greater than zero.");
+
+		if constexpr (use_heap_storage())
+			first_partition_heap_ptr[0].reset(new impl::PoolPartition<T, initial_capacity>);
 	}
 
 	~Pool()
@@ -187,7 +189,7 @@ private:
 		const int partition_outer_offset = count / initial_capacity;
 		int partition_inner_offset = count % initial_capacity;
 
-		impl::PoolPartition<T, initial_capacity> *partition = partition_head.get();
+		impl::PoolPartition<T, initial_capacity> *partition = get_first_partition();
 		for (int i = 0; i < partition_outer_offset; ++i)
 		{
 			if (!partition->next)
@@ -199,9 +201,21 @@ private:
 		return partition->storage + partition_inner_offset;
 	}
 
+	// use heap storage for first head) partition?
+	static constexpr bool use_heap_storage()
+	{
+		return sizeof(T) * initial_capacity > 500;
+	}
+
+	constexpr impl::PoolPartition<T, initial_capacity> *get_first_partition()
+	{
+		return use_heap_storage() ? first_partition_heap_ptr[0].get() : first_partition_storage;
+	}
+
 	int count;
 	std::vector<std::aligned_storage_t<sizeof(impl::PoolNode<T>), alignof(impl::PoolNode<T>)>*> freelist;
-	std::unique_ptr<impl::PoolPartition<T, initial_capacity>> partition_head;
+	std::unique_ptr<impl::PoolPartition<T, initial_capacity>> first_partition_heap_ptr[use_heap_storage() ? 1 : 0]; // empty arrays take up no space in the class layout
+	impl::PoolPartition<T, initial_capacity> first_partition_storage[use_heap_storage() ? 0 : 1]; // empty arrays take up no space in the class layout
 	impl::PoolNode<T> *head;
 	impl::PoolNode<T> *tail;
 };
