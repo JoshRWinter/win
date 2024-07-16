@@ -289,6 +289,9 @@ public:
 
 	void reset(float block_size, float map_left, float map_right, float map_bottom, float map_top)
 	{
+		if (open_iterables > 0)
+			win::bug("SpatialIndex: Can't reset while iterating!");
+
 		this->block_size = block_size;
 		this->map_left = map_left;
 		this->map_right = map_right;
