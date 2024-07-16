@@ -70,7 +70,8 @@ template<typename T> class BlockMapIterable;
 
 template<typename T> class BlockMapIterator
 {
-	WIN_NO_COPY_MOVE(BlockMapIterator);
+	WIN_NO_COPY(BlockMapIterator);
+
 	friend class BlockMapIterable<T>;
 
 public:
@@ -83,9 +84,9 @@ public:
 	{
 		this->map_index = map.index(starting_key);
 		this->block_index = 0;
-
-		seek_to_next_valid();
 	}
+
+	BlockMapIterator(BlockMapIterator<T> &&rhs) = default;
 
 	T &operator*() { return *dereference(); }
 	bool operator!=(const BlockMapIterator<T> &rhs) const { return map_index != rhs.map_index || block_index != rhs.block_index; }
@@ -99,9 +100,6 @@ public:
 private:
 	void seek_to_next_valid()
 	{
-		if (is_exhausted())
-			return;
-
 		while (block_index >= block_item_count())
 		{
 			++current_key.x;
@@ -230,7 +228,9 @@ public:
 			return end(); // the sample location that spawned this iterable does not overlap the map at all
 		else
 		{
-			return BlockMapIterator<T>(map, corrected_key1, corrected_key2, corrected_key1, deduper);
+			BlockMapIterator<T> it(map, corrected_key1, corrected_key2, corrected_key1, deduper);
+			it.seek_to_next_valid();
+			return std::move(it);
 		}
 	}
 
