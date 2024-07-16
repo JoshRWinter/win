@@ -10,17 +10,15 @@
 namespace win
 {
 
-template<typename T> class BlockMap;
-
 namespace impl
 {
 
-template<typename T, int size> class BlockMapDeduperPool
+template<typename T, int size> class SimplePool
 {
-	WIN_NO_COPY_MOVE(BlockMapDeduperPool);
+	WIN_NO_COPY_MOVE(SimplePool);
 
 public:
-	BlockMapDeduperPool() = default;
+	SimplePool() = default;
 
 	T &acquire()
 	{
@@ -33,7 +31,7 @@ public:
 			}
 		}
 
-		win::bug("BlockMapDeduperPool: no items. max collision check depth reached.");
+		win::bug("SimplePool: no items. max collision check depth reached.");
 	}
 
 	void release(T &item)
@@ -47,7 +45,7 @@ public:
 			}
 		}
 
-		win::bug("BlockMapDeduperPool: invalid release");
+		win::bug("SimplePool: invalid release");
 	}
 
 private:
@@ -66,16 +64,29 @@ struct BlockKey
 	std::int16_t y;
 };
 
-template<typename T> class BlockMapIterable;
-
-template<typename T> class BlockMapIterator
+template<typename T> struct Block
 {
-	WIN_NO_COPY(BlockMapIterator);
+	WIN_NO_COPY(Block);
+	Block(Block&&) = default;
+	Block &operator=(Block&&) = default;
+	Block() = default;
+	std::vector<T*> items;
+	int ghosts = 0;
+};
 
-	friend class BlockMapIterable<T>;
+}
+
+template<typename T> class SpatialIndex;
+template<typename T> class SpatialIndexIterable;
+
+template<typename T> class SpatialIndexIterator
+{
+	WIN_NO_COPY(SpatialIndexIterator);
+
+	friend class SpatialIndexIterable<T>;
 
 public:
-	BlockMapIterator(const BlockMap<T> &map, BlockKey key1, BlockKey key2, BlockKey starting_key, std::unordered_set<const T*> *deduper)
+	SpatialIndexIterator(const SpatialIndex<T> &map, impl::BlockKey key1, impl::BlockKey key2, impl::BlockKey starting_key, std::unordered_set<const T*> *deduper)
 		: key1(key1)
 		, key2(key2)
 		, current_key(starting_key)
@@ -86,10 +97,10 @@ public:
 		this->block_index = 0;
 	}
 
-	BlockMapIterator(BlockMapIterator<T> &&rhs) = default;
+	SpatialIndexIterator(SpatialIndexIterator<T> &&rhs) = default;
 
 	T &operator*() { return *dereference(); }
-	bool operator!=(const BlockMapIterator<T> &rhs) const { return map_index != rhs.map_index || block_index != rhs.block_index; }
+	bool operator!=(const SpatialIndexIterator<T> &rhs) const { return map_index != rhs.map_index || block_index != rhs.block_index; }
 
 	void operator++()
 	{
@@ -188,18 +199,18 @@ private:
 
 	int block_index;
 	int map_index;
-	const BlockKey key1, key2;
-	BlockKey current_key;
-	const BlockMap<T> &map;
+	const impl::BlockKey key1, key2;
+	impl::BlockKey current_key;
+	const SpatialIndex<T> &map;
 	std::unordered_set<const T*> *deduper;
 };
 
-template<typename T> class BlockMapIterable
+template<typename T> class SpatialIndexIterable
 {
-	WIN_NO_COPY_MOVE(BlockMapIterable);
+	WIN_NO_COPY_MOVE(SpatialIndexIterable);
 
 public:
-	BlockMapIterable(BlockMap<T> &map, BlockKey key1, BlockKey key2)
+	SpatialIndexIterable(SpatialIndex<T> &map, impl::BlockKey key1, impl::BlockKey key2)
 		: key1(key1)
 		, key2(key2)
 		, corrected_key1(std::max(key1.x, (short)0), std::max(key1.y, (short)0))
@@ -210,7 +221,7 @@ public:
 		++map.open_iterables;
 	}
 
-	~BlockMapIterable()
+	~SpatialIndexIterable()
 	{
 		if (--map.open_iterables == 0)
 			map.vacuum();
@@ -222,62 +233,50 @@ public:
 		}
 	}
 
-	BlockMapIterator<T> begin() const
+	SpatialIndexIterator<T> begin() const
 	{
 		if (key1.x >= map.map_width || key1.y >= map.map_height || key2.x < 0 || key2.y < 0)
 			return end(); // the sample location that spawned this iterable does not overlap the map at all
 		else
 		{
-			BlockMapIterator<T> it(map, corrected_key1, corrected_key2, corrected_key1, deduper);
+			SpatialIndexIterator<T> it(map, corrected_key1, corrected_key2, corrected_key1, deduper);
 			it.seek_to_next_valid();
 			return std::move(it);
 		}
 	}
 
-	BlockMapIterator<T> end() const
+	SpatialIndexIterator<T> end() const
 	{
-		BlockKey one_past_the_end(corrected_key1.x, corrected_key2.y + 1);
-		return BlockMapIterator<T>(map, corrected_key1, corrected_key2, one_past_the_end, NULL);
+		impl::BlockKey one_past_the_end(corrected_key1.x, corrected_key2.y + 1);
+		return SpatialIndexIterator<T>(map, corrected_key1, corrected_key2, one_past_the_end, NULL);
 	}
 
 private:
-	const BlockKey key1, key2, corrected_key1, corrected_key2;
+	const impl::BlockKey key1, key2, corrected_key1, corrected_key2;
 	std::unordered_set<const T*> *const deduper;
-	BlockMap<T> &map;
+	SpatialIndex<T> &map;
 };
 
-template<typename T> struct Block
+struct SpatialIndexLocation
 {
-	WIN_NO_COPY(Block);
-	Block(Block&&) = default;
-	Block &operator=(Block&&) = default;
-	Block() = default;
-	std::vector<T*> items;
-	int ghosts = 0;
-};
-
-}
-
-struct BlockMapLocation
-{
-	explicit BlockMapLocation(float x, float y, float w, float h)
+	explicit SpatialIndexLocation(float x, float y, float w, float h)
 		: x(x), y(y), w(w), h(h)
 	{}
 
 	const float x, y, w, h;
 };
 
-template<typename T> class BlockMap
+template<typename T> class SpatialIndex
 {
-	WIN_NO_COPY_MOVE(BlockMap);
+	WIN_NO_COPY_MOVE(SpatialIndex);
 
-	friend class impl::BlockMapIterator<T>;
-	friend class impl::BlockMapIterable<T>;
+	friend class SpatialIndexIterator<T>;
+	friend class SpatialIndexIterable<T>;
 
 	static constexpr int vacuum_threshold = 10;
 
 public:
-	BlockMap()
+	SpatialIndex()
 		: block_size(0.0f)
 		, map_left(0.0f)
 		, map_right(0.0f)
@@ -299,10 +298,10 @@ public:
 		this->map_height = std::ceil(map_top - map_bottom) / block_size;
 
 		if (this->map_width < 1 || this->map_height < 1)
-			win::bug("BlockMap: to small");
+			win::bug("SpatialIndex: to small");
 
 		if (this->map_width > std::numeric_limits<std::int16_t>::max() || this->map_height > std::numeric_limits<std::int16_t>::max())
-			win::bug("BlockMap: exceeds integer limits.");
+			win::bug("SpatialIndex: exceeds integer limits.");
 
 		open_iterables = 0;
 
@@ -317,12 +316,12 @@ public:
 		vacuum_queue.reserve(map_width * map_height);
 	}
 
-	void add(const BlockMapLocation &loc, T &id)
+	void add(const SpatialIndexLocation &loc, T &id)
 	{
 		add(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id);
 	}
 
-	void move(const BlockMapLocation &old_loc, const BlockMapLocation &new_loc, T &id)
+	void move(const SpatialIndexLocation &old_loc, const SpatialIndexLocation &new_loc, T &id)
 	{
 		const auto old_key1 = sample(old_loc.x, old_loc.y);
 		const auto old_key2 = sample(old_loc.x + old_loc.w, old_loc.y + old_loc.h);
@@ -337,18 +336,18 @@ public:
 		add(new_key1, new_key2, id);
 	}
 
-	void remove(const BlockMapLocation &loc, T &id)
+	void remove(const SpatialIndexLocation &loc, T &id)
 	{
 		remove(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id);
 	}
 
-	impl::BlockMapIterable<T> query(const BlockMapLocation &loc)
+	SpatialIndexIterable<T> query(const SpatialIndexLocation &loc)
 	{
 
 		const auto key1 = sample(loc.x, loc.y);
 		const auto key2 = sample(loc.x + loc.w, loc.y + loc.h);
 
-		return impl::BlockMapIterable<T>(*this, key1, key2);
+		return SpatialIndexIterable<T>(*this, key1, key2);
 	}
 
 private:
@@ -436,7 +435,7 @@ private:
 	float block_size, map_left, map_right, map_bottom, map_top;
 	int map_width, map_height;
 	std::vector<impl::Block<T>> map;
-	impl::BlockMapDeduperPool<std::unordered_set<const T*>, 4> pool;
+	impl::SimplePool<std::unordered_set<const T*>, 4> pool;
 	int open_iterables;
 	std::vector<int> vacuum_queue;
 };

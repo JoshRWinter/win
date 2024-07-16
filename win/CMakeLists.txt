@@ -24,7 +24,7 @@ add_library(win STATIC
 
 	include/win/MappedRingBuffer.hpp
 
-	include/win/BlockMap.hpp
+	include/win/SpatialIndex.hpp
 
 	include/win/Atlas.hpp
 	src/Atlas.cpp
