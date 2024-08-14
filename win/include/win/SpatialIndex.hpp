@@ -297,8 +297,8 @@ public:
 		this->map_right = map_right;
 		this->map_bottom = map_bottom;
 		this->map_top = map_top;
-		this->map_width = std::ceil(map_right - map_left) / block_size;
-		this->map_height = std::ceil(map_top - map_bottom) / block_size;
+		this->map_width = std::ceil((map_right - map_left) / block_size);
+		this->map_height = std::ceil((map_top - map_bottom) / block_size);
 
 		if (this->map_width < 1 || this->map_height < 1)
 			win::bug("SpatialIndex: to small");
