@@ -47,6 +47,11 @@ WIN_STORAGE PFNGLCREATEPROGRAMPROC glCreateProgram;
 WIN_STORAGE PFNGLUSEPROGRAMPROC glUseProgram;
 WIN_STORAGE PFNGLDELETEPROGRAMPROC glDeleteProgram;
 
+WIN_STORAGE PFNGLGENFRAMEBUFFERSPROC glGenFramebuffers;
+WIN_STORAGE PFNGLBINDFRAMEBUFFERPROC glBindFramebuffer;
+WIN_STORAGE PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D;
+WIN_STORAGE PFNGLDELETEFRAMEBUFFERSPROC glDeleteFramebuffers;
+
 WIN_STORAGE PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
 WIN_STORAGE PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
 WIN_STORAGE PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
@@ -66,6 +71,8 @@ WIN_STORAGE PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
 WIN_STORAGE PFNGLVERTEXATTRIBIPOINTERPROC glVertexAttribIPointer;
 WIN_STORAGE PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
 
+WIN_STORAGE PFNGLSHADERSTORAGEBLOCKBINDINGPROC glShaderStorageBlockBinding;
+WIN_STORAGE PFNGLGETPROGRAMRESOURCEINDEXPROC glGetProgramResourceIndex;
 WIN_STORAGE PFNGLGETUNIFORMBLOCKINDEXPROC glGetUniformBlockIndex;
 WIN_STORAGE PFNGLUNIFORMBLOCKBINDINGPROC glUniformBlockBinding;
 WIN_STORAGE PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
@@ -259,6 +266,48 @@ public:
 
 private:
 	GLuint program;
+};
+
+class GLFramebuffer
+{
+	WIN_NO_COPY(GLFramebuffer);
+
+public:
+	GLFramebuffer()
+	{
+		gl::glGenFramebuffers(1, &fbo);
+	}
+
+	GLFramebuffer(GLFramebuffer &&rhs)
+	{
+		fbo = rhs.fbo;
+		rhs.fbo = -1;
+	}
+
+	~GLFramebuffer()
+	{
+		if (fbo != -1)
+			gl::glDeleteFramebuffers(1, &fbo);
+	}
+
+	GLFramebuffer &operator=(GLFramebuffer &&rhs)
+	{
+		if (this == &rhs)
+			return *this;
+
+		if (fbo != -1)
+			gl::glDeleteFramebuffers(1, &fbo);
+
+		fbo = rhs.fbo;
+		rhs.fbo = -1;
+
+		return *this;
+	}
+
+	GLuint get() const { return fbo; }
+
+private:
+	GLuint fbo;
 };
 
 void gl_check_error();
