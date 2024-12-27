@@ -3,7 +3,6 @@
 #include <type_traits>
 
 #include <win/Event.hpp>
-#include <win/Stream.hpp>
 
 namespace win
 {
@@ -71,7 +70,7 @@ template <typename T> struct Dimensions
 template <typename Ta, typename Tb = Ta> struct Pair
 {
 	Pair() : x(0), y(0) {}
-	Pair(Ta x, const Tb y) : x(x), y(y) {}
+	Pair(Ta x, Tb y) : x(x), y(y) {}
 
 	Ta x;
 	Tb y;
