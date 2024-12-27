@@ -15,7 +15,7 @@ GLAtlas::GLAtlas(Stream stream, Mode mode)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, canvas_width, canvas_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, imgdata.get());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, canvas_width, canvas_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, imgdata.get());
 
 	// kill off the bitmap data cause we don't need it any more
 	imgdata.reset(NULL);
