@@ -20,26 +20,7 @@ static constexpr const char *const helptext =
 "       roll --help\n"
 ;
 
-std::vector<const char*> compressible_file_exts =
-{
-	".frag",
-	".vert",
-	".glsl",
-	".tga",
-	".txt",
-	".atlas"
-};
-
 const char *magic = "ASSETROLL";
-
-static bool compress_file_ext(const std::string &ext)
-{
-	for (const char *const e : compressible_file_exts)
-		if (ext == e)
-			return true;
-
-	return false;
-}
 
 static std::string format(size_t size)
 {
