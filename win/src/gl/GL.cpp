@@ -123,6 +123,7 @@ void load_gl_functions()
 	glUniformMatrix4fv = (decltype(glUniformMatrix4fv)) get_proc("glUniformMatrix4fv");
 	glUniform1f = (decltype(glUniform1f)) get_proc("glUniform1f");
 	glUniform2f = (decltype(glUniform2f)) get_proc("glUniform2f");
+	glUniform3f = (decltype(glUniform3f)) get_proc("glUniform3f");
 	glUniform4f = (decltype(glUniform4f)) get_proc("glUniform4f");
 	glUniform1i = (decltype(glUniform1i)) get_proc("glUniform1i");
 	glUniform2i = (decltype(glUniform2i)) get_proc("glUniform2i");
