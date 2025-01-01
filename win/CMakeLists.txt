@@ -34,6 +34,15 @@ add_library(win STATIC
 
 	include/win/Math.hpp
 
+	include/win/UdpServer.hpp
+	src/UdpServer.cpp
+
+	include/win/UdpClient.hpp
+	src/UdpClient.cpp
+
+	include/win/WsaSingleton.hpp
+	src/WsaSingleton.cpp
+
 	#
 	# gl utility
 	#
@@ -155,6 +164,7 @@ if(WIN32)
 		${CMAKE_CURRENT_LIST_DIR}/lib/freetype.lib
 		${CMAKE_CURRENT_LIST_DIR}/lib/ogg.lib
 		${CMAKE_CURRENT_LIST_DIR}/lib/vorbis.lib
+		ws2_32
 		)
 
 	if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
