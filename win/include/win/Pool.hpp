@@ -77,6 +77,8 @@ private:
 
 template <typename T, int initial_capacity = 100> class Pool
 {
+	struct Empty {};
+
 	WIN_NO_COPY_MOVE(Pool);
 
 public:
@@ -91,7 +93,7 @@ public:
 		static_assert(initial_capacity > 0, "Capacity must be greater than zero.");
 
 		if constexpr (use_heap_storage())
-			first_partition_heap_ptr[0].reset(new impl::PoolPartition<T, initial_capacity>);
+			first_partition_heap_ptr.reset(new impl::PoolPartition<T, initial_capacity>);
 	}
 
 	~Pool()
@@ -209,13 +211,16 @@ private:
 
 	constexpr impl::PoolPartition<T, initial_capacity> *get_first_partition()
 	{
-		return use_heap_storage() ? first_partition_heap_ptr[0].get() : first_partition_storage;
+		if constexpr (use_heap_storage())
+			return first_partition_heap_ptr.get();
+		else
+			return &first_partition_storage;
 	}
 
 	int count;
 	std::vector<std::aligned_storage_t<sizeof(impl::PoolNode<T>), alignof(impl::PoolNode<T>)>*> freelist;
-	std::unique_ptr<impl::PoolPartition<T, initial_capacity>> first_partition_heap_ptr[use_heap_storage() ? 1 : 0]; // empty arrays take up no space in the class layout
-	impl::PoolPartition<T, initial_capacity> first_partition_storage[use_heap_storage() ? 0 : 1]; // empty arrays take up no space in the class layout
+	[[no_unique_address]] std::conditional_t<use_heap_storage(), std::unique_ptr<impl::PoolPartition<T, initial_capacity>>, Empty> first_partition_heap_ptr;
+	[[no_unique_address]] std::conditional_t<!use_heap_storage(), impl::PoolPartition<T, initial_capacity>, Empty> first_partition_storage;
 	impl::PoolNode<T> *head;
 	impl::PoolNode<T> *tail;
 };
