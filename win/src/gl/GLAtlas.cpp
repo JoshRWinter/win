@@ -5,9 +5,10 @@
 namespace win
 {
 
-GLAtlas::GLAtlas(Stream stream, Mode mode)
+GLAtlas::GLAtlas(Stream stream, Mode mode, GLenum texture_unit)
 	: Atlas(std::move(stream))
 {
+	glActiveTexture(texture_unit);
 	glBindTexture(GL_TEXTURE_2D, gltex.get());
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mode == Mode::linear ? GL_LINEAR : GL_NEAREST);

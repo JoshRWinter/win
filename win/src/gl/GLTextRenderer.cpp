@@ -56,10 +56,12 @@ static const char *vertexshader =
 namespace win
 {
 
-GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned)
+GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint uniform_block_binding, bool uniform_block_binding_owned)
 	: TextRenderer(screen_pixel_dimensions, screen_area)
 	, texture_unit(texture_unit)
 	, texture_unit_owned(texture_unit_owned)
+	, uniform_block_binding(uniform_block_binding)
+	, uniform_block_binding_owned(uniform_block_binding_owned)
 	, current_font(NULL)
 	, current_color(0.0f, 0.0f, 0.0f, 1.0f)
 {
@@ -140,8 +142,8 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 	glBindBuffer(GL_UNIFORM_BUFFER, uniform_object_data.get());
 	const auto object_data_block_index = glGetUniformBlockIndex(program.get(), "object_data");
 	if (object_data_block_index == GL_INVALID_INDEX) win::bug("No object data uniform block index");
-	glUniformBlockBinding(program.get(), object_data_block_index, 0);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uniform_object_data.get());
+	glUniformBlockBinding(program.get(), object_data_block_index, uniform_block_binding);
+	glBindBufferBase(GL_UNIFORM_BUFFER, uniform_block_binding, uniform_object_data.get());
 	glBufferStorage(GL_UNIFORM_BUFFER, sizeof(ObjectBytes) * object_data_length * object_data_multiplier, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 	void *instances_mem = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(ObjectBytes) * object_data_length * object_data_multiplier, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 	object_data = std::move(GLMappedRingBuffer<ObjectBytes>(instances_mem, object_data_length * object_data_multiplier));
@@ -166,6 +168,9 @@ void GLTextRenderer::flush()
 {
 	glUseProgram(program.get());
 	glBindVertexArray(vao.get());
+
+	if (!uniform_block_binding_owned)
+		glBindBufferBase(GL_UNIFORM_BUFFER, uniform_block_binding, uniform_object_data.get());
 
 	for (const auto &str : string_queue)
 	{

@@ -22,10 +22,15 @@ struct UdpId
 	WIN_NO_COPY_MOVE(UdpId);
 
 	UdpId()
-		: initialized(false)
-		, len(sizeof(sockaddr_storage))
+		: len(sizeof(sockaddr_storage))
+	{
+		reset();
+	}
+
+	void reset()
 	{
 		memset(&storage, 0, sizeof(storage));
+		initialized = false;
 	}
 
 	bool initialized;

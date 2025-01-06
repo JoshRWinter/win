@@ -24,7 +24,7 @@ class GLTextRenderer : public TextRenderer
 	constexpr static int uniform_object_data_length = object_data_length * object_data_multiplier;
 
 public:
-	GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned);
+	GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint uniform_block_binding, bool uniform_block_binding_owned);
 
 	GLFont create_font(float size, Stream data);
 
@@ -38,6 +38,9 @@ private:
 
 	GLenum texture_unit;
 	bool texture_unit_owned;
+	GLuint uniform_block_binding;
+	bool uniform_block_binding_owned;
+
 	const GLFont *current_font;
 	win::Color<float> current_color;
 

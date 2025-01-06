@@ -31,7 +31,7 @@ class UdpClient
 
 public:
 	UdpClient();
-	UdpClient(const std::string &address, unsigned short port);
+	UdpClient(const char *address, unsigned short port);
 	UdpClient(UdpClient &&rhs) noexcept;
 	~UdpClient();
 

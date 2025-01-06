@@ -20,7 +20,7 @@ class GLAtlas : public Atlas
 public:
 	enum class Mode { linear, nearest };
 
-	GLAtlas(Stream, Mode);
+	GLAtlas(Stream, Mode, GLenum texture_unit);
 	GLAtlas(GLAtlas&&) = default;
 
 	GLuint texture() const;
@@ -28,7 +28,6 @@ public:
 private:
 	GLTexture gltex;
 
-	int num;
 	std::unique_ptr<AtlasItem[]> items;
 };
 

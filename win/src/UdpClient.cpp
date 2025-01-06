@@ -34,7 +34,7 @@ UdpClient::UdpClient()
 	sock = -1;
 }
 
-UdpClient::UdpClient(const std::string &address, unsigned short port)
+UdpClient::UdpClient(const char *address, unsigned short port)
 {
 	ai = NULL;
 	sock = -1;
@@ -50,7 +50,7 @@ UdpClient::UdpClient(const std::string &address, unsigned short port)
 	sprintf(port_string,"%hu",port);
 
 	// resolve hostname
-	if (getaddrinfo(address.c_str(), port_string, (const addrinfo*)&hints, &ai) != 0)
+	if (getaddrinfo(address, port_string, (const addrinfo*)&hints, &ai) != 0)
 		return;
 
 	// create the socket
