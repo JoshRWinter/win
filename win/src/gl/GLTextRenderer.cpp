@@ -49,7 +49,9 @@ static const char *vertexshader =
 "uniform vec4 color;\n"
 
 "void main(){\n"
-"pixel = vec4(1.0, 1.0, 1.0, texture(tex, ftexcoord).r) * color;\n"
+"vec4 smpl = texture(tex, ftexcoord);\n"
+"float alpha = smpl.r * color.a;\n"
+"pixel = vec4(color.rgb * alpha, alpha);\n"
 "}\n"
 ;
 

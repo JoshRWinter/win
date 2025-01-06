@@ -132,9 +132,11 @@ int main()
 	float block_position[2];
 	unsigned char block_color[3];
 
-	glClearColor(0.4f, 0.4f, 0.6f, 1.0f);
+	glClearColor(0.133f, 0.133f, 0.319f, 1.0f);
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	glEnable(GL_FRAMEBUFFER_SRGB);
 
 	bool quit = false;
 	bool paused = false;

@@ -8,5 +8,6 @@ uniform sampler2D tex;
 
 void main()
 {
-	color = texture(tex, ftexcoord) * vec4(fcolor.rgb, 1.0);
+	vec4 smpl = texture(tex, ftexcoord);
+	color = vec4(((smpl.rgb / smpl.a) * fcolor.rgb) * smpl.a, smpl.a);
 }
