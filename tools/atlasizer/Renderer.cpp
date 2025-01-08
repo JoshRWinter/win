@@ -26,7 +26,7 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	, projection(glm::ortho((float)0, (float)viewport_width, (float)0, (float)viewport_height))
 	, view(glm::identity<glm::mat4>())
 	, font(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), 16, roll["NotoSans-Regular.ttf"])
-	, text_renderer(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), GL_TEXTURE1, true)
+	, text_renderer(win::Dimensions<int>(viewport_width, viewport_height), win::Area<float>(0, viewport_width, 0, viewport_height), GL_TEXTURE1, true, 0, true)
 {
 	set_view(viewport_width / 2.0f, viewport_height / 2.0f, 1.0f);
 	glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
