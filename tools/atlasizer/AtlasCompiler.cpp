@@ -1,5 +1,3 @@
-#include <cmath>
-#include <algorithm>
 #include <filesystem>
 #include <string.h>
 
@@ -116,41 +114,6 @@ static void bitblt(const AtlasItem &item, unsigned char *atlas, int width, int h
 	}
 }
 
-static void premultiply(unsigned char *data, int width, int height)
-{
-	const auto decode = [](unsigned char c)
-	{
-		const float norm = c / 255.0f;
-		if (norm <= 0.04045f)
-			return norm / 12.92f;
-		else
-			return std::powf((norm + 0.055f) / 1.055f, 2.4f);
-	};
-
-	const auto encode = [](float c)
-	{
-		float r;
-		if (c <= 0.0031308f)
-			r = c * 12.92f;
-		else
-			r = (1.055f * std::powf(c, 1.0f / 2.4f)) - 0.055f;
-
-		return (unsigned char)std::clamp(std::roundf(r * 255.0f), 0.0f, 255.0f);
-	};
-
-	for (int i = 0; i < width * height * 4; i += 4)
-	{
-		const float r = decode(data[i + 0]);
-		const float g = decode(data[i + 1]);
-		const float b = decode(data[i + 2]);
-		const float a = data[i + 3] / 255.0f;
-
-		data[i + 0] = encode(r * a);
-		data[i + 1] = encode(g * a);
-		data[i + 2] = encode(b * a);
-	}
-}
-
 void compileatlas(const std::string &layoutfile, const std::string &atlasfile)
 {
 	if (std::filesystem::exists(atlasfile) && !is_atlas_file(atlasfile))
@@ -206,9 +169,6 @@ void compileatlas(const std::string &layoutfile, const std::string &atlasfile)
 		out.write((char*)&w, sizeof(w));
 		out.write((char*)&h, sizeof(h));
 	}
-
-	// premultiply alpha
-	premultiply(atlas.get(), width, height);
 
 	// write atlas
 	out.write((char*)atlas.get(), width * height * 4);
