@@ -6,9 +6,14 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(roll roll/roll.cpp roll/roll.hpp roll/recipe/recipe.cpp roll/recipe/recipe.hpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
 add_executable(roll-recipe-tests roll/recipe/tests/test.hpp roll/recipe/tests/parsertests.cpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
 
-add_executable(
-	atlasizer
+set(atlasizer_sources
 	atlasizer/main.cpp
+	atlasizer/AtlasCompiler.hpp
+	atlasizer/AtlasCompiler.cpp
+	atlasizer/LayoutExporter.cpp
+	atlasizer/LayoutExporter.hpp)
+
+set(atlasizer_gui_sources
 	atlasizer/gui.cpp
 	atlasizer/Renderer.hpp
 	atlasizer/Renderer.cpp
@@ -25,15 +30,23 @@ add_executable(
 	atlasizer/WindowsPlatform.cpp
 	atlasizer/FilePickerManager.hpp
 	atlasizer/FilePickerManager.cpp
-	atlasizer/LayoutExporter.cpp
-	atlasizer/LayoutExporter.hpp
-	atlasizer/AtlasCompiler.hpp
-	atlasizer/AtlasCompiler.cpp
 )
 
 if (NOGUI)
+	add_executable(
+		atlasizer
+		${atlasizer_sources}
+		../win/src/Targa.cpp
+		../win/src/FileReadStream.cpp
+	)
+	target_include_directories(atlasizer PUBLIC ../win/include)
 	add_compile_definitions(NOGUI)
 else()
+	add_executable(
+		atlasizer
+		${atlasizer_sources}
+		${atlasizer_gui_sources}
+	)
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../win ${CMAKE_CURRENT_BINARY_DIR}/win)
 	target_link_libraries(atlasizer win)
 endif()
