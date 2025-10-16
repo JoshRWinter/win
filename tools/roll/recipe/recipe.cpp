@@ -145,7 +145,7 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		if (conversion_needed)
 		{
 			run_cmd("rsvg-convert --width " + width_string + " --height " + height_string + " " + real_file.string() + " > " + converted_png);
-			run_cmd("convert " + converted_png + " " + converted_tga.string());
+			run_cmd("convert -auto-orient " + converted_png + " " + converted_tga.string());
 		}
 
 		std::filesystem::remove(converted_png);
