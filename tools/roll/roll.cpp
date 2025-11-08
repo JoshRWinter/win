@@ -15,12 +15,13 @@ using namespace std::string_literals;
 
 static constexpr const char *const helptext =
 "Asset Roll\n"
-"       roll output-file.roll --recipe recipe-file\n"
+"       roll [--hex] outputfile recipefile\n"
 "       roll --inspect input.roll\n"
 "       roll --help\n"
 ;
 
-const char *magic = "ASSETROLL";
+const char *MAGIC = "ASSETROLL";
+const char *HEXMAGIC = "0x41,0x53,0x53,0x45,0x54,0x52,0x4F,0x4C,0x4C";
 
 static std::string format(size_t size)
 {
@@ -35,17 +36,26 @@ static std::string format(size_t size)
 	return convert;
 }
 
-static bool is_asset_roll(const std::string &filename)
+static bool is_asset_roll(const std::string &filename, bool hex)
 {
 	std::ifstream in(filename, std::ifstream::binary);
 
-	char test[50];
-	in.read(test, strlen(magic));
-	if(in.gcount() != strlen(magic))
-		return false;
-	test[strlen(magic)] = 0;
+	const char *magic = hex ? HEXMAGIC : MAGIC;
+	const auto len = strlen(magic);
 
-	return std::string(test) == std::string(magic);
+	char test[50];
+
+	if (sizeof(test) < len + 1)
+		throw std::runtime_error("oops");
+
+	in.read(test, len);
+
+	if(in.gcount() != len)
+		return false;
+
+	test[len] = 0;
+
+	return !strcmp(test, magic);
 }
 
 static void inspect(const std::string &roll)
@@ -53,14 +63,14 @@ static void inspect(const std::string &roll)
 	if(!std::filesystem::exists(roll))
 		throw std::runtime_error("File \"" + roll + "\" does not exist");
 
-	if(!is_asset_roll(roll))
+	if(!is_asset_roll(roll, false))
 		throw std::runtime_error("File \"" + roll + "\" does not appear to be an asset roll");
 
 	std::ifstream in(roll, std::ifstream::binary);
 	if(!in)
 		throw std::runtime_error("Could not open file \"" + roll + "\" in read mode");
 
-	in.seekg(strlen(magic));
+	in.seekg(strlen(MAGIC));
 
 	// read number of files
 	std::uint16_t file_count = 0;
@@ -117,15 +127,29 @@ static std::string forward_slash(const std::string &name)
 	return newname;
 }
 
+std::filesystem::path get_random_temp_file()
+{
+	std::random_device rd;
+
+	char r[11];
+
+	for (int i = 0; i < 10; ++i)
+		r[i] = (char)std::uniform_int_distribution<int>('a', 'z')(rd);
+
+	r[10] = 0;
+
+	return std::filesystem::temp_directory_path() / r;
+}
+
 // do the work
-static void create(const std::string &out_file, const std::vector<RollItem> &in_files)
+static void create(bool hex, const std::filesystem::path &out_file, const std::vector<RollItem> &in_files)
 {
 	// number of input files
 	const int file_count = in_files.size();
 
 	// make sure the output file doesn't exist, or is already an asset roll
-	if(std::filesystem::exists(out_file) && !is_asset_roll(out_file))
-		throw std::runtime_error("Not willing to overwrite file \""s + out_file + "\"");
+	if(std::filesystem::exists(out_file) && !is_asset_roll(out_file, hex))
+		throw std::runtime_error("Not willing to overwrite file \""s + out_file.string() + "\"");
 
 	// make sure all the input files exist
 	for(const RollItem &in : in_files)
@@ -153,17 +177,18 @@ static void create(const std::string &out_file, const std::vector<RollItem> &in_
 	}
 
 	// prepare output file
-	std::ofstream out(out_file, std::ofstream::binary);
+	const auto destfile = hex ? get_random_temp_file() : out_file;
+	std::ofstream out(destfile, std::ofstream::binary);
 
 	// write magic
-	out.write(magic, strlen(magic));
+	out.write(MAGIC, strlen(MAGIC));
 
 	// embedded file count
 	const std::uint16_t file_count_short = file_count;
 	out.write((char*)&file_count_short, sizeof(file_count_short));
 
 	// write the headers
-	std::uint64_t offset = strlen(magic) + sizeof(std::uint16_t); // magic length plus filecount length
+	std::uint64_t offset = strlen(MAGIC) + sizeof(std::uint16_t); // magic length plus filecount length
 	for(const Header &h : headers)
 	{
 		out.write((const char*)&h.compressed, sizeof(h.compressed));
@@ -237,7 +262,7 @@ static void create(const std::string &out_file, const std::vector<RollItem> &in_
 	}
 
 	// rewrite all the headers with proper info
-	out.seekp(strlen(magic) + sizeof(std::uint16_t));
+	out.seekp(strlen(MAGIC) + sizeof(std::uint16_t));
 	for(const Header &h : headers)
 	{
 		out.write((const char*)&h.compressed, sizeof(h.compressed));
@@ -250,58 +275,142 @@ static void create(const std::string &out_file, const std::vector<RollItem> &in_
 
 	out.close();
 
-	std::cout << file_count << " files written to \"" << out_file << "\" (" << format(std::filesystem::file_size(out_file)) << ")" << std::endl;
+	// rewrite the binary in hex csv
+	if (hex)
+	{
+		std::ifstream in(destfile, std::ifstream::binary);
+		if (!in)
+			throw std::runtime_error("Couldn't open " + destfile.string() + " for reading");
+
+		const auto len = std::filesystem::file_size(destfile);
+		std::unique_ptr<unsigned char[]> binary(new unsigned char[len]);
+		in.read((char*)binary.get(), len);
+		if (in.gcount() != len)
+			throw std::runtime_error("Couldn't read " + std::to_string(len) + " from " + destfile.string());
+
+		std::filesystem::remove(destfile);
+
+		std::ofstream hexout(out_file, std::ofstream::binary);
+		if (!hexout)
+			throw std::runtime_error("Couldn't open " + out_file.string() + " for writing");
+
+		char conv[10];
+		for (long long i = 0; i < len; ++i)
+		{
+			if (i % 60 == 0 && i != 0)
+				hexout.write("\n", 1);
+
+			const bool last = i == len - 1;
+			snprintf(conv, sizeof(conv), last ? "0x%X" : "0x%X,", binary[i]);
+			hexout.write(conv, strlen(conv));
+		}
+
+		hexout.close();
+	}
+
+	std::cout << file_count << " files written to \"" << out_file.string() << "\" (" << format(std::filesystem::file_size(out_file)) << ")" << std::endl;
 }
 
-static int go(int argc, char **argv)
+struct CmdLineOptions
 {
+	bool showhelp = false;
+	std::filesystem::path outfile;
+	std::filesystem::path recipe;
+	std::filesystem::path inspectfile;
+	bool hex = false;
+};
+
+CmdLineOptions get_options(int argc, char **argv)
+{
+	CmdLineOptions opts;
+
+	if (argc < 3)
+	{
+		opts.showhelp = true;
+		return opts;
+	}
+
 	std::vector<std::string> args;
 	for (int i = 0; i < argc; ++i)
 		args.emplace_back(argv[i]);
 
-	// collect the arguments
-	std::vector<RollItem> infiles;
-
-	// examine an existing rollfile
-	if(args.size() == 3 && args.at(1) == "--inspect")
+	// inspect
+	if (args.at(1) == "--inspect")
 	{
-		inspect(args.at(2));
+		if (args.size() != 3)
+		{
+			opts.showhelp = true;
+			return opts;
+		}
 
+		opts.inspectfile = args.at(2);
+	}
+	// recipe with hex
+	else if (args.at(1) == "--hex")
+	{
+		if (args.size() != 4)
+		{
+			opts.showhelp = true;
+			return opts;
+		}
+
+		opts.outfile = args.at(2);
+		opts.recipe = args.at(3);
+		opts.hex = true;
+	}
+	// recipe no hex
+	else
+	{
+		if (args.size() != 3)
+		{
+			opts.showhelp = true;
+			return opts;
+		}
+
+		opts.outfile = args[1];
+		opts.recipe = args[2];
+	}
+
+	return opts;
+}
+
+static int go(int argc, char **argv)
+{
+	const auto opts = get_options(argc, argv);
+
+	if (opts.showhelp)
+	{
+		std::cout << helptext << std::endl;
+		return 1;
+	}
+
+	else if (opts.inspectfile != "")
+	{
+		inspect(opts.inspectfile);
 		return 0;
 	}
-	// use rollfile
-	else if(args.size() == 4 && args.at(2) == "--recipe")
+	else
 	{
-		const std::string out_file = args.at(1);
-		const std::string recipe_file = args.at(3);
-
 		try
 		{
-			Recipe recipe(recipe_file, out_file);
-			bool update = true;
+			Recipe recipe(opts.recipe, opts.outfile);
 
-			infiles = recipe.get_items(update);
+			bool update = true;
+			auto infiles = recipe.get_items(update);
 			if (!update)
 			{
-				std::cout << recipe_file << " is up-to-date" << std::endl;
+				std::cout << opts.outfile << " is up-to-date" << std::endl;
 				return 0;
 			}
+
+			create(opts.hex, opts.outfile, infiles);
+			return 0;
 		}
 		catch (const std::exception &e)
 		{
 			throw std::runtime_error(std::string("recipe: ") + e.what());
 		}
 	}
-	// create a roll file from cmd args
-	else
-	{
-		std::cout << helptext << std::endl;
-		return 0;
-	}
-
-	create(args.at(1), infiles);
-
-	return 0;
 }
 
 int main(int argc, char **argv)
