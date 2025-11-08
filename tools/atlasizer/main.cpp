@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-		compileatlas(argv[1], argv[2]);
+		compileatlas(argv[2], argv[1]);
 	}
 	catch (const std::exception &e)
 	{

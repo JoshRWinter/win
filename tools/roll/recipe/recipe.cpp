@@ -202,7 +202,7 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 		if (conversion_needed)
 		{
 			recreate = true;
-			run_cmd("atlasizer " + real_layout_file.string() + " " + real_atlas_file.string());
+			run_cmd("atlasizer " + real_atlas_file.string() + " " + real_layout_file.string());
 		}
 
 		items.emplace_back(real_atlas_file.string(), recorded_atlas_file.string(), true);
