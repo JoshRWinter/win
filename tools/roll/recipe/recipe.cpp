@@ -86,8 +86,17 @@ void Recipe::process_root_line(const RecipeInputLine &line)
 
 void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 {
-	if (section.options.size() > 0)
+	if (section.options.size() > 1)
 		throw std::runtime_error(std::to_string(section.line_number) + ": Unrecognized svg2tga section options");
+
+	bool section_exclude = false;
+	if (section.options.size() == 1)
+	{
+		if (section.options.at(0) == "exclude")
+			section_exclude = true;
+		else
+			throw std::runtime_error(std::to_string(section.line_number) + ": Unrecognized svg2tga section options");
+	}
 
 	std::string converted_png = "";
 	for (const RecipeInputLine &line : section.lines)
@@ -98,7 +107,7 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		if (line.tokens.size() < 3)
 			throw std::runtime_error(std::to_string(line.line_number) + ": svg2tga: need at least 3 arguments - filename width height");
 
-		bool exclude = false;
+		bool exclude = section_exclude;
 		int token_index = 0;
 
 		const std::filesystem::path recorded_file = line.tokens.at(token_index);

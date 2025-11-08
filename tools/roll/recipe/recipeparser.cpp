@@ -21,7 +21,6 @@ std::vector<RecipeRootInput> RecipeParser::parse(const std::filesystem::path &fi
 	{
 		++line_number;
 
-
 		std::string line;
 		std::getline(stream, line);
 
