@@ -42,6 +42,11 @@ if (NOGUI)
 	target_include_directories(atlasizer PUBLIC ../win/include)
 	add_compile_definitions(NOGUI)
 else()
+	if (ROLLDATA)
+		file(REAL_PATH ${ROLLDATA} path BASE_DIRECTORY ${CMAKE_BINARY_DIR})
+		add_compile_definitions(ROLLDATA=\"${path}\")
+	endif()
+
 	add_executable(
 		atlasizer
 		${atlasizer_sources}

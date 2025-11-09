@@ -2,7 +2,7 @@
 
 #include <win/Display.hpp>
 #include <win/AssetRoll.hpp>
-#include <win/FileReadStream.hpp>
+#include <win/FileStream.hpp>
 
 #include "ControlPanel.hpp"
 #include "ListPanel.hpp"
@@ -40,6 +40,13 @@ static void get_platform_directories(const Platform &platform, std::filesystem::
 #endif
 }
 
+#ifdef ROLLDATA
+static const unsigned char rolldata[] =
+{
+#include ROLLDATA
+};
+#endif
+
 static bool in_box(int p_x, int p_y, const win::Box<int> &box)
 {
 	return p_x >= box.x && p_x <= box.x + box.width && p_y >= box.y && p_y <= box.y + box.height;
@@ -62,8 +69,13 @@ void gui()
 	std::filesystem::path filepicker_state, default_dir;
 	get_platform_directories(platform, filepicker_state, default_dir);
 
-	FilePickerManager filepicker(platform, filepicker_state, default_dir);
+#ifdef ROLLDATA
+	win::AssetRoll roll(rolldata, sizeof(rolldata));
+#else
 	win::AssetRoll roll((platform.get_exe_path().parent_path() / "atlasizer.roll").string().c_str());
+#endif
+
+	FilePickerManager filepicker(platform, filepicker_state, default_dir);
 	Renderer renderer(roll, display.width(), display.height());
 	Atlasizer atlasizer;
 
@@ -140,7 +152,7 @@ void gui()
 			const auto layout = LayoutExporter::import(result.value(), padding);
 			for (const auto &item : layout)
 			{
-				const win::Targa tga(win::Stream(new win::FileReadStream(item.filename)));
+				const win::Targa tga(win::Stream(new win::FileStream(item.filename)));
 				const int id = atlasizer.add(renderer.add_texture(tga), item.filename, item.x, item.y, tga.width(), tga.height());
 				lpanel.add(id, item.filename.filename().string());
 			}
@@ -201,7 +213,7 @@ void gui()
 		{
 			for (const auto &f: result.value())
 			{
-				const win::Targa tga(win::Stream(new win::FileReadStream(f)));
+				const win::Targa tga(win::Stream(new win::FileStream(f)));
 				const int id = atlasizer.add(renderer.add_texture(tga), f, -1, -1, tga.width(), tga.height());
 				lpanel.add(id, f.filename().string());
 			}
@@ -243,7 +255,7 @@ void gui()
 	{
 		for (auto item : atlasizer.get_items_layout_order())
 		{
-			const win::Targa tga(win::Stream(new win::FileReadStream(item->texturepath)));
+			const win::Targa tga(win::Stream(new win::FileStream(item->texturepath)));
 
 			if (tga.width() != item->w || tga.height() != item->h)
 				dirty = true;

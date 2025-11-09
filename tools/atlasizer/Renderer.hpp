@@ -54,6 +54,6 @@ private:
 	win::GLBuffer vbo;
 	win::GLProgram program;
 
-	win::GLFont font;
 	win::GLTextRenderer text_renderer;
+	win::GLFont font;
 };

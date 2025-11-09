@@ -4,14 +4,14 @@
 #include <vector>
 
 #include <win/Targa.hpp>
-#include <win/FileReadStream.hpp>
+#include <win/FileStream.hpp>
 
 class AtlasItem
 {
 public:
 	AtlasItem(const std::filesystem::path &filepath, int x, int y)
 		: filename(filepath)
-		, targa(win::Stream(new win::FileReadStream(filepath)))
+		, targa(win::Stream(new win::FileStream(filepath)))
 		, x(x)
 		, y(y)
 	{
