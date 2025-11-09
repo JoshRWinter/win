@@ -1,8 +1,6 @@
 #pragma once
 
 #include <fstream>
-#include <memory>
-#include <random>
 
 #include "recipeparser.hpp"
 
@@ -23,7 +21,8 @@ private:
 
 	std::filesystem::path recipe_file;
 	std::filesystem::path roll_file;
+	std::filesystem::file_time_type recipe_file_lastwrite;
+	std::filesystem::file_time_type roll_file_lastwrite;
 	bool recreate;
-	bool reconvert;
 	std::vector<RollItem> items;
 };

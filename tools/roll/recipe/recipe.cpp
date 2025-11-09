@@ -13,17 +13,13 @@
 
 Recipe::Recipe(const std::filesystem::path &recipe_file, const std::filesystem::path &roll_file)
 	: recreate(false)
-	, reconvert(false)
 	, recipe_file(recipe_file)
 	, roll_file(roll_file)
+	, recipe_file_lastwrite(std::filesystem::exists(recipe_file) ? std::filesystem::last_write_time(recipe_file) : std::filesystem::file_time_type::min())
+	, roll_file_lastwrite(std::filesystem::exists(roll_file) ? std::filesystem::last_write_time(roll_file) : std::filesystem::file_time_type::min())
 {
 	if (!std::filesystem::exists(roll_file))
 	{
-		recreate = true;
-	}
-	else if (std::filesystem::last_write_time(recipe_file) > std::filesystem::last_write_time(roll_file))
-	{
-		reconvert = true;
 		recreate = true;
 	}
 
@@ -78,8 +74,13 @@ void Recipe::process_root_line(const RecipeInputLine &line)
 		compress = true;
 	}
 
-	if (recreate || std::filesystem::last_write_time(real_file) > std::filesystem::last_write_time(roll_file))
+	if (
+		std::filesystem::last_write_time(real_file) > roll_file_lastwrite ||
+		recipe_file_lastwrite > roll_file_lastwrite
+	)
+	{
 		recreate = true;
+	}
 
 	items.emplace_back(real_file.string(), recorded_file.string(), compress);
 }
@@ -146,9 +147,9 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		const bool converted_tga_exists = std::filesystem::exists(converted_tga);
 
 		const bool conversion_needed =
-			reconvert ||
 			!converted_tga_exists ||
-			std::filesystem::last_write_time(real_file) > std::filesystem::last_write_time(converted_tga)
+			std::filesystem::last_write_time(real_file) > std::filesystem::last_write_time(converted_tga) ||
+			recipe_file_lastwrite > std::filesystem::last_write_time(converted_tga)
 		;
 
 		if (conversion_needed)
@@ -159,8 +160,10 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 
 		std::filesystem::remove(converted_png);
 
-		if (recreate || (!exclude && std::filesystem::last_write_time(converted_tga) > std::filesystem::last_write_time(roll_file)))
+		if (!exclude && conversion_needed)
+		{
 			recreate = true;
+		}
 
 		if (!exclude)
 			items.emplace_back(converted_tga.string(), recorded_converted_tga.string(), true);
@@ -178,21 +181,19 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 			continue;
 
 		if (line.tokens.size() != 2)
-			throw std::runtime_error(std::to_string(line.line_number) + ": Need 2 args: LayoutFile and AtlasFile");
+			throw std::runtime_error(std::to_string(line.line_number) + ": Need 2 args: AtlasFile and LayoutFile");
 
-		const std::filesystem::path layout_file = line.tokens.at(0);
-		const std::filesystem::path real_layout_file = get_real_file_path(layout_file);
-
-		const std::filesystem::path recorded_atlas_file = line.tokens.at(1);
+		const std::filesystem::path recorded_atlas_file = line.tokens.at(0);
 		const std::filesystem::path real_atlas_file = get_real_file_path(recorded_atlas_file);
-
 		const bool real_atlas_file_exists = std::filesystem::exists(real_atlas_file);
+
+		const std::filesystem::path layout_file = line.tokens.at(1);
+		const std::filesystem::path real_layout_file = get_real_file_path(layout_file);
 
 		if (!std::filesystem::exists(real_layout_file))
 			throw std::runtime_error(std::to_string(line.line_number) + ": Layout file \"" + real_layout_file.string() + "\" doesn't exist");
 
 		bool conversion_needed =
-			reconvert ||
 			!real_atlas_file_exists ||
 			std::filesystem::last_write_time(real_layout_file) > std::filesystem::last_write_time(real_atlas_file)
 		;
