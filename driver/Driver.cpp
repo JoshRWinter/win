@@ -65,7 +65,7 @@ int main()
 	auto music = "assets/Motions.ogg";
 	auto effect = "assets/platform_destroy.ogg";
 
-	win::SoundEngine audio_engine(display, roll);
+	win::SoundEngine audio_engine(roll);
 
 	win::GLTextRenderer text_renderer(win::Dimensions<int>(display.width(), display.height()), win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f), GL_TEXTURE1, true, 0, true);
 	win::GLFont font1 = text_renderer.create_font(0.5f, roll["assets/arial.ttf"]);
@@ -73,7 +73,6 @@ int main()
 	win::GLFont font3 = text_renderer.create_font(0.2f, roll["assets/NotoSansMono-Regular.ttf"]);
 
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
-	std::cerr << "screen width is " << display.screen_width() << " and screen height is " << display.screen_height() << std::endl;
 
 	const win::AtlasItem coords = atlas.item(4);
 	const float verts[] =

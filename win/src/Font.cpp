@@ -1,4 +1,5 @@
 #include <string>
+#include <cmath>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -12,7 +13,7 @@ Font::Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &sc
 {
 	auto data = font_file.read_all();
 
-	const int pixelsize = ((font_size / (screen_area.right - screen_area.left)) * screen_pixel_dimensions.width);
+	const int pixelsize = std::roundf((font_size / (screen_area.right - screen_area.left)) * screen_pixel_dimensions.width);
 
 	int error;
 	FT_Library library;
@@ -29,7 +30,7 @@ Font::Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &sc
 	if (error)
 		win::bug("Error setting pixel size");
 
-	metric.vertical_advance = (((float)(face->size->metrics.height >> 6)) / screen_pixel_dimensions.width) * (screen_area.right - screen_area.left);
+	metric.vertical_advance = ((face->size->metrics.height >> 6) / (float)screen_pixel_dimensions.height) * (screen_area.top - screen_area.bottom);
 
 	FT_UInt indices[char_count];
 	// get largest width and height
@@ -44,9 +45,9 @@ Font::Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &sc
 		indices[x - char_low] = face->glyph->glyph_index;
 
 		if ((int)face->glyph->bitmap.width > metric.max_width_pixels)
-			metric.max_width_pixels = (int) face->glyph->bitmap.width;
+			metric.max_width_pixels = (int)face->glyph->bitmap.width;
 		if ((int)face->glyph->bitmap.rows > metric.max_height_pixels)
-			metric.max_height_pixels = (int) face->glyph->bitmap.rows;
+			metric.max_height_pixels = (int)face->glyph->bitmap.rows;
 	}
 
 	metric.max_width = (metric.max_width_pixels / (float)screen_pixel_dimensions.width) * (screen_area.right - screen_area.left);

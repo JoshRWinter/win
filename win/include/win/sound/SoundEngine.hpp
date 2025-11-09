@@ -82,9 +82,7 @@ class SoundEngine
 {
 	WIN_NO_COPY_MOVE(SoundEngine);
 
-	SoundEngine(Display*, AssetRoll&);
 public:
-	SoundEngine(Display&, AssetRoll&);
 	SoundEngine(AssetRoll&);
 
 	// name must live until the save() call returns

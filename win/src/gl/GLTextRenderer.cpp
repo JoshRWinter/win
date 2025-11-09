@@ -19,7 +19,7 @@ static const char *vertexshader =
 
 "struct Object { vec2 position; uint dims; float index; };\n"
 
-"layout (std140) uniform object_data { Object data[900]; };\n"
+"layout (std140) buffer object_data { Object data[]; };\n"
 "uniform mat4 projection;\n"
 "uniform float width;\n"
 "uniform float height;\n"
@@ -31,7 +31,7 @@ static const char *vertexshader =
 "out vec3 ftexcoord;\n"
 
 "void main(){\n"
-"int i = draw_id % 900;\n"
+"int i = draw_id % 2048;\n"
 "float w = (data[i].dims >> 16) / float(65535);\n"
 "float h = (data[i].dims & 65535) / float(65535);\n"
 "ftexcoord = vec3(float(texcoord.x) * w, float(texcoord.y) * h, data[i].index);\n"
@@ -42,7 +42,7 @@ static const char *vertexshader =
 , *fragmentshader =
 "#version 440 core\n"
 
-"out vec4 pixel;\n"
+"layout (location = 0) out vec4 pixel;\n"
 "in vec3 ftexcoord;\n"
 
 "uniform sampler2DArray tex;\n"
@@ -58,12 +58,13 @@ static const char *vertexshader =
 namespace win
 {
 
-GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint uniform_block_binding, bool uniform_block_binding_owned)
-	: TextRenderer(screen_pixel_dimensions, screen_area)
+GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint shader_storage_block_binding, bool shader_storage_block_binding_owned)
+	: screen_pixel_dimensions(screen_pixel_dimensions)
+	, screen_area(screen_area)
 	, texture_unit(texture_unit)
 	, texture_unit_owned(texture_unit_owned)
-	, uniform_block_binding(uniform_block_binding)
-	, uniform_block_binding_owned(uniform_block_binding_owned)
+	, shader_storage_block_binding(shader_storage_block_binding)
+	, shader_storage_block_binding_owned(shader_storage_block_binding_owned)
 	, current_font(NULL)
 	, current_color(0.0f, 0.0f, 0.0f, 1.0f)
 {
@@ -88,9 +89,9 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 		0, 1, 2, 0, 2, 3
 	};
 
-	static_assert((uniform_object_data_length * 2 - 2) <= 32767, "we gon' need a bigger boat here cap'n");
-	std::uint16_t draw_ids[(uniform_object_data_length * 2) - 2];
-	for (int i = 0; i < (uniform_object_data_length * 2) - 2; ++i)
+	static_assert((object_data_length * 2 - 2) <= 32767, "we gon' need a bigger boat here cap'n");
+	std::uint16_t draw_ids[(object_data_length * 2) - 2];
+	for (int i = 0; i < (object_data_length * 2) - 2; ++i)
 		draw_ids[i] = i;
 
 	// shaders and uniforms
@@ -141,19 +142,30 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// object data
-	glBindBuffer(GL_UNIFORM_BUFFER, uniform_object_data.get());
-	const auto object_data_block_index = glGetUniformBlockIndex(program.get(), "object_data");
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, shader_storage_object_data.get());
+	const auto object_data_block_index = glGetProgramResourceIndex(program.get(), GL_SHADER_STORAGE_BLOCK, "object_data");
 	if (object_data_block_index == GL_INVALID_INDEX) win::bug("No object data uniform block index");
-	glUniformBlockBinding(program.get(), object_data_block_index, uniform_block_binding);
-	glBindBufferBase(GL_UNIFORM_BUFFER, uniform_block_binding, uniform_object_data.get());
-	glBufferStorage(GL_UNIFORM_BUFFER, sizeof(ObjectBytes) * object_data_length * object_data_multiplier, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	void *instances_mem = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(ObjectBytes) * object_data_length * object_data_multiplier, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	object_data = std::move(GLMappedRingBuffer<ObjectBytes>(instances_mem, object_data_length * object_data_multiplier));
+	glShaderStorageBlockBinding(program.get(), object_data_block_index, shader_storage_block_binding);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, shader_storage_block_binding, shader_storage_object_data.get());
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(ObjectBytes) * object_data_length, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	void *instances_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(ObjectBytes) * object_data_length, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	object_data = std::move(GLMappedRingBuffer<ObjectBytes>(instances_mem, object_data_length));
 }
 
-GLFont GLTextRenderer::create_font(float size, win::Stream data)
+GLFont GLTextRenderer::create_font(float font_size, Stream data) const
 {
-	return std::move(GLFont(screen_pixel_dimensions, screen_area, size, std::move(data)));
+	glActiveTexture(texture_unit);
+	return GLFont(screen_pixel_dimensions, screen_area, font_size, std::move(data));
+}
+
+void GLTextRenderer::resize(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area)
+{
+	this->screen_pixel_dimensions = screen_pixel_dimensions;
+	this->screen_area = screen_area;
+
+	glUseProgram(program.get());
+	const auto projection = glm::ortho(screen_area.left, screen_area.right, screen_area.bottom, screen_area.top);
+	glUniformMatrix4fv(uniform_projection, 1, GL_FALSE, glm::value_ptr(projection));
 }
 
 void GLTextRenderer::draw(const GLFont &font, const char *text, float xpos, float ypos, bool centered)
@@ -171,8 +183,8 @@ void GLTextRenderer::flush()
 	glUseProgram(program.get());
 	glBindVertexArray(vao.get());
 
-	if (!uniform_block_binding_owned)
-		glBindBufferBase(GL_UNIFORM_BUFFER, uniform_block_binding, uniform_object_data.get());
+	if (!shader_storage_block_binding_owned)
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, shader_storage_block_binding, shader_storage_object_data.get());
 
 	for (const auto &str : string_queue)
 	{
@@ -214,10 +226,10 @@ void GLTextRenderer::flush()
 			const TextRendererCharacter &c = *it;
 			const auto &cmetric = font.character_metric(c.c);
 
-			const float xpos = c.xpos + (cmetric.width / 2.0f);
-			const float ypos = (c.ypos + (cmetric.height / 2.0f));
-			const std::uint16_t width_pct = (cmetric.width / metric.max_width) * std::numeric_limits<std::uint16_t>::max();
-			const std::uint16_t height_pct = (cmetric.height / metric.max_height) * std::numeric_limits<std::uint16_t>::max();
+			const float xpos = alignw(c.xpos) + (cmetric.width / 2.0f);
+			const float ypos = alignh(c.ypos) + (cmetric.height / 2.0f);
+			const std::uint16_t width_pct = std::roundf((cmetric.width / metric.max_width) * std::numeric_limits<std::uint16_t>::max());
+			const std::uint16_t height_pct = std::roundf((cmetric.height / metric.max_height) * std::numeric_limits<std::uint16_t>::max());
 			const std::uint32_t dims = (width_pct << 16) | height_pct;
 			const float index = c.c - Font::char_low;
 
@@ -251,6 +263,23 @@ void GLTextRenderer::send()
 	object_data.lock(range);
 
 	object_data_prebuf.clear();
+}
+
+float GLTextRenderer::alignw(float x) const
+{
+	return align(x, screen_pixel_dimensions.width, screen_area.right - screen_area.left);
+}
+
+float GLTextRenderer::alignh(float y) const
+{
+	return align(y, screen_pixel_dimensions.height, screen_area.top - screen_area.bottom);
+}
+
+float GLTextRenderer::align(float f, int pixels, float scale)
+{
+	const int pixelized = std::roundf((f / scale) * pixels);
+	const auto aligned = (pixelized / (float)pixels) * scale;
+	return aligned;
 }
 
 }

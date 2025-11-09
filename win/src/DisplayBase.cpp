@@ -6,6 +6,7 @@ namespace win
 DisplayBase::DisplayBase()
 {
 	window_handler = default_window_handler;
+	resize_handler = default_resize_handler;
 	button_handler = default_button_handler;
 	character_handler = default_character_handler;
 	mouse_handler = default_mouse_handler;
@@ -14,6 +15,11 @@ DisplayBase::DisplayBase()
 void DisplayBase::register_window_handler(WindowHandler handler)
 {
 	window_handler = std::move(handler);
+}
+
+void DisplayBase::register_resize_handler(ResizeHandler handler)
+{
+	resize_handler = std::move(handler);
 }
 
 void DisplayBase::register_button_handler(ButtonHandler handler)

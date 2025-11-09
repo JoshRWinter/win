@@ -6,11 +6,6 @@
 namespace win
 {
 
-TextRenderer::TextRenderer(const win::Dimensions<int> &screen_pixel_dimensions, const win::Area<float> &screen_area)
-	: screen_pixel_dimensions(screen_pixel_dimensions)
-	, screen_area(screen_area)
-{}
-
 void TextRenderer::queue(const Font &font, const char *text, float xpos, float ypos, const Color<float> &color, bool centered)
 {
 	const FontMetric &metric = font.font_metric();
@@ -58,8 +53,8 @@ void TextRenderer::queue(const Font &font, const char *text, float xpos, float y
 		const float kern = last_char == 0 ? 0.0f : find_kern(text[i], font.character_metric(last_char));
 		xoffset += kern;
 
-		const float x = align(screen_pixel_dimensions.width, screen_area.right - screen_area.left, xoffset);
-		const float y = align(screen_pixel_dimensions.height, screen_area.top - screen_area.bottom, yoffset - (char_metric.height - char_metric.bearing_y));
+		const float x = xoffset;
+		const float y = yoffset - (char_metric.height - char_metric.bearing_y);
 
 		text_queue.emplace_back(text[i], x, y);
 
@@ -138,11 +133,6 @@ float TextRenderer::line_length(const Font &font, const char *text, int start)
 	}
 
 	return length;
-}
-
-float TextRenderer::align(int pixel_scale, float scale, float f)
-{
-	return (((int)std::roundf((f / scale) * pixel_scale) / (float)pixel_scale) * scale);
 }
 
 }

@@ -17,6 +17,9 @@ template <typename T, int desired_length = -1> class ConcurrentRingBuffer
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 
 public:
+
+	constexpr static auto length = desired_length;
+
 	ConcurrentRingBuffer(T *user_buffer, int user_length)
 		: atomic_read_cursor(0)
 		, atomic_write_cursor(0)

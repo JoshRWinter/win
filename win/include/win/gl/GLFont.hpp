@@ -14,8 +14,11 @@ class GLFont : public Font
 {
 	WIN_NO_COPY(GLFont);
 
-public:
+	friend class GLTextRenderer;
+
 	GLFont(const Dimensions<int> &screen_dimensions, const Area<float> &screen_area, float font_size, Stream font_file);
+
+public:
 	GLFont(GLFont&&) = default;
 
 	GLFont &operator=(GLFont&&) = default;

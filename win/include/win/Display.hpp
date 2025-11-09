@@ -31,13 +31,15 @@ public:
 	void swap() { inner->swap(); }
 	int width() { return inner->width(); }
 	int height() { return inner->height(); }
-	int screen_width() { return inner->screen_width(); }
-	int screen_height() { return inner->screen_height(); }
+	void resize(int w, int h) { inner->resize(w, h); }
+	float refresh_rate() { return inner->refresh_rate(); }
 	void cursor(bool show) { inner->cursor(show); }
+	void set_fullscreen(bool fullscreen) { inner->set_fullscreen(fullscreen); }
 	void vsync(bool on) { inner->vsync(on); }
 	NativeWindowHandle native_handle() { return inner->native_handle(); }
 
 	void register_window_handler(DisplayBase::WindowHandler handler) { inner->register_window_handler(std::move(handler)); }
+	void register_resize_handler(DisplayBase::ResizeHandler handler) { inner->register_resize_handler(std::move(handler)); }
 	void register_button_handler(DisplayBase::ButtonHandler handler) { inner->register_button_handler(std::move(handler)); }
 	void register_character_handler(DisplayBase::CharacterHandler handler) { inner->register_character_handler(std::move(handler)); }
 	void register_mouse_handler(DisplayBase::MouseHandler handler) { inner->register_mouse_handler(std::move(handler)); }

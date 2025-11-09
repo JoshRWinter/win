@@ -11,15 +11,15 @@ assets/beacon_1.tga z
 vertex.vert z
 fragment.frag z
 
-svg2tga {
-    assets/artillery.svg 100 20 exclude
-    assets/beacon.svg 100 20 exclude
-    assets/grass1.svg 100 60 exclude
-    assets/tank.svg 100 50 exclude
-    assets/mine.svg 100 100 exclude
-    assets/skull.svg 100 100 exclude
+svg2tga exclude {
+    assets/artillery.svg 100 20
+    assets/beacon.svg 100 20
+    assets/grass1.svg 100 60
+    assets/tank.svg 100 50
+    assets/mine.svg 100 100
+    assets/skull.svg 100 100
 }
 
 atlas {
-    atlas.txt main.atlas
+    main.atlas atlas.txt
 }

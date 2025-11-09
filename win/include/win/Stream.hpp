@@ -1,21 +1,16 @@
 #pragma once
 
 #include <memory>
-#include <string>
 
 namespace win
 {
 
 class StreamBase
 {
+	WIN_NO_COPY_MOVE(StreamBase);
 public:
 	StreamBase() = default;
-	StreamBase(const StreamBase&) = delete;
-	StreamBase(StreamBase&&) = delete;
 	virtual ~StreamBase() = default;
-
-	void operator=(const StreamBase&) = delete;
-	void operator=(StreamBase&&) = delete;
 
 	virtual unsigned long long size() const = 0;
 	virtual void read(void*, unsigned long long) = 0;
@@ -27,13 +22,10 @@ public:
 
 class Stream
 {
-	friend class AssetRoll;
+	WIN_NO_COPY(Stream);
 public:
 	explicit Stream(StreamBase *inner) : inner(inner) {}
-	Stream(const Stream&) = delete;
 	Stream(Stream&&) = default;
-
-	Stream &operator=(const Stream&) = delete;
 
 	unsigned long long size() const { return inner->size(); }
 	void read(void *b, unsigned long long len) { inner->read(b, len); }

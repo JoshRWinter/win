@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <iostream>
 
+#include <dxgi.h>
+
 #include <win/Win32Display.hpp>
 
 #ifdef WIN_USE_OPENGL
@@ -160,9 +162,9 @@ void Win32Display::win_init_gl(HWND hwnd)
 	pfd.iLayerType=PFD_MAIN_PLANE;
 
 	const int attribs[] =
-		{
-			WGL_CONTEXT_MAJOR_VERSION_ARB, gl_major, WGL_CONTEXT_MINOR_VERSION_ARB, gl_minor, 0
-		};
+	{
+		WGL_CONTEXT_MAJOR_VERSION_ARB, options.gl_major, WGL_CONTEXT_MINOR_VERSION_ARB, options.gl_minor, 0
+	};
 
 	SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 	HGLRC tmp = wglCreateContext(hdc);
@@ -174,7 +176,7 @@ void Win32Display::win_init_gl(HWND hwnd)
 	if(context == NULL)
 	{
 		ReleaseDC(hwnd, hdc);
-		MessageBox(NULL, ("This software requires support for at least Opengl " + std::to_string(gl_major) + "." + std::to_string(gl_minor)).c_str(), "Fatal Error", MB_ICONEXCLAMATION);
+		MessageBox(NULL, ("This software requires support for at least Opengl " + std::to_string(options.gl_major) + "." + std::to_string(options.gl_minor)).c_str(), "Fatal Error", MB_ICONEXCLAMATION);
 		std::abort();
 	}
 
@@ -270,6 +272,25 @@ LRESULT CALLBACK Win32Display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 			return 0;
 		case WM_ERASEBKGND:
 			return 0;
+		case WM_WINDOWPOSCHANGED:
+			return DefWindowProc(hwnd, msg, wp, lp);
+		case WM_SIZE:
+		{
+			const auto w = LOWORD(lp);
+			const auto h = HIWORD(lp);
+
+			display.update_refresh_rate();
+
+			if (display.window_prop_cache.w != w || display.window_prop_cache.h != h)
+			{
+				display.window_prop_cache.w = w;
+				display.window_prop_cache.h = h;
+
+				display.resize_handler(w, h);
+			}
+
+			return 0;
+		}
 		default:
 			return DefWindowProc(hwnd, msg, wp, lp);
 	}
@@ -278,11 +299,12 @@ LRESULT CALLBACK Win32Display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 }
 
 Win32Display::Win32Display(const DisplayOptions &options)
+	: options(options)
 {
-	const char *const window_class = "win_window_class";
+	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+	init_monitor_properties();
 
-	gl_major = options.gl_major;
-	gl_minor = options.gl_minor;
+	const char *const window_class = "win_window_class";
 
 	WNDCLASSEX wc;
 	wc.cbSize = sizeof(wc);
@@ -301,10 +323,43 @@ Win32Display::Win32Display(const DisplayOptions &options)
 	if(!RegisterClassEx(&wc))
 		win::bug("Could not register window class");
 
-	if(options.fullscreen)
-		window = CreateWindowEx(0, window_class, "", WS_POPUP, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CXSCREEN), NULL, NULL, GetModuleHandle(NULL), this);
-	else
-		window = CreateWindowEx(0, window_class, options.caption.c_str(), WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, options.width, options.height, NULL, NULL, GetModuleHandle(NULL), this);
+	HMONITOR monitor = MonitorFromWindow(NULL, MONITOR_DEFAULTTOPRIMARY);
+	if (monitor == NULL)
+		win::bug("MonitorFromWindow failure");
+
+	MONITORINFOEX mi;
+	mi.cbSize = sizeof(mi);
+	if (!GetMonitorInfo(monitor, &mi))
+		win::bug("GetMonitorInfo failure");
+
+	DEVMODE dm;
+	dm.dmSize = sizeof(dm);
+	if (!EnumDisplaySettings(mi.szDevice, ENUM_CURRENT_SETTINGS, &dm))
+		win::bug("EnumDisplaySettings failure");
+
+	RECT rect;
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = options.fullscreen ? dm.dmPelsWidth : options.width;
+	rect.bottom = options.fullscreen ? dm.dmPelsHeight : options.height;
+
+	if (!AdjustWindowRectEx(&rect, options.fullscreen ? fullscreen_style : windowed_style, FALSE, 0))
+		win::bug("AdjustWindowRectExFailure");
+
+	window = CreateWindowEx(
+		0,
+		window_class,
+		options.caption.c_str(),
+		options.fullscreen ? fullscreen_style : windowed_style,
+		options.fullscreen ? mi.rcMonitor.left : CW_USEDEFAULT,
+		options.fullscreen ? mi.rcMonitor.top : CW_USEDEFAULT,
+		rect.right - rect.left,
+		rect.bottom - rect.top,
+		options.parent,
+		NULL,
+		GetModuleHandle(NULL),
+		this);
+
 	if(window == NULL)
 		win::bug("Could not create window");
 
@@ -312,16 +367,15 @@ Win32Display::Win32Display(const DisplayOptions &options)
 
 	ShowWindow(window, SW_SHOWDEFAULT);
 
-	if(!options.fullscreen)
-	{
-		RECT rect;
-		GetClientRect(window, &rect);
-		SetWindowPos(window, NULL, 0, 0, options.width + (options.width - rect.right), options.height + (options.height - rect.bottom), SWP_SHOWWINDOW);
-	}
+	if (!GetClientRect(window, &rect))
+		win::bug("GetClientRect failure");
 
-	glViewport(0, 0, options.width, options.height);
+	glViewport(0, 0, rect.right, rect.bottom);
 
-	UpdateWindow(window);
+	window_prop_cache.w = rect.right - rect.left;
+	window_prop_cache.h = rect.bottom - rect.top;
+
+	update_refresh_rate();
 }
 
 Win32Display::~Win32Display()
@@ -363,18 +417,87 @@ int Win32Display::height()
 	return rect.bottom;
 }
 
-int Win32Display::screen_width()
+void Win32Display::resize(int w, int h)
 {
-	return GetSystemMetrics(SM_CXSCREEN);
+	const auto style = GetWindowLongA(window, GWL_STYLE);
+
+	RECT rect;
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = w;
+	rect.bottom = h;
+
+	const auto s = style & WS_MINIMIZEBOX ? windowed_style : fullscreen_style;
+
+	if (!AdjustWindowRectEx(&rect, s, FALSE, 0))
+		win::bug("AdjustWindowRectEx failure");
+
+	if (!SetWindowPos(window, HWND_TOP, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, SWP_NOMOVE | SWP_FRAMECHANGED))
+		win::bug("SetWindowPos failure");
+
+	PostMessage(window, WM_EXITSIZEMOVE, 0, 0);
 }
 
-int Win32Display::screen_height()
+float Win32Display::refresh_rate()
 {
-	return GetSystemMetrics(SM_CYSCREEN);
+	return rrate;
 }
 
 void Win32Display::cursor(bool show)
 {
+	ShowCursor(show);
+}
+
+void Win32Display::set_fullscreen(bool fullscreen)
+{
+	if (fullscreen)
+	{
+		HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONULL);
+		if (monitor == NULL)
+			win::bug("MonitorFromWindow failure");
+
+		MONITORINFOEX mi;
+		mi.cbSize = sizeof(mi);
+		if (!GetMonitorInfo(monitor, &mi))
+			win::bug("GetMonitorInfo failure");
+
+		DEVMODE dm;
+		dm.dmSize = sizeof(dm);
+		if (!EnumDisplaySettings(mi.szDevice, ENUM_CURRENT_SETTINGS, &dm))
+			win::bug("EnumDisplaySettings failure");
+
+		SetWindowLongPtrA(window, GWL_STYLE, fullscreen_style);
+
+		RECT rect;
+		rect.left = 0;
+		rect.top = 0;
+		rect.right = dm.dmPelsWidth;
+		rect.bottom = dm.dmPelsHeight;
+
+		if (!AdjustWindowRectEx(&rect, fullscreen_style, FALSE, 0))
+			win::bug("AdjustWindowRectEx failure");
+
+		SetWindowPos(window, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top, rect.right - rect.left, rect.bottom - rect.top, SWP_FRAMECHANGED);
+	}
+	else
+	{
+		SetWindowLongPtrA(window, GWL_STYLE, windowed_style);
+
+		RECT rect;
+		rect.left = 0;
+		rect.top = 0;
+		rect.right = options.width;
+		rect.bottom = options.height;
+
+		if (!AdjustWindowRectEx(&rect, windowed_style, FALSE, 0))
+			win::bug("AdjustWindowRectEx failure");
+
+		SetWindowPos(window, HWND_TOP, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, SWP_NOMOVE | SWP_FRAMECHANGED);
+	}
+
+	ShowWindow(window, SW_SHOWDEFAULT);
+
+	PostMessage(window, WM_EXITSIZEMOVE, 0, 0);
 }
 
 void Win32Display::vsync(bool on)
@@ -385,6 +508,145 @@ void Win32Display::vsync(bool on)
 NativeWindowHandle Win32Display::native_handle()
 {
 	return window;
+}
+
+void Win32Display::init_monitor_properties()
+{
+	monprops.clear();
+
+	IDXGIFactory1 *factory;
+	HRESULT result;
+
+	std::vector<DXGI_MODE_DESC> modes;
+
+	result = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&factory);
+
+	if (result != S_OK)
+	{
+		fprintf(stderr, "CreateDXGIFactory1 failed: %ld\n", result);
+		return;
+	}
+
+	UINT i = 0;
+	IDXGIAdapter1 *adapter;
+	while (factory->EnumAdapters1(i, &adapter) != DXGI_ERROR_NOT_FOUND)
+	{
+		UINT i2 = 0;
+		IDXGIOutput *output;
+		while (adapter->EnumOutputs(i2, &output) != DXGI_ERROR_NOT_FOUND)
+		{
+			DXGI_OUTPUT_DESC desc;
+			result = output->GetDesc(&desc);
+
+			if (result != S_OK)
+			{
+				fprintf(stderr, "IDXGIOutput::GetDesc failed: %ld\n", result);
+				continue;
+			}
+
+			UINT num = 0;
+			result = output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, NULL);
+
+			if (result != S_OK)
+			{
+				fprintf(stderr, "IDXGIOutput::GetDisplayModeList failed: %ld\n", result);
+				continue;
+			}
+
+			modes.resize(num);
+			result = output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, modes.data());
+
+			if (result != S_OK)
+			{
+				fprintf(stderr, "IDXGIOutput::GetDisplayModeList failed: %ld\n", result);
+				continue;
+			}
+
+			for (const auto &mode : modes)
+			{
+				auto &props = monprops.emplace_back();
+
+				static_assert(sizeof(desc.DeviceName) == sizeof(WCHAR) * 32, "DXGI_OUTPUT_DESC::DeviceName must be 32 WCHAR array");
+
+				// Turrible.
+				char name[33];
+				for (int j = 0; j < 32; ++j)
+					name[j] = desc.DeviceName[j];
+
+				name[32] = 0;
+
+				props.name = name;
+				props.width = mode.Width;
+				props.height = mode.Height;
+				props.rate = mode.RefreshRate.Numerator / (float)mode.RefreshRate.Denominator;
+			}
+
+			output->Release();
+			++i2;
+		}
+
+		adapter->Release();
+		++i;
+	}
+
+	factory->Release();
+}
+
+void Win32Display::update_refresh_rate()
+{
+	HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONULL);
+
+	if (monitor == NULL)
+	{
+		fprintf(stderr, "MonitorFromWindow() returned NULL\n");
+		rrate = 60.0f;
+		return;
+	}
+
+	MONITORINFOEX mi;
+	mi.cbSize = sizeof(mi);
+
+	if (!GetMonitorInfo(monitor, &mi))
+	{
+		fprintf(stderr, "GetMonitorInfo() returned NULL\n");
+		rrate = 60.0f;
+		return;
+	}
+
+	DEVMODE dm;
+	dm.dmSize = sizeof(dm);
+
+	if (!EnumDisplaySettings(mi.szDevice, ENUM_CURRENT_SETTINGS, &dm))
+	{
+		fprintf(stderr, "GetMonitorInfo() returned NULL\n");
+		rrate = 60.0f;
+		return;
+	}
+
+	const MonitorProperties* closest = NULL;
+
+	// Iterate over monprops to find the closest one.
+	// The alleged refreshrate given in dm.dmDisplayFrequency is often rounded, we are trying to suss out which one it actually is.
+	for (const auto& mode : monprops)
+	{
+		if (mode.name == mi.szDevice && mode.width == dm.dmPelsWidth && mode.height == dm.dmPelsHeight)
+		{
+			if (closest == NULL)
+				closest = &mode;
+			else if (std::fabsf(mode.rate - dm.dmDisplayFrequency) < std::fabs(closest->rate - dm.dmDisplayFrequency))
+				closest = &mode;
+		}
+	}
+
+	if (closest == NULL)
+	{
+		fprintf(stderr, "Couldn't match the display mode.\n");
+		rrate = 60.0f;
+	}
+	else
+	{
+		rrate = closest->rate;
+	}
 }
 
 }

@@ -13,7 +13,7 @@
 namespace win
 {
 
-SoundEngine::SoundEngine(Display *parent, AssetRoll &roll)
+SoundEngine::SoundEngine(AssetRoll &roll)
 {
 #if defined WINPLAT_LINUX
 	const char *libpipewire = "/usr/lib/libpipewire-0.3.so.0";
@@ -38,18 +38,9 @@ SoundEngine::SoundEngine(Display *parent, AssetRoll &roll)
 		inner.reset(new SoundEngineLinuxDummy());
 	}
 #elif defined WINPLAT_WINDOWS
-	if (parent == NULL)
-		inner.reset(new SoundEngineWindowsDirectSound(GetDesktopWindow(), roll));
-	else
-		inner.reset(new SoundEngineWindowsDirectSound(parent->native_handle(), roll));
+	inner.reset(new SoundEngineWindowsDirectSound(roll));
 #endif
 }
-
-SoundEngine::SoundEngine(Display &parent, AssetRoll &roll)
-	: SoundEngine(&parent, roll) {}
-
-SoundEngine::SoundEngine(AssetRoll &roll)
-	: SoundEngine(NULL, roll) {}
 
 std::uint32_t SoundEngine::play(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, bool cache, int seek)
 {

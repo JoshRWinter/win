@@ -27,7 +27,7 @@ class SoundEngineWindowsDirectSound : public SoundEngineBase
 	constexpr static int buffer_len_bytes = (write_size_stereo_samples * 2 * sizeof(std::int16_t)) * 3;
 
 public:
-	SoundEngineWindowsDirectSound(HWND hwnd, AssetRoll &roll);
+	explicit SoundEngineWindowsDirectSound(AssetRoll &roll);
 	~SoundEngineWindowsDirectSound() override;
 
 	std::uint32_t play(const SoundEnginePlayCommand &cmd) override;

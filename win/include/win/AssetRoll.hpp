@@ -1,9 +1,8 @@
 #pragma once
 
-#include <fstream>
+#include <filesystem>
 #include <string>
 #include <vector>
-#include <memory>
 #include <mutex>
 
 #include <win/Win.hpp>
@@ -26,16 +25,27 @@ class AssetRoll
 	WIN_NO_COPY_MOVE(AssetRoll);
 
 public:
-	explicit AssetRoll(const char*);
+	explicit AssetRoll(const std::filesystem::path &filepath);
+	AssetRoll(const unsigned char *data, unsigned long long len);
+
+private:
+	explicit AssetRoll(Stream stream);
+
+public:
 
 	Stream operator[](const char*);
 	bool exists(const char*);
 
 private:
+	Stream substream(unsigned long long start, unsigned long long length);
+
 	std::mutex guard;
-	std::string asset_roll_name;
 	std::vector<AssetRollResource> resources;
-	std::ifstream stream;
+	Stream stream;
+
+	std::filesystem::path original_file;
+	const unsigned char *original_data;
+	unsigned long long original_data_length;
 };
 
 }

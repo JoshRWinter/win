@@ -5,6 +5,7 @@
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
 #include <X11/Xatom.h>
+#include <X11/extensions/Xrandr.h>
 
 #include <win/X11Display.hpp>
 
@@ -12,8 +13,10 @@ typedef GLXContext (*glXCreateContextAttribsARBProc)(::Display*, GLXFBConfig, GL
 
 static Atom atom_delete_window;
 static Atom atom_fullscreen;
+static Atom atom_wm_state;
 static ::Display *xdisplay;
 static XkbDescPtr xkb_desc;
+
 static struct x_init_helper
 {
 	x_init_helper()
@@ -37,6 +40,8 @@ static struct x_init_helper
 		// fullscreen atom
 		atom_fullscreen = XInternAtom(xdisplay, "_NET_WM_STATE_FULLSCREEN", False);
 
+		// wm state atom
+		atom_wm_state = XInternAtom(xdisplay, "_NET_WM_STATE", False);
 	}
 
 	~x_init_helper()
@@ -219,6 +224,7 @@ namespace win
 {
 
 X11Display::X11Display(const DisplayOptions &options)
+	: options(options)
 {
 	if (options.width < 1 || options.height < 1)
 		win::bug("Invalid window dimensions");
@@ -252,16 +258,52 @@ X11Display::X11Display(const DisplayOptions &options)
 	// window settings
 	XSetWindowAttributes xswa;
 	xswa.colormap = XCreateColormap(xdisplay, RootWindow(xdisplay, xvi->screen), xvi->visual, AllocNone);
-	xswa.event_mask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+	xswa.event_mask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
+
+	int primary_x, primary_y;
+	unsigned primary_width, primary_height;
+
+	{
+		auto root = RootWindow(xdisplay, DefaultScreen(xdisplay));
+		auto res = XRRGetScreenResources(xdisplay, root);
+		auto outputid = XRRGetOutputPrimary(xdisplay, root);
+		if (outputid == 0)
+			outputid = res->outputs[0];
+		auto output = XRRGetOutputInfo(xdisplay, res, outputid);
+		auto crtc = XRRGetCrtcInfo(xdisplay, res, output->crtc);
+
+		primary_x = crtc->x;
+		primary_y = crtc->y;
+		primary_width = crtc->width;
+		primary_height = crtc->height;
+
+		XRRFreeCrtcInfo(crtc);
+		XRRFreeOutputInfo(output);
+		XRRFreeScreenResources(res);
+	}
 
 	// create da window
-	window = XCreateWindow(xdisplay, RootWindow(xdisplay, xvi->screen), 0, 0, options.width, options.height, 0, xvi->depth, InputOutput, xvi->visual, CWColormap | CWEventMask, &xswa);
+	window = XCreateWindow(
+		xdisplay,
+		RootWindow(xdisplay, xvi->screen),
+		options.fullscreen ? 0 : (primary_x + (primary_width / 2)) - (options.width / 2),
+		options.fullscreen ? 0 : (primary_y + (primary_height / 2)) - (options.height / 2),
+		options.fullscreen ? primary_width : options.width,
+		options.fullscreen ? primary_height : options.height,
+		0,
+		xvi->depth,
+		InputOutput,
+		xvi->visual,
+		CWColormap | CWEventMask,
+		&xswa
+	);
+
 	XMapWindow(xdisplay, window);
 	XStoreName(xdisplay, window, options.caption.c_str());
 
 	// fullscreen
 	if(options.fullscreen)
-		XChangeProperty(xdisplay, window, XInternAtom(xdisplay, "_NET_WM_STATE", False), XA_ATOM, 32, PropModeReplace, (const unsigned char*)&atom_fullscreen, 1);
+		XChangeProperty(xdisplay, window, atom_wm_state, XA_ATOM, 32, PropModeReplace, (const unsigned char*)&atom_fullscreen, 1);
 
 	glXCreateContextAttribsARBProc glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)glXGetProcAddress((unsigned char*)"glXCreateContextAttribsARB");
 	if(glXCreateContextAttribsARB == NULL)
@@ -278,7 +320,7 @@ X11Display::X11Display(const DisplayOptions &options)
 	// create opengl context
 	context = glXCreateContextAttribsARB(xdisplay, fbconfig[0], NULL, true, context_attributes);
 	if(context == None)
-		win::bug("Could not create an OpenGL " + std::to_string(context_attributes[1]) + "." + std::to_string(context_attributes[3])  + " context");
+		win::bug("Could not create an OpenGL " + std::to_string(context_attributes[1]) + "." + std::to_string(context_attributes[3]) + " context");
 	glXMakeCurrent(xdisplay, window, context);
 
 	// set up delete window protocol
@@ -290,6 +332,11 @@ X11Display::X11Display(const DisplayOptions &options)
 
 	XFree(xvi);
 	XFree(fbconfig);
+
+	update_refresh_rate();
+
+	window_prop_cache.w = options.fullscreen ? primary_width : options.width;
+	window_prop_cache.h = options.fullscreen ? primary_height : options.height;
 }
 
 X11Display::~X11Display()
@@ -308,48 +355,70 @@ void X11Display::process()
 
 		switch(xevent.type)
 		{
-		case ClientMessage:
-			window_handler(win::WindowEvent::close);
-			break;
-		case KeyPress:
-		{
-			button_handler(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), true);
-			const KeySym sym = x_get_keysym(&xevent.xkey);
-			if(sym)
-				character_handler(sym);
-			break;
-		}
-		case KeyRelease:
-		{
-			XEvent e;
-			if(XPending(xdisplay))
+			case ClientMessage:
+				window_handler(win::WindowEvent::close);
+				break;
+			case ConfigureNotify:
 			{
-				XPeekEvent(xdisplay, &e);
-				if(e.xany.window == xevent.xany.window && xevent.xkey.keycode == e.xkey.keycode && e.type == KeyPress)
-					break;
-			}
+				Window root;
+				int x, y;
+				unsigned w, h, b, d;
+				XGetGeometry(xdisplay, window, &root, &x, &y, &w, &h, &b, &d);
 
-			button_handler(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), false);
-			break;
-		}
-		case MotionNotify:
-			mouse_handler(xevent.xmotion.x, xevent.xmotion.y);
-			break;
-		case ButtonPress:
-		case ButtonRelease:
-			switch(xevent.xbutton.button)
-			{
-			case 1:
-				button_handler(Button::mouse_left, xevent.type == ButtonPress);
-				break;
-			case 2:
-				button_handler(Button::mouse_middle, xevent.type == ButtonPress);
-				break;
-			case 3:
-				button_handler(Button::mouse_right, xevent.type == ButtonPress);
-				break;
+				const bool resized = w != window_prop_cache.w || h != window_prop_cache.h;
+				const bool moved = x != window_prop_cache.x || y != window_prop_cache.y;
+
+				if (moved || resized)
+					update_refresh_rate();
+
+				if (resized)
+					resize_handler(w, h);
+
+				window_prop_cache.x = x;
+				window_prop_cache.y = y;
+				window_prop_cache.w = w;
+				window_prop_cache.h = h;
 			}
 			break;
+			case KeyPress:
+			{
+				button_handler(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), true);
+				const KeySym sym = x_get_keysym(&xevent.xkey);
+				if(sym)
+					character_handler(sym);
+				break;
+			}
+			case KeyRelease:
+			{
+				XEvent e;
+				if(XPending(xdisplay))
+				{
+					XPeekEvent(xdisplay, &e);
+					if(e.xany.window == xevent.xany.window && xevent.xkey.keycode == e.xkey.keycode && e.type == KeyPress)
+						break;
+				}
+
+				button_handler(keystring_to_button(xkb_desc->names->keys[xevent.xkey.keycode].name), false);
+				break;
+			}
+			case MotionNotify:
+				mouse_handler(xevent.xmotion.x, xevent.xmotion.y);
+				break;
+			case ButtonPress:
+			case ButtonRelease:
+				switch(xevent.xbutton.button)
+				{
+					case 1:
+						button_handler(Button::mouse_left, xevent.type == ButtonPress);
+						break;
+					case 2:
+						button_handler(Button::mouse_middle, xevent.type == ButtonPress);
+						break;
+					case 3:
+						button_handler(Button::mouse_right, xevent.type == ButtonPress);
+						break;
+				}
+				break;
 		}
 	}
 }
@@ -389,14 +458,14 @@ int X11Display::height()
 	return height;
 }
 
-int X11Display::screen_width()
+void X11Display::resize(int w, int h)
 {
-	return WidthOfScreen(ScreenOfDisplay(xdisplay, 0));
+	XResizeWindow(xdisplay, window, w, h);
 }
 
-int X11Display::screen_height()
+float X11Display::refresh_rate()
 {
-	return HeightOfScreen(ScreenOfDisplay(xdisplay, 0));
+	return rrate;
 }
 
 void X11Display::cursor(bool show)
@@ -425,9 +494,106 @@ void X11Display::vsync(bool on)
 	glXSwapIntervalEXT(xdisplay, window, on);
 }
 
+void X11Display::set_fullscreen(bool fullscreen)
+{
+	int monx, mony, monw, monh;
+	float monrate;
+	get_current_monitor_props(monx, mony, monw, monh, monrate);
+
+	XMoveResizeWindow(
+		xdisplay,
+		window,
+		fullscreen ? monx : ((monx + (monw / 2)) - (options.width / 2)),
+		fullscreen ? mony : ((mony + (monh / 2)) - (options.height / 2)),
+		fullscreen ? monw : options.width,
+		fullscreen ? monh : options.height);
+
+	XChangeProperty(xdisplay, window, atom_wm_state, XA_ATOM, 32, PropModeReplace, (const unsigned char *)&atom_fullscreen, fullscreen);
+}
+
 NativeWindowHandle X11Display::native_handle()
 {
 	return &window;
+}
+
+void X11Display::update_refresh_rate()
+{
+	int x, y, w, h;
+	float rr;
+
+	get_current_monitor_props(x, y, w, h, rr);
+
+	rrate = rr;
+}
+
+void X11Display::get_current_monitor_props(int &x, int &y, int &w, int &h, float &rr)
+{
+	x = 0;
+	y = 0;
+	w = 0;
+	h = 0;
+	rr = 0;
+
+	Window root;
+
+	int windowx, windowy;
+	unsigned windoww, windowh, b, d;
+
+	XGetGeometry(xdisplay, window, &root, &windowx, &windowy, &windoww, &windowh, &b, &d);
+
+	auto resources = XRRGetScreenResources(xdisplay, window);
+
+	for (int i = 0; i < resources->noutput; ++i)
+	{
+		auto info = XRRGetOutputInfo(xdisplay, resources, resources->outputs[i]);
+		auto crtc = XRRGetCrtcInfo(xdisplay, resources, info->crtc);
+
+		if (contains_point(crtc->x, crtc->y, crtc->width, crtc->height, windowx + (windoww / 2), windowy + (windowh / 2)))
+		{
+			XRRModeInfo *mode = NULL;
+			for (int j = 0; j < resources->nmode; ++j)
+			{
+				if (resources->modes[j].id == crtc->mode)
+				{
+					mode = &resources->modes[j];
+					break;
+				}
+			}
+
+			if (mode != NULL)
+			{
+				mon_props_cache.x = crtc->x;
+				mon_props_cache.y = crtc->y;
+				mon_props_cache.w = crtc->width;
+				mon_props_cache.h = crtc->height;
+				mon_props_cache.rate = mode->dotClock / ((double)mode->hTotal * mode->vTotal);
+
+				//fprintf(stderr, "Updated refresh rate (%.4f)\n", rr);
+
+				break;
+			}
+			else
+			{
+				fprintf(stderr, "Couldn't find mode\n");
+			}
+		}
+
+		XRRFreeCrtcInfo(crtc);
+		XRRFreeOutputInfo(info);
+	}
+
+	XRRFreeScreenResources(resources);
+
+	x = mon_props_cache.x;
+	y = mon_props_cache.y;
+	w = mon_props_cache.w;
+	h = mon_props_cache.h;
+	rr = mon_props_cache.rate;
+}
+
+bool X11Display::contains_point(int monitorx, int monitory, int monitorw, int monitorh, int x, int y)
+{
+	return x >= monitorx && x < monitorx + monitorw && y >= monitory && y < monitory + monitorh;
 }
 
 }

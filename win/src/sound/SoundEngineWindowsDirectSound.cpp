@@ -42,7 +42,7 @@ static std::string describe_dserr(HRESULT result)
 namespace win
 {
 
-SoundEngineWindowsDirectSound::SoundEngineWindowsDirectSound(HWND w, AssetRoll &roll)
+SoundEngineWindowsDirectSound::SoundEngineWindowsDirectSound(AssetRoll &roll)
 	: loop_cancel(false)
 	, write_position(0)
 	, mixer(roll)
@@ -52,7 +52,7 @@ SoundEngineWindowsDirectSound::SoundEngineWindowsDirectSound(HWND w, AssetRoll &
 	if ((r = DirectSoundCreate8(NULL, &context, NULL)) != DS_OK)
 		win::bug("DirectSound: Couldn't create context " + describe_dserr(r));
 
-	if ((r = context->SetCooperativeLevel(w, DSSCL_PRIORITY)) != DS_OK)
+	if ((r = context->SetCooperativeLevel(GetDesktopWindow(), DSSCL_PRIORITY)) != DS_OK)
 		win::bug("DirectSound: Couldn't set cooperative level " + describe_dserr(r));
 	/*
 
@@ -84,7 +84,7 @@ SoundEngineWindowsDirectSound::SoundEngineWindowsDirectSound(HWND w, AssetRoll &
 
 	DSBUFFERDESC secondary_buffer;
 	secondary_buffer.dwSize = sizeof(secondary_buffer);
-	secondary_buffer.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | (w == GetDesktopWindow() ? DSBCAPS_GLOBALFOCUS : 0);
+	secondary_buffer.dwFlags = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS;
 	secondary_buffer.dwBufferBytes = buffer_len_bytes;
 	secondary_buffer.dwReserved = 0;
 	secondary_buffer.lpwfxFormat = &format;

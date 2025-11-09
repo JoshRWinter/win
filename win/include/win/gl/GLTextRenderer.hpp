@@ -16,17 +16,16 @@ namespace win
 
 class GLTextRenderer : public TextRenderer
 {
-	WIN_NO_COPY(GLTextRenderer);
+	WIN_NO_COPY_MOVE(GLTextRenderer);
 	friend class Font;
 
-	constexpr static int object_data_multiplier = 3;
-	constexpr static int object_data_length = 300;
-	constexpr static int uniform_object_data_length = object_data_length * object_data_multiplier;
+	constexpr static int object_data_length = 2048;
 
 public:
-	GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint uniform_block_binding, bool uniform_block_binding_owned);
+	GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint shader_storage_block_binding, bool shader_storage_block_binding_owned);
 
-	GLFont create_font(float size, Stream data);
+	GLFont create_font(float font_size, Stream data) const;
+	void resize(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area);
 
 	void draw(const GLFont &font, const char *text, float xpos, float ypos, bool centered = false);
 	void draw(const GLFont &font, const char *text, float xpos, float ypos, const Color<float> &color, bool centered = false);
@@ -36,12 +35,19 @@ public:
 private:
 	void send();
 
+	float alignw(float x) const;
+	float alignh(float y) const;
+	static float align(float f, int pixels, float scale);
+
+	Dimensions<int> screen_pixel_dimensions;
+	Area<float> screen_area;
+
 	GLenum texture_unit;
 	bool texture_unit_owned;
-	GLuint uniform_block_binding;
-	bool uniform_block_binding_owned;
+	GLuint shader_storage_block_binding;
+	bool shader_storage_block_binding_owned;
 
-	const GLFont *current_font;
+	const void *current_font;
 	win::Color<float> current_color;
 
 	GLProgram program;
@@ -53,7 +59,7 @@ private:
 	GLBuffer vbo_drawids;
 	GLBuffer ebo;
 
-	GLBuffer uniform_object_data;
+	GLBuffer shader_storage_object_data;
 
 	GLint uniform_projection;
 	GLint uniform_width;
