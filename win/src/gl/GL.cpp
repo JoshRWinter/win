@@ -91,6 +91,8 @@ void load_gl_functions()
 	glUseProgram = (decltype(glUseProgram)) get_proc("glUseProgram");
 	glDeleteProgram = (decltype(glDeleteProgram)) get_proc("glDeleteProgram");
 
+	glGenerateMipmap = (decltype(glGenerateMipmap)) get_proc("glGenerateMipmap");
+
 	glGenFramebuffers = (decltype(glGenFramebuffers)) get_proc("glGenFramebuffers");
 	glBindFramebuffer = (decltype(glBindFramebuffer)) get_proc("glBindFramebuffer");
 	glFramebufferTexture2D = (decltype(glFramebufferTexture2D)) get_proc("glFramebufferTexture2D");

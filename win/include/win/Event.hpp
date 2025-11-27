@@ -52,8 +52,7 @@ enum class Button
 
 enum class WindowEvent
 {
-	close,
-	resize
+	close
 };
 
 }
