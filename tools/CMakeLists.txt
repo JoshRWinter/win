@@ -37,7 +37,7 @@ if (NOGUI)
 		atlasizer
 		${atlasizer_sources}
 		../win/src/Targa.cpp
-		../win/src/FileReadStream.cpp
+		../win/src/FileStream.cpp
 	)
 	target_include_directories(atlasizer PUBLIC ../win/include)
 	add_compile_definitions(NOGUI)
