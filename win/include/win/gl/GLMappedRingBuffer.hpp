@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <cstdio>
 
 #include <win/gl/GL.hpp>
 
@@ -24,6 +23,8 @@ public:
 	GLSyncObject &operator=(GLSyncObject &&rhs) noexcept
 	{
 		if (&rhs == this) return *this;
+
+		if (sync != NULL) glDeleteSync(sync);
 
 		sync = rhs.sync;
 		rhs.sync = NULL;
@@ -63,8 +64,8 @@ struct GLMappedRingBufferLockedRange
 	WIN_NO_COPY(GLMappedRingBufferLockedRange);
 
 	GLMappedRingBufferLockedRange(int buffer_length, int start, int length)
-		: reservation(buffer_length, start, length)
-		, sync(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
+		: sync(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0))
+		, reservation(buffer_length, start, length)
 	{
 		if (sync.get() == NULL)
 			win::bug("glFenceSync() return NULL");
@@ -74,8 +75,8 @@ struct GLMappedRingBufferLockedRange
 
 	GLMappedRingBufferLockedRange &operator=(GLMappedRingBufferLockedRange &&rhs) noexcept = default;
 
-	GLMappedRingBufferReservation reservation;
 	GLSyncObject sync;
+	GLMappedRingBufferReservation reservation;
 };
 
 template <typename T> class GLMappedRingBuffer;
@@ -204,10 +205,11 @@ private:
 
 	static void wait(GLsync sync)
 	{
-		unsigned loops = 0;
+		GLbitfield flags = 0;
+		GLuint64 timeout = 0;
 		for (;;)
 		{
-			auto result = glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
+			auto result = glClientWaitSync(sync, flags, timeout);
 
 			switch(result)
 			{
@@ -217,10 +219,8 @@ private:
 				case GL_CONDITION_SATISFIED:
 					return;
 				case GL_TIMEOUT_EXPIRED:
-					if (++loops > 10)
-					{
-						fprintf(stderr, "glClientWaitSync() has looped %u times!\n", loops);
-					}
+					flags = GL_SYNC_FLUSH_COMMANDS_BIT;
+					timeout = 500'000'000; // halfsec
 					break;
 				default:
 					win::bug("glClientWaitSync(): unrecognized result (" + std::to_string(result) + ")");

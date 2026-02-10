@@ -72,6 +72,7 @@ void load_gl_functions()
 	glDebugMessageCallback = (decltype(glDebugMessageCallback))get_proc("glDebugMessageCallback");
 	glDebugMessageControl = (decltype(glDebugMessageControl))get_proc("glDebugMessageControl");
 
+	glMemoryBarrier = (decltype(glMemoryBarrier))get_proc("glMemoryBarrier");
 	glFenceSync = (decltype(glFenceSync))get_proc("glFenceSync");
 	glDeleteSync = (decltype(glDeleteSync))get_proc("glDeleteSync");
 	glClientWaitSync = (decltype(glClientWaitSync))get_proc("glClientWaitSync");
@@ -111,6 +112,7 @@ void load_gl_functions()
 	glBindBufferRange = (decltype(glBindBufferRange)) get_proc("glBindBufferRange");
 	glDeleteBuffers = (decltype(glDeleteBuffers)) get_proc("glDeleteBuffers");
 
+	glGetBufferSubData = (decltype(glGetBufferSubData)) get_proc("glGetBufferSubData");
 	glBufferData = (decltype(glBufferData)) get_proc("glBufferData");
 	glBufferStorage = (decltype(glBufferStorage)) get_proc("glBufferStorage");
 	glMapBufferRange = (decltype(glMapBufferRange)) get_proc("glMapBufferRange");
@@ -122,6 +124,7 @@ void load_gl_functions()
 
 	glShaderStorageBlockBinding = (decltype(glShaderStorageBlockBinding)) get_proc("glShaderStorageBlockBinding");
 	glGetProgramResourceIndex = (decltype(glGetProgramResourceIndex)) get_proc("glGetProgramResourceIndex");
+
 	glGetUniformBlockIndex = (decltype(glGetUniformBlockIndex)) get_proc("glGetUniformBlockIndex");
 	glUniformBlockBinding = (decltype(glUniformBlockBinding)) get_proc("glUniformBlockBinding");
 	glGetUniformLocation = (decltype(glGetUniformLocation)) get_proc("glGetUniformLocation");
@@ -131,12 +134,16 @@ void load_gl_functions()
 	glUniform3f = (decltype(glUniform3f)) get_proc("glUniform3f");
 	glUniform4f = (decltype(glUniform4f)) get_proc("glUniform4f");
 	glUniform1i = (decltype(glUniform1i)) get_proc("glUniform1i");
+	glUniform1ui = (decltype(glUniform1ui)) get_proc("glUniform1ui");
 	glUniform2i = (decltype(glUniform2i)) get_proc("glUniform2i");
 
 	glDrawElementsInstanced = (decltype(glDrawElementsInstanced)) get_proc("glDrawElementsInstanced");
 	glDrawElementsInstancedBaseInstance = (decltype(glDrawElementsInstancedBaseInstance)) get_proc("glDrawElementsInstancedBaseInstance");
 	glDrawElementsBaseVertex = (decltype(glDrawElementsBaseVertex)) get_proc("glDrawElementsBaseVertex");
 	glMultiDrawElementsIndirect = (decltype(glMultiDrawElementsIndirect)) get_proc("glMultiDrawElementsIndirect");
+	glDrawArraysInstanced = (decltype(glDrawArraysInstanced)) get_proc("glDrawArraysInstanced");
+
+	glDispatchCompute = (decltype(glDispatchCompute)) get_proc("glDispatchCompute");
 
 #ifdef WINPLAT_WINDOWS
 	glTexImage3D = (decltype(glTexImage3D)) get_proc("glTexImage3D");
@@ -193,10 +200,49 @@ GLuint load_gl_shaders(const std::string &vertex, const std::string &fragment)
 	return program;
 }
 
-const char *v = "#version 330 core\nvoid main(){}";
 GLuint load_gl_shaders(Stream vertex, Stream fragment)
 {
 	return load_gl_shaders(vertex.read_all_as_string(), fragment.read_all_as_string());
+}
+
+GLuint load_gl_compute_shader(const std::string &compute)
+{
+	const char *const compute_cstr = compute.c_str();
+	const int compute_cstr_len = compute.length();
+
+	const unsigned cshader = glCreateShader(GL_COMPUTE_SHADER);
+	glShaderSource(cshader, 1, &compute_cstr, &compute_cstr_len);
+
+	glCompileShader(cshader);
+
+	int success = 1;
+	char buffer[2000] = "";
+	glGetShaderiv(cshader, GL_COMPILE_STATUS, &success);
+	if (success == 0)
+	{
+		glGetShaderInfoLog(cshader, 2000, NULL, buffer);
+		win::bug(std::string("compute shader:\n") + buffer);
+	}
+
+	unsigned program = glCreateProgram();
+	glAttachShader(program, cshader);
+	glLinkProgram(program);
+	GLint linked = 0;
+	glGetProgramiv(program, GL_LINK_STATUS, &linked);
+	if (!linked)
+	{
+		glGetProgramInfoLog(program, 2000, NULL, buffer);
+		win::bug(std::string("linker:\n") + buffer);
+	}
+	glDetachShader(program, cshader);
+	glDeleteShader(cshader);
+
+	return program;
+}
+
+GLuint load_gl_compute_shader(Stream compute)
+{
+	return load_gl_compute_shader(compute.read_all_as_string());
 }
 
 }

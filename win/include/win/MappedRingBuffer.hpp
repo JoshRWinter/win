@@ -8,56 +8,7 @@
 namespace win
 {
 
-template <typename T> class MappedRingBuffer;
 template <typename T, bool contiguous = false> class MappedRingBufferRange;
-template <typename T> class MappedRingBufferRangeSliceIterable;
-
-struct MappedRingBufferRangeSlice
-{
-	int start;
-	int length;
-};
-
-template <typename T> class MappedRingBufferRangeSliceIterator
-{
-public:
-	MappedRingBufferRangeSliceIterator(const MappedRingBufferRangeSliceIterable<T> &parent, int position)
-		: parent(parent)
-		, position(position)
-	{}
-
-	void operator++() { ++position; }
-	void operator++(int) { ++position; }
-
-	const MappedRingBufferRangeSlice &operator*() const { return parent.slices[position]; }
-
-	bool operator==(const MappedRingBufferRangeSliceIterator<T> &rhs) const { return &parent == &rhs.parent && position == rhs.position; }
-	bool operator!=(const MappedRingBufferRangeSliceIterator<T> &rhs) const { return &parent != &rhs.parent || position != rhs.position; }
-
-private:
-	const MappedRingBufferRangeSliceIterable<T> &parent;
-	int position;
-};
-
-template <typename T> class MappedRingBufferRangeSliceIterable
-{
-	friend class MappedRingBufferRangeSliceIterator<T>;
-
-public:
-	explicit MappedRingBufferRangeSliceIterable(const MappedRingBufferRange<T, false> &parent)
-	{
-		slices[0].start = parent.range_head;
-		slices[0].length = std::min(parent.buffer_length - parent.range_head, parent.range_length);
-		slices[1].start = 0;
-		slices[1].length = parent.range_length - slices[0].length;
-	}
-
-	MappedRingBufferRangeSliceIterator<T> begin() const { return MappedRingBufferRangeSliceIterator<T>(*this, 0); }
-	MappedRingBufferRangeSliceIterator<T> end() const { return MappedRingBufferRangeSliceIterator<T>(*this, 1 + (slices[1].length != 0)); }
-
-private:
-	MappedRingBufferRangeSlice slices[2];
-};
 
 template <typename T, bool contiguous = false> class MappedRingBufferRangeIterator
 {
@@ -95,8 +46,8 @@ public:
 	}
 
 private:
-	int position;
 	MappedRingBufferRange<T, contiguous> *parent;
+	int position;
 };
 
 template <typename T, bool contiguous> class MappedRingBufferRange
@@ -104,7 +55,6 @@ template <typename T, bool contiguous> class MappedRingBufferRange
 	WIN_NO_COPY(MappedRingBufferRange);
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 	friend class MappedRingBufferRangeIterator<T, contiguous>;
-	friend class MappedRingBufferRangeSliceIterable<T>;
 
 public:
 	MappedRingBufferRange()
@@ -122,20 +72,13 @@ public:
 	{}
 
 	MappedRingBufferRange(MappedRingBufferRange<T, contiguous> &&rhs) noexcept = default;
+	MappedRingBufferRange<T, contiguous> &operator=(MappedRingBufferRange<T, contiguous> &&rhs) noexcept = default;
 
 	MappedRingBufferRangeIterator<T, contiguous> begin() { return MappedRingBufferRangeIterator<T, contiguous>(this, 0); }
 	MappedRingBufferRangeIterator<T, contiguous> end() { return MappedRingBufferRangeIterator<T, contiguous>(this, range_length); }
 
-	MappedRingBufferRangeSliceIterable<T> slices() const
-	{
-		static_assert(!contiguous, "slices() not supported (or necessary) on contiguous ranges");
-		return MappedRingBufferRangeSliceIterable<T>(*this);
-	}
-
 	int head() const { return range_head; }
 	int length() const { return range_length; }
-
-	MappedRingBufferRange<T, contiguous> &operator=(MappedRingBufferRange<T, contiguous> &&rhs) noexcept = default;
 
 	T &operator[](int index)
 	{
@@ -195,8 +138,8 @@ template <typename T> class MappedRingBuffer
 
 public:
 	MappedRingBuffer(void *mapbuf, int len_elelements)
-		: buffer_head(0)
-		, buffer(reinterpret_cast<T*>(mapbuf))
+		: buffer(reinterpret_cast<T*>(mapbuf))
+		, buffer_head(0)
 		, buffer_length(len_elelements)
 	{}
 
@@ -241,8 +184,8 @@ public:
 	}
 
 private:
-	int buffer_head;
 	T *buffer;
+	int buffer_head;
 	int buffer_length;
 };
 

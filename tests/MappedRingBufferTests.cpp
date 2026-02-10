@@ -7,14 +7,6 @@
 int successfull = 0;
 #define assert(exp) do { if (!(exp)) { win::bug("Assert failed on line " + std::to_string(__LINE__)); } else { ++successfull; } } while (false)
 
-template <typename T> std::vector<win::MappedRingBufferRangeSlice> vec(const win::MappedRingBufferRange<T> &range)
-{
-	std::vector<win::MappedRingBufferRangeSlice> v;
-	for (const auto &slice : range.slices())
-		v.emplace_back(slice);
-	return v;
-}
-
 template <typename T> void test_mapped_buffer_reserve()
 {
 	T mapped[5];
@@ -29,10 +21,6 @@ template <typename T> void test_mapped_buffer_reserve()
 		assert(mbuf.buffer_head == 0);
 		assert(range.range_head == 0);
 		assert(range.range_length == 5);
-
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 0);
-		assert(vec(range).at(0).length == 5);
 	}
 
 	{
@@ -41,10 +29,6 @@ template <typename T> void test_mapped_buffer_reserve()
 		assert(mbuf.buffer_head == 3);
 		assert(range.range_head == 0);
 		assert(range.range_length == 3);
-
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 0);
-		assert(vec(range).at(0).length == 3);
 	}
 
 	{
@@ -53,12 +37,6 @@ template <typename T> void test_mapped_buffer_reserve()
 		assert(mbuf.buffer_head == 2);
 		assert(range.range_head == 3);
 		assert(range.range_length == 4);
-
-		assert(vec(range).size() == 2);
-		assert(vec(range).at(0).start == 3);
-		assert(vec(range).at(0).length == 2);
-		assert(vec(range).at(1).start == 0);
-		assert(vec(range).at(1).length == 2);
 	}
 
 	{
@@ -67,10 +45,6 @@ template <typename T> void test_mapped_buffer_reserve()
 		assert(mbuf.buffer_head == 4);
 		assert(range.range_head == 2);
 		assert(range.range_length == 2);
-
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 2);
-		assert(vec(range).at(0).length == 2);
 	}
 
 	{
@@ -79,12 +53,6 @@ template <typename T> void test_mapped_buffer_reserve()
 		assert(mbuf.buffer_head == 4);
 		assert(range.range_head == 4);
 		assert(range.range_length == 5);
-
-		assert(vec(range).size() == 2);
-		assert(vec(range).at(0).start == 4);
-		assert(vec(range).at(0).length == 1);
-		assert(vec(range).at(1).start == 0);
-		assert(vec(range).at(1).length == 4);
 	}
 }
 
@@ -102,10 +70,6 @@ template <typename T> void test_mapped_buffer_range_write()
 		assert(mbuf.buffer_head == 3);
 		assert(range.range_head == 0);
 		assert(range.range_length == 3);
-
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 0);
-		assert(vec(range).at(0).length == 3);
 	}
 
 	{
@@ -114,12 +78,6 @@ template <typename T> void test_mapped_buffer_range_write()
 		assert(mbuf.buffer_head == 2);
 		assert(range.range_head == 3);
 		assert(range.range_length == 4);
-
-		assert(vec(range).size() == 2);
-		assert(vec(range).at(0).start == 3);
-		assert(vec(range).at(0).length == 2);
-		assert(vec(range).at(1).start == 0);
-		assert(vec(range).at(1).length == 2);
 
 		{
 			const T src[2] { 2, 66 };
@@ -150,12 +108,6 @@ template <typename T> void test_mapped_buffer_range_write()
 		assert(range.range_head == 2);
 		assert(range.range_length == 5);
 
-		assert(vec(range).size() == 2);
-		assert(vec(range).at(0).start == 2);
-		assert(vec(range).at(0).length == 3);
-		assert(vec(range).at(1).start == 0);
-		assert(vec(range).at(1).length == 2);
-
 		{
 			T src[0];
 			range.write(src, 0);
@@ -184,10 +136,6 @@ template <typename T> void test_mapped_buffer_range_write()
 		assert(mbuf.buffer_head == 2);
 		assert(range.range_head == 2);
 		assert(range.range_length == 0);
-
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 2);
-		assert(vec(range).at(0).length == 0);
 	}
 }
 
@@ -206,10 +154,6 @@ template <typename T> void test_mapped_buffer_range_iterator()
 		assert(mbuf.buffer_head == 2);
 		assert(range.range_head == 0);
 		assert(range.range_length == 2);
-
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 0);
-		assert(vec(range).at(0).length == 2);
 
 		{
 			auto it = range.begin();
@@ -238,10 +182,6 @@ template <typename T> void test_mapped_buffer_range_iterator()
 		assert(mbuf.buffer_head == 3);
 		assert(range.range_head == 2);
 		assert(range.range_length == 1);
-
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 2);
-		assert(vec(range).at(0).length == 1);
 	}
 
 	{
@@ -250,12 +190,6 @@ template <typename T> void test_mapped_buffer_range_iterator()
 		assert(mbuf.buffer_head == 2);
 		assert(range.range_head == 3);
 		assert(range.range_length == 4);
-
-		assert(vec(range).size() == 2);
-		assert(vec(range).at(0).start == 3);
-		assert(vec(range).at(0).length == 2);
-		assert(vec(range).at(1).start == 0);
-		assert(vec(range).at(1).length == 2);
 
 		int index = 0;
 		for (T &item : range)
@@ -273,12 +207,6 @@ template <typename T> void test_mapped_buffer_range_iterator()
 		assert(mbuf.buffer_head == 2);
 		assert(range.range_head == 2);
 		assert(range.range_length == 5);
-
-		assert(vec(range).size() == 2);
-		assert(vec(range).at(0).start == 2);
-		assert(vec(range).at(0).length == 3);
-		assert(vec(range).at(1).start == 0);
-		assert(vec(range).at(1).length == 2);
 
 		{
 			auto it = range.begin() + 4;
@@ -353,10 +281,6 @@ template <typename T> void test_mapped_buffer_range_subscript_operator()
 		assert(range.range_head == 0);
 		assert(range.range_length == 5);
 
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 0);
-		assert(vec(range).at(0).length == 5);
-
 		range[4] = 91;
 
 		assert(mapped[0] == 0 && mapped[1] == 0 && mapped[2] == 0 && mapped[3] == 0 && mapped[4] == 91);
@@ -373,10 +297,6 @@ template <typename T> void test_mapped_buffer_range_subscript_operator()
 		assert(range.range_head == 0);
 		assert(range.range_length == 3);
 
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 0);
-		assert(vec(range).at(0).length == 3);
-
 		range[0] = 5;
 		range[1] = 93;
 		range[2] = 44;
@@ -390,12 +310,6 @@ template <typename T> void test_mapped_buffer_range_subscript_operator()
 		assert(mbuf.buffer_head == 1);
 		assert(range.range_head == 3);
 		assert(range.range_length == 3);
-
-		assert(vec(range).size() == 2);
-		assert(vec(range).at(0).start == 3);
-		assert(vec(range).at(0).length == 2);
-		assert(vec(range).at(1).start == 0);
-		assert(vec(range).at(1).length == 1);
 
 		range[0] = 56;
 		range[1] = 1;
@@ -411,10 +325,6 @@ template <typename T> void test_mapped_buffer_range_subscript_operator()
 		assert(range.range_head == 1);
 		assert(range.range_length == 4);
 
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 1);
-		assert(vec(range).at(0).length == 4);
-
 		range[0] = 7;
 		range[1] = 81;
 		range[2] = 72;
@@ -429,10 +339,6 @@ template <typename T> void test_mapped_buffer_range_subscript_operator()
 		assert(mbuf.buffer_head == 0);
 		assert(range.range_head == 0);
 		assert(range.range_length == 0);
-
-		assert(vec(range).size() == 1);
-		assert(vec(range).at(0).start == 0);
-		assert(vec(range).at(0).length == 0);
 
 		// range[0] = 3; // would abort
 	}
