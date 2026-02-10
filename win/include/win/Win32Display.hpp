@@ -4,12 +4,13 @@
 
 #ifdef WINPLAT_WINDOWS
 
-#include <vector>
+#include <chrono>
 
 #include <gl/GL.h>
 #include <GL/wglext.h>
 
 #include <win/DisplayBase.hpp>
+#include <win/Win32MonitorEnumerator.hpp>
 
 namespace win
 {
@@ -20,14 +21,6 @@ class Win32Display : public DisplayBase
 
 	constexpr static DWORD windowed_style = WS_SYSMENU | WS_MINIMIZEBOX | WS_CAPTION | WS_SIZEBOX;
 	constexpr static DWORD fullscreen_style = WS_POPUP;
-
-	struct MonitorProperties
-	{
-		std::string name;
-		int width;
-		int height;
-		float rate;
-	};
 
 public:
 	explicit Win32Display(const DisplayOptions &options);
@@ -48,17 +41,17 @@ private:
 	static LRESULT CALLBACK wndproc(HWND, UINT, WPARAM, LPARAM);
 	void win_init_gl(HWND);
 	void win_term_gl();
-	void init_monitor_properties();
 	void update_refresh_rate();
 
 	HWND window;
 	HDC hdc;
 	HGLRC context;
 	PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
-	std::vector<MonitorProperties> monprops;
+	Win32MonitorEnumerator monitors;
 	float rrate;
 	const win::DisplayOptions options;
 	struct { int w = 0, h = 0; } window_prop_cache;
+	struct { bool resize = false; std::chrono::time_point<std::chrono::steady_clock> time; } resize_state;;
 };
 
 }

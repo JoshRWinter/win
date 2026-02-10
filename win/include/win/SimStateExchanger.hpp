@@ -40,7 +40,8 @@ public:
 	~SimStateExchanger()
 	{
 #ifdef WINPLAT_WINDOWS
-		CloseHandle(timer);
+		if (timer != NULL)
+			CloseHandle(timer);
 #endif
 	}
 

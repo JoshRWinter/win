@@ -24,6 +24,7 @@ struct DisplayOptions
 	{}
 
 	std::string caption;
+	std::string monitor_name;
 	bool fullscreen = false;
 	int width = 800;
 	int height = 600;

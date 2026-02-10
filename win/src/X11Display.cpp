@@ -5,9 +5,9 @@
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
 #include <X11/Xatom.h>
-#include <X11/extensions/Xrandr.h>
 
 #include <win/X11Display.hpp>
+#include <win/X11MonitorEnumerator.hpp>
 
 typedef GLXContext (*glXCreateContextAttribsARBProc)(::Display*, GLXFBConfig, GLXContext, Bool, const int*);
 
@@ -260,36 +260,17 @@ X11Display::X11Display(const DisplayOptions &options)
 	xswa.colormap = XCreateColormap(xdisplay, RootWindow(xdisplay, xvi->screen), xvi->visual, AllocNone);
 	xswa.event_mask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
 
-	int primary_x, primary_y;
-	unsigned primary_width, primary_height;
-
-	{
-		auto root = RootWindow(xdisplay, DefaultScreen(xdisplay));
-		auto res = XRRGetScreenResources(xdisplay, root);
-		auto outputid = XRRGetOutputPrimary(xdisplay, root);
-		if (outputid == 0)
-			outputid = res->outputs[0];
-		auto output = XRRGetOutputInfo(xdisplay, res, outputid);
-		auto crtc = XRRGetCrtcInfo(xdisplay, res, output->crtc);
-
-		primary_x = crtc->x;
-		primary_y = crtc->y;
-		primary_width = crtc->width;
-		primary_height = crtc->height;
-
-		XRRFreeCrtcInfo(crtc);
-		XRRFreeOutputInfo(output);
-		XRRFreeScreenResources(res);
-	}
+	X11MonitorEnumerator monitors;
+	const auto &monitor = monitors[0];
 
 	// create da window
 	window = XCreateWindow(
 		xdisplay,
 		RootWindow(xdisplay, xvi->screen),
-		options.fullscreen ? 0 : (primary_x + (primary_width / 2)) - (options.width / 2),
-		options.fullscreen ? 0 : (primary_y + (primary_height / 2)) - (options.height / 2),
-		options.fullscreen ? primary_width : options.width,
-		options.fullscreen ? primary_height : options.height,
+		options.fullscreen ? 0 : (monitor.x + (monitor.width / 2)) - (options.width / 2),
+		options.fullscreen ? 0 : (monitor.y + (monitor.height / 2)) - (options.height / 2),
+		options.fullscreen ? monitor.width : options.width,
+		options.fullscreen ? monitor.height : options.height,
 		0,
 		xvi->depth,
 		InputOutput,
@@ -335,8 +316,8 @@ X11Display::X11Display(const DisplayOptions &options)
 
 	update_refresh_rate();
 
-	window_prop_cache.w = options.fullscreen ? primary_width : options.width;
-	window_prop_cache.h = options.fullscreen ? primary_height : options.height;
+	window_prop_cache.w = options.fullscreen ? monitor.width : options.width;
+	window_prop_cache.h = options.fullscreen ? monitor.height : options.height;
 }
 
 X11Display::~X11Display()
@@ -348,6 +329,12 @@ X11Display::~X11Display()
 
 void X11Display::process()
 {
+	if (resize_state.resized && std::chrono::duration<float>(std::chrono::steady_clock::now() - resize_state.time).count() > 0.25f)
+	{
+		resize_state.resized = false;
+		resize_handler(window_prop_cache.w, window_prop_cache.h);
+	}
+
 	while(XPending(xdisplay))
 	{
 		XEvent xevent;
@@ -372,7 +359,10 @@ void X11Display::process()
 					update_refresh_rate();
 
 				if (resized)
-					resize_handler(w, h);
+				{
+					resize_state.resized = true;
+					resize_state.time = std::chrono::steady_clock::now();
+				}
 
 				window_prop_cache.x = x;
 				window_prop_cache.y = y;
@@ -541,48 +531,20 @@ void X11Display::get_current_monitor_props(int &x, int &y, int &w, int &h, float
 
 	XGetGeometry(xdisplay, window, &root, &windowx, &windowy, &windoww, &windowh, &b, &d);
 
-	auto resources = XRRGetScreenResources(xdisplay, window);
-
-	for (int i = 0; i < resources->noutput; ++i)
+	X11MonitorEnumerator monitors;
+	for (const auto &monitor : monitors)
 	{
-		auto info = XRRGetOutputInfo(xdisplay, resources, resources->outputs[i]);
-		auto crtc = XRRGetCrtcInfo(xdisplay, resources, info->crtc);
-
-		if (contains_point(crtc->x, crtc->y, crtc->width, crtc->height, windowx + (windoww / 2), windowy + (windowh / 2)))
+		if (contains_point(monitor.x, monitor.y, monitor.width, monitor.height, windowx + (windoww / 2), windowy + (windowh / 2)))
 		{
-			XRRModeInfo *mode = NULL;
-			for (int j = 0; j < resources->nmode; ++j)
-			{
-				if (resources->modes[j].id == crtc->mode)
-				{
-					mode = &resources->modes[j];
-					break;
-				}
-			}
+			mon_props_cache.x = monitor.x;
+			mon_props_cache.y = monitor.y;
+			mon_props_cache.w = monitor.width;
+			mon_props_cache.h = monitor.height;
+			mon_props_cache.rate = monitor.rate;
 
-			if (mode != NULL)
-			{
-				mon_props_cache.x = crtc->x;
-				mon_props_cache.y = crtc->y;
-				mon_props_cache.w = crtc->width;
-				mon_props_cache.h = crtc->height;
-				mon_props_cache.rate = mode->dotClock / ((double)mode->hTotal * mode->vTotal);
-
-				//fprintf(stderr, "Updated refresh rate (%.4f)\n", rr);
-
-				break;
-			}
-			else
-			{
-				fprintf(stderr, "Couldn't find mode\n");
-			}
+			break;
 		}
-
-		XRRFreeCrtcInfo(crtc);
-		XRRFreeOutputInfo(info);
 	}
-
-	XRRFreeScreenResources(resources);
 
 	x = mon_props_cache.x;
 	y = mon_props_cache.y;
