@@ -325,11 +325,11 @@ private:
 };
 
 void gl_check_error();
-GLuint load_gl_shaders(const std::string &, const std::string &);
-GLuint load_gl_shaders(Stream, Stream);
-GLuint load_gl_compute_shader(Stream);
-GLuint load_gl_compute_shader(const std::string &);
-void load_gl_functions();
+void gl_load_functions();
+GLuint gl_load_shaders(const std::string &, const std::string &);
+GLuint gl_load_shaders(Stream, Stream);
+GLuint gl_load_compute_shader(Stream);
+GLuint gl_load_compute_shader(const std::string &);
 
 }
 

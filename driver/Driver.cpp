@@ -52,7 +52,7 @@ int main()
 	win::Display display(display_options);
 	display.cursor(true);
 
-	win::load_gl_functions();
+	win::gl_load_functions();
 
 #if defined WINPLAT_LINUX
 	win::AssetRoll roll("roll");
@@ -87,7 +87,7 @@ int main()
 		0, 1, 2, 0, 2, 3
 	};
 
-	win::GLProgram program(win::load_gl_shaders(roll["vertex.vert"], roll["fragment.frag"]));
+	win::GLProgram program(win::gl_load_shaders(roll["vertex.vert"], roll["fragment.frag"]));
 	glUseProgram(program.get());
 
 	glm::mat4 ortho = glm::ortho(-4.0f, 4.0f, -3.0f, 3.0f);

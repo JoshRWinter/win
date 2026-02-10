@@ -67,7 +67,7 @@ void gl_check_error()
 		win::bug("GL error " + std::string(errname) + " (" + std::to_string(err) + ")");
 }
 
-void load_gl_functions()
+void gl_load_functions()
 {
 	glDebugMessageCallback = (decltype(glDebugMessageCallback))get_proc("glDebugMessageCallback");
 	glDebugMessageControl = (decltype(glDebugMessageControl))get_proc("glDebugMessageControl");
@@ -152,7 +152,7 @@ void load_gl_functions()
 #endif
 }
 
-GLuint load_gl_shaders(const std::string &vertex, const std::string &fragment)
+GLuint gl_load_shaders(const std::string &vertex, const std::string &fragment)
 {
 	const char *const vertex_cstr = vertex.c_str();
 	const char *const fragment_cstr = fragment.c_str();
@@ -200,12 +200,12 @@ GLuint load_gl_shaders(const std::string &vertex, const std::string &fragment)
 	return program;
 }
 
-GLuint load_gl_shaders(Stream vertex, Stream fragment)
+GLuint gl_load_shaders(Stream vertex, Stream fragment)
 {
-	return load_gl_shaders(vertex.read_all_as_string(), fragment.read_all_as_string());
+	return gl_load_shaders(vertex.read_all_as_string(), fragment.read_all_as_string());
 }
 
-GLuint load_gl_compute_shader(const std::string &compute)
+GLuint gl_load_compute_shader(const std::string &compute)
 {
 	const char *const compute_cstr = compute.c_str();
 	const int compute_cstr_len = compute.length();
@@ -240,9 +240,9 @@ GLuint load_gl_compute_shader(const std::string &compute)
 	return program;
 }
 
-GLuint load_gl_compute_shader(Stream compute)
+GLuint gl_load_compute_shader(Stream compute)
 {
-	return load_gl_compute_shader(compute.read_all_as_string());
+	return gl_load_compute_shader(compute.read_all_as_string());
 }
 
 }

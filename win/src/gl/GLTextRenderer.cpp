@@ -95,7 +95,7 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 		draw_ids[i] = i;
 
 	// shaders and uniforms
-	program = std::move(GLProgram(load_gl_shaders(vertexshader, fragmentshader)));
+	program = std::move(GLProgram(gl_load_shaders(vertexshader, fragmentshader)));
 	glUseProgram(program.get());
 
 	uniform_color = glGetUniformLocation(program.get(), "color");
