@@ -82,7 +82,7 @@ struct GLMappedRingBufferLockedRange
 template <typename T> class GLMappedRingBuffer;
 template <typename T, bool contiguous = false> class GLMappedRingBufferRange : public MappedRingBufferRange<T, contiguous>
 {
-	WIN_NO_COPY(GLMappedRingBufferRange);
+	WIN_NO_COPY_MOVE(GLMappedRingBufferRange);
 	friend class GLMappedRingBuffer<T>;
 
 	// only should be called by GLMappedRingBuffer
@@ -92,42 +92,10 @@ template <typename T, bool contiguous = false> class GLMappedRingBufferRange : p
 	{}
 
 public:
-	GLMappedRingBufferRange()
-		: locked(true) // pretend to be locked so the destructor doesn't get angry
-	{}
-
-	GLMappedRingBufferRange(GLMappedRingBufferRange<T, contiguous> &&rhs) noexcept
-		: MappedRingBufferRange<T, contiguous>(std::move(rhs))
-		, locked(rhs.locked)
-	{
-		// pretend to lock the rhs so its destructor doesn't complain
-		rhs.locked = true;
-	}
-
 	~GLMappedRingBufferRange()
 	{
 		if (!locked)
 			win::bug("GLMappedRingBufferRange was left unlocked!");
-	}
-
-	GLMappedRingBufferRange &operator=(GLMappedRingBufferRange<T, contiguous> &&rhs) noexcept
-	{
-		MappedRingBufferRange<T, contiguous>::operator=(std::move(rhs));
-		locked = rhs.locked;
-
-		// pretend to lock the rhs so its destructor doesn't complain
-		rhs.locked = true;
-
-		return *this;
-	}
-
-	void discard()
-	{
-		if (locked)
-			win::bug("GLMappedRingBufferRange: discard() was called on a locked range! This is nonsensical.");
-
-		// fool the destructor into thinking everything's fine
-		locked = true;
 	}
 
 private:
