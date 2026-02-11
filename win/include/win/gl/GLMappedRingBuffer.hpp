@@ -11,33 +11,6 @@ using namespace win::gl;
 namespace win
 {
 
-class GLSyncObject
-{
-	WIN_NO_COPY(GLSyncObject);
-
-public:
-	explicit GLSyncObject(GLsync s) : sync(s) {}
-	GLSyncObject(GLSyncObject &&rhs) noexcept : sync(rhs.sync) { rhs.sync = NULL; }
-	~GLSyncObject() { if (sync != NULL) glDeleteSync(sync); }
-
-	GLSyncObject &operator=(GLSyncObject &&rhs) noexcept
-	{
-		if (&rhs == this) return *this;
-
-		if (sync != NULL) glDeleteSync(sync);
-
-		sync = rhs.sync;
-		rhs.sync = NULL;
-
-		return *this;
-	}
-
-	GLsync get() const { return sync; }
-
-private:
-	GLsync sync;
-};
-
 struct GLMappedRingBufferReservation
 {
 	GLMappedRingBufferReservation(int buffer_length, int start, int length)
