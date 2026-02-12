@@ -53,14 +53,14 @@ struct GLMappedRingBufferLockedRange
 };
 
 template <typename T> class GLMappedRingBuffer;
-template <typename T, bool contiguous = false> class GLMappedRingBufferRange : public MappedRingBufferRange<T, contiguous>
+template <typename T> class GLMappedRingBufferRange : public MappedRingBufferRange<T>
 {
 	WIN_NO_COPY_MOVE(GLMappedRingBufferRange);
 	friend class GLMappedRingBuffer<T>;
 
 	// only should be called by GLMappedRingBuffer
-	explicit GLMappedRingBufferRange(MappedRingBufferRange<T, contiguous> &&original)
-		: MappedRingBufferRange<T, contiguous>(std::move(original))
+	explicit GLMappedRingBufferRange(MappedRingBufferRange<T> &&original)
+		: MappedRingBufferRange<T>(std::move(original))
 		, locked(false)
 	{}
 
@@ -90,6 +90,8 @@ public:
 
 	GLMappedRingBuffer(GLMappedRingBuffer<T> &&rhs) noexcept = default;
 
+	GLMappedRingBuffer<T> &operator=(GLMappedRingBuffer<T> &&rhs) noexcept = default;
+
 	int head() const { return inner.head(); }
 	int length() const { return inner.length(); }
 
@@ -100,36 +102,16 @@ public:
 		return GLMappedRingBufferRange<T>(inner.reserve(len));
 	}
 
-	GLMappedRingBufferRange<T, true> reserve_contiguous(int len)
-	{
-		wait_for_locked_range(inner.head(), len);
-
-		return GLMappedRingBufferRange<T, true>(inner.reserve_contiguous(len));
-	}
-
-	GLMappedRingBuffer<T> &operator=(GLMappedRingBuffer<T> &&rhs) noexcept = default;
-
 	void lock(GLMappedRingBufferRange<T> &range)
 	{
-		lock(range.head(), range.length());
-		range.locked = true;
-	}
-
-	void lock(GLMappedRingBufferRange<T, true> &range)
-	{
-		lock(range.head(), range.length());
+		locks.emplace_back(inner.length(), range.head(), range.length());
 		range.locked = true;
 	}
 
 private:
-	void lock(int start, int len)
-	{
-		locks.emplace_back(inner.length(), start, len);
-	}
-
 	void wait_for_locked_range(const int start, const int length)
 	{
-		GLMappedRingBufferReservation reservation(inner.length(), start, length);
+		const GLMappedRingBufferReservation reservation(inner.length(), start, length);
 
 		for (auto it = locks.begin(); it != locks.end();)
 		{
@@ -148,9 +130,10 @@ private:
 	{
 		GLbitfield flags = 0;
 		GLuint64 timeout = 0;
+
 		for (;;)
 		{
-			auto result = glClientWaitSync(sync, flags, timeout);
+			const auto result = glClientWaitSync(sync, flags, timeout);
 
 			switch(result)
 			{
