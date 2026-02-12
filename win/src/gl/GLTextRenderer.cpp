@@ -19,7 +19,7 @@ static const char *vertexshader =
 
 "struct Object { vec2 position; uint dims; float index; };\n"
 
-"layout (std140) buffer object_data { Object data[]; };\n"
+"layout (std140) uniform object_data { Object data[500]; };\n"
 "uniform mat4 projection;\n"
 "uniform float width;\n"
 "uniform float height;\n"
@@ -31,7 +31,7 @@ static const char *vertexshader =
 "out vec3 ftexcoord;\n"
 
 "void main(){\n"
-"int i = draw_id % 2048;\n"
+"int i = draw_id % data.length();\n"
 "float w = (data[i].dims >> 16) / float(65535);\n"
 "float h = (data[i].dims & 65535) / float(65535);\n"
 "ftexcoord = vec3(float(texcoord.x) * w, float(texcoord.y) * h, data[i].index);\n"
@@ -58,13 +58,13 @@ static const char *vertexshader =
 namespace win
 {
 
-GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint shader_storage_block_binding, bool shader_storage_block_binding_owned)
+GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint uniform_block_binding, bool uniform_block_binding_owned)
 	: screen_pixel_dimensions(screen_pixel_dimensions)
 	, screen_area(screen_area)
 	, texture_unit(texture_unit)
 	, texture_unit_owned(texture_unit_owned)
-	, shader_storage_block_binding(shader_storage_block_binding)
-	, shader_storage_block_binding_owned(shader_storage_block_binding_owned)
+	, uniform_block_binding(uniform_block_binding)
+	, uniform_block_binding_owned(uniform_block_binding_owned)
 	, current_font(NULL)
 	, current_color(0.0f, 0.0f, 0.0f, 1.0f)
 {
@@ -142,13 +142,13 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// object data
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, shader_storage_object_data.get());
-	const auto object_data_block_index = glGetProgramResourceIndex(program.get(), GL_SHADER_STORAGE_BLOCK, "object_data");
+	glBindBuffer(GL_UNIFORM_BUFFER, uniform_object_data.get());
+	const auto object_data_block_index = glGetUniformBlockIndex(program.get(), "object_data");
 	if (object_data_block_index == GL_INVALID_INDEX) win::bug("No object data uniform block index");
-	glShaderStorageBlockBinding(program.get(), object_data_block_index, shader_storage_block_binding);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, shader_storage_block_binding, shader_storage_object_data.get());
-	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(ObjectBytes) * object_data_length, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	void *instances_mem = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(ObjectBytes) * object_data_length, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	glUniformBlockBinding(program.get(), object_data_block_index, uniform_block_binding);
+	glBindBufferBase(GL_UNIFORM_BUFFER, uniform_block_binding, uniform_object_data.get());
+	glBufferStorage(GL_UNIFORM_BUFFER, sizeof(ObjectBytes) * object_data_length, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+	void *instances_mem = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(ObjectBytes) * object_data_length, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 	object_data = std::move(GLMappedRingBuffer<ObjectBytes>(instances_mem, object_data_length));
 }
 
@@ -183,8 +183,8 @@ void GLTextRenderer::flush()
 	glUseProgram(program.get());
 	glBindVertexArray(vao.get());
 
-	if (!shader_storage_block_binding_owned)
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, shader_storage_block_binding, shader_storage_object_data.get());
+	if (!uniform_block_binding_owned)
+		glBindBufferBase(GL_UNIFORM_BUFFER, uniform_block_binding, uniform_object_data.get());
 
 	for (const auto &str : string_queue)
 	{
@@ -258,6 +258,8 @@ void GLTextRenderer::send()
 
 	auto range = object_data.reserve(count);
 	range.write(object_data_prebuf.data(), count);
+
+	glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 
 	glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, NULL, count, range.head());
 	object_data.lock(range);

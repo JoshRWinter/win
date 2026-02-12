@@ -19,10 +19,10 @@ class GLTextRenderer : public TextRenderer
 	WIN_NO_COPY_MOVE(GLTextRenderer);
 	friend class Font;
 
-	constexpr static int object_data_length = 2048;
+	constexpr static int object_data_length = 500;
 
 public:
-	GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint shader_storage_block_binding, bool shader_storage_block_binding_owned);
+	GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint uniform_block_binding, bool uniform_block_binding_owned);
 
 	GLFont create_font(float font_size, Stream data) const;
 	void resize(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area);
@@ -44,8 +44,8 @@ private:
 
 	GLenum texture_unit;
 	bool texture_unit_owned;
-	GLuint shader_storage_block_binding;
-	bool shader_storage_block_binding_owned;
+	GLuint uniform_block_binding;
+	bool uniform_block_binding_owned;
 
 	const void *current_font;
 	win::Color<float> current_color;
@@ -59,7 +59,7 @@ private:
 	GLBuffer vbo_drawids;
 	GLBuffer ebo;
 
-	GLBuffer shader_storage_object_data;
+	GLBuffer uniform_object_data;
 
 	GLint uniform_projection;
 	GLint uniform_width;
