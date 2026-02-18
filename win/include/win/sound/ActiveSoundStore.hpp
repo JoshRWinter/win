@@ -26,8 +26,9 @@ template <typename T, int capacity> class ActiveSoundStore;
 template <typename T, int capacity> class ActiveSoundStoreIterator
 {
 	friend class ActiveSoundStore<T, capacity>;
+
 public:
-	ActiveSoundStoreIterator(typename win::Pool<ActiveSoundStoreItem<T>, capacity>::Iterator iterator)
+	ActiveSoundStoreIterator(typename win::Pool<ActiveSoundStoreItem<T>, capacity, true>::Iterator iterator)
 		: iterator(iterator)
 	{}
 
@@ -39,12 +40,13 @@ public:
 	bool operator!=(const ActiveSoundStoreIterator<T, capacity> rhs) { return iterator != rhs.iterator; }
 
 private:
-	typename win::Pool<ActiveSoundStoreItem<T>, capacity>::Iterator iterator;
+	typename win::Pool<ActiveSoundStoreItem<T>, capacity, true>::Iterator iterator;
 };
 
 template <typename T, int capacity> class ActiveSoundStore
 {
 	WIN_NO_COPY_MOVE(ActiveSoundStore);
+	static_assert(capacity <= 32, "Reevaluate first_partition_inline for capacities other than 32");
 
 public:
 	typedef class ActiveSoundStoreIterator<T, capacity> Iterator;
@@ -174,7 +176,7 @@ private:
 	}
 
 	std::uint16_t next_id;
-	win::Pool<ActiveSoundStoreItem<T>, capacity> store;
+	win::Pool<ActiveSoundStoreItem<T>, capacity, true> store;
 	ActiveSoundStoreItem<T> *index[capacity];
 	std::vector<std::uint32_t> index_free_list;
 };

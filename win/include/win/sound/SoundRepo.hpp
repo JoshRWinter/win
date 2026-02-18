@@ -63,11 +63,11 @@ public:
 
 private:
 	AssetRoll &roll;
-	Pool<SoundRepoEntry, 25> entries;
-	Pool<SoundRepoCacheEntry, 25> cache_entries;
-	Pool<DecodingPcmSource, 25> decoders;
-	Pool<CachingPcmSource, 25> caching_sources;
-	Pool<CachedPcmSource, 25> cached_sources;
+	Pool<SoundRepoEntry, 25, false> entries;
+	Pool<SoundRepoCacheEntry, 25, false> cache_entries;
+	Pool<DecodingPcmSource, 25, false> decoders;
+	Pool<CachingPcmSource, 25, false> caching_sources;
+	Pool<CachedPcmSource, 25, false> cached_sources;
 };
 
 }

@@ -1,109 +1,140 @@
 #pragma once
 
-#include <type_traits>
 #include <memory>
 #include <vector>
-#include <limits>
 
 #include <win/Win.hpp>
 
 namespace win
 {
 
-template <typename T, int initial_capacity> class Pool;
-
 namespace impl
 {
 
-template <typename T> struct PoolNode : T
+template<typename T> struct PoolNodeStorage
 {
-	template <typename... Ts> PoolNode(Ts&&... ts)
-		: T(std::forward<Ts>(ts)...)
-	{}
+	alignas(alignof(T)) unsigned char item[sizeof(T)];
+};
 
-	void *spot;
+template<typename T> struct PoolNode : T
+{
+	template<typename... Ts> PoolNode(Ts &&...ts)
+		: T(std::forward<Ts>(ts)...)
+	{
+	}
+
 	PoolNode<T> *prev;
 	PoolNode<T> *next;
 };
 
-template <typename T, int capacity> struct PoolPartition
+template<typename T, int capacity> struct PoolPartition
 {
 	WIN_NO_COPY_MOVE(PoolPartition);
 
 	PoolPartition() = default;
 
-	std::aligned_storage_t<sizeof(PoolNode<T>), alignof(PoolNode<T>)> storage[capacity];
 	std::unique_ptr<PoolPartition<T, capacity>> next;
+	PoolNodeStorage<PoolNode<T>> storage[capacity];
 };
 
-
-template <typename T, int initial_capacity> class PoolIterator
+template<typename T> class PoolIterator
 {
-	friend class Pool<T, initial_capacity>;
-public:
-	explicit PoolIterator(impl::PoolNode<T> *node)
-		: node(node) {}
+	friend class Pool;
 
-	PoolIterator<T, initial_capacity> operator++() { node = node->next; return *this; }
-	PoolIterator<T, initial_capacity> operator++(int) { PoolIterator<T, initial_capacity> copy = *this; node = node->next; return copy; }
+public:
+	explicit PoolIterator(PoolNode<T> *node)
+		: node(node)
+	{
+	}
+
+	PoolIterator<T> operator++()
+	{
+		node = node->next;
+		return *this;
+	}
+
+	PoolIterator<T> operator++(int)
+	{
+		PoolIterator<T> copy(node);
+		node = node->next;
+		return copy;
+	}
+
 	T &operator*() { return *node; }
+
 	T *operator->() { return node; }
-	bool operator==(const PoolIterator<T, initial_capacity> rhs) const { return node == rhs.node; }
-	bool operator!=(const PoolIterator<T, initial_capacity> rhs) const { return node != rhs.node; }
+
+	bool operator==(const PoolIterator<T> rhs) const { return node == rhs.node; }
+
+	bool operator!=(const PoolIterator<T> rhs) const { return node != rhs.node; }
 
 private:
-	impl::PoolNode<T> *node;
+	PoolNode<T> *node;
 };
 
-template <typename T, int initial_capacity> class PoolConstIterator
+template<typename T> class PoolConstIterator
 {
-	friend class Pool<T, initial_capacity>;
 public:
-	explicit PoolConstIterator(const impl::PoolNode<T> *node)
-		: node(node) {}
+	explicit PoolConstIterator(const PoolNode<T> *node)
+		: node(node)
+	{
+	}
 
-	PoolConstIterator<T, initial_capacity> operator++() { node = node->next; return *this; }
-	PoolConstIterator<T, initial_capacity> operator++(int) { PoolConstIterator<T, initial_capacity> copy = *this; node = node->next; return copy; }
+	PoolConstIterator<T> operator++()
+	{
+		node = node->next;
+		return *this;
+	}
+
+	PoolConstIterator<T> operator++(int)
+	{
+		PoolConstIterator<T> copy(node);
+		node = node->next;
+		return copy;
+	}
+
 	const T &operator*() const { return *node; }
+
 	const T *operator->() const { return node; }
-	bool operator==(const PoolConstIterator<T, initial_capacity> rhs) const { return node == rhs.node; }
-	bool operator!=(const PoolConstIterator<T, initial_capacity> rhs) const { return node != rhs.node; }
+
+	bool operator==(const PoolConstIterator<T> rhs) const { return node == rhs.node; }
+
+	bool operator!=(const PoolConstIterator<T> rhs) const { return node != rhs.node; }
 
 private:
-	const impl::PoolNode<T> *node;
+	const PoolNode<T> *node;
 };
 
 }
 
-template <typename T, int initial_capacity = 100> class Pool
+template<typename T, int partition_capacity, bool first_partition_inline> class Pool
 {
-	struct Empty {};
+	struct Empty
+	{
+	};
 
 	WIN_NO_COPY_MOVE(Pool);
 
 public:
-	typedef impl::PoolIterator<T, initial_capacity> Iterator;
-	typedef impl::PoolConstIterator<T, initial_capacity> ConstIterator;
+	typedef impl::PoolIterator<T> Iterator;
+	typedef impl::PoolConstIterator<T> ConstIterator;
 
 	Pool()
-		: count(0)
-		, head(NULL)
-		, tail(NULL)
 	{
-		static_assert(initial_capacity > 0, "Capacity must be greater than zero.");
+		static_assert(partition_capacity > 0, "Capacity must be greater than zero.");
 
-		if constexpr (use_heap_storage())
-			first_partition_heap_ptr.reset(new impl::PoolPartition<T, initial_capacity>);
+		if constexpr (!first_partition_inline)
+			first_partition_heap_ptr.reset(new impl::PoolPartition<T, partition_capacity>);
 	}
 
-	~Pool()
-	{
-		clear();
-	}
+	~Pool() { clear(); }
 
 	Iterator begin() { return Iterator(head); }
+
 	Iterator end() { return Iterator(NULL); }
+
 	ConstIterator begin() const { return ConstIterator(head); }
+
 	ConstIterator end() const { return ConstIterator(NULL); }
 
 	int size() const { return count; }
@@ -117,15 +148,13 @@ public:
 		count = 0;
 	}
 
-	template <typename... Ts> T &add(Ts&&... ts)
+	template<typename... Ts> T &add(Ts &&...ts)
 	{
 		if (count == std::numeric_limits<int>::max())
 			win::bug("win::Pool: max size");
 
-		std::aligned_storage_t<sizeof(impl::PoolNode<T>), alignof(impl::PoolNode<T>)> *const spot = find_spot();
-
-		impl::PoolNode<T> *node = new (spot) impl::PoolNode<T>(std::forward<Ts>(ts)...);
-		node->spot = spot;
+		auto *const spot = find_spot();
+		auto *const node = std::launder(new (spot) impl::PoolNode<T>(std::forward<Ts>(ts)...));
 
 		node->next = NULL;
 		node->prev = tail;
@@ -141,20 +170,14 @@ public:
 		return *node;
 	}
 
-	void remove(T &object)
-	{
-		erase(object);
-	}
+	void remove(T &object) { erase(object); }
 
-	Iterator remove(Iterator it)
-	{
-		return erase(*it.node);
-	}
+	Iterator remove(Iterator it) { return erase(*it); }
 
 private:
 	Iterator erase(T &object)
 	{
-		impl::PoolNode<T> *node = static_cast<impl::PoolNode<T>*>(&object);
+		auto node = static_cast<impl::PoolNode<T> *>(&object);
 
 		if (node->prev != NULL)
 			node->prev->next = node->next;
@@ -169,60 +192,65 @@ private:
 		if (--count == 0)
 			freelist.clear(); // this is the last one. wipe the free list
 		else
-			freelist.push_back(static_cast<std::aligned_storage_t<sizeof(impl::PoolNode<T>), alignof(impl::PoolNode<T>)>*>(node->spot));
+			freelist.push_back(node);
 
 		impl::PoolNode<T> *next = node->next;
+
 #ifndef NDEBUG
 		node->next = NULL;
 #endif
+
 		node->~PoolNode();
+
 		return Iterator(next);
 	}
 
-	std::aligned_storage_t<sizeof(impl::PoolNode<T>), alignof(impl::PoolNode<T>)> *find_spot()
+	impl::PoolNode<T> *find_spot()
 	{
 		if (!freelist.empty())
 		{
-			std::aligned_storage_t<sizeof(impl::PoolNode<T>), alignof(impl::PoolNode<T>)> *spot = freelist[freelist.size() - 1];
+			auto spot = freelist[freelist.size() - 1];
 			freelist.pop_back();
+
 			return spot;
 		}
 
-		const int partition_outer_offset = count / initial_capacity;
-		int partition_inner_offset = count % initial_capacity;
+		const int partition_number = count / partition_capacity;
+		int partition_index = count % partition_capacity;
 
-		impl::PoolPartition<T, initial_capacity> *partition = get_first_partition();
-		for (int i = 0; i < partition_outer_offset; ++i)
+		auto partition = get_first_partition();
+		for (int i = 0; i < partition_number; ++i)
 		{
 			if (!partition->next)
-				partition->next.reset(new impl::PoolPartition<T, initial_capacity>());
+				partition->next.reset(new impl::PoolPartition<T, partition_capacity>());
 
 			partition = partition->next.get();
 		}
 
-		return partition->storage + partition_inner_offset;
+		// The reinterpret_cast comes close to violating strict-aliasing here, but since the pointer is not dereferenced, it's ok
+		return reinterpret_cast<impl::PoolNode<T> *>(&partition->storage[partition_index].item);
 	}
 
-	// use heap storage for first head) partition?
-	static constexpr bool use_heap_storage()
+	constexpr impl::PoolPartition<T, partition_capacity> *get_first_partition()
 	{
-		return sizeof(T) * initial_capacity > 500;
-	}
-
-	constexpr impl::PoolPartition<T, initial_capacity> *get_first_partition()
-	{
-		if constexpr (use_heap_storage())
-			return first_partition_heap_ptr.get();
-		else
+		if constexpr (first_partition_inline)
 			return &first_partition_storage;
+		else
+			return first_partition_heap_ptr.get();
 	}
 
-	int count;
-	std::vector<std::aligned_storage_t<sizeof(impl::PoolNode<T>), alignof(impl::PoolNode<T>)>*> freelist;
-	[[no_unique_address]] std::conditional_t<use_heap_storage(), std::unique_ptr<impl::PoolPartition<T, initial_capacity>>, Empty> first_partition_heap_ptr;
-	[[no_unique_address]] std::conditional_t<!use_heap_storage(), impl::PoolPartition<T, initial_capacity>, Empty> first_partition_storage;
-	impl::PoolNode<T> *head;
-	impl::PoolNode<T> *tail;
+	impl::PoolNode<T> *head = NULL;
+	impl::PoolNode<T> *tail = NULL;
+
+	[[no_unique_address]]
+	std::conditional_t<!first_partition_inline, std::unique_ptr<impl::PoolPartition<T, partition_capacity>>, Empty> first_partition_heap_ptr;
+
+	[[no_unique_address]]
+	std::conditional_t<first_partition_inline, impl::PoolPartition<T, partition_capacity>, Empty> first_partition_storage;
+
+	std::vector<impl::PoolNode<T> *> freelist;
+
+	int count = 0;
 };
 
 }
