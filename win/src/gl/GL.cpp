@@ -114,6 +114,7 @@ void gl_load_functions()
 
 	glGetBufferSubData = (decltype(glGetBufferSubData)) get_proc("glGetBufferSubData");
 	glBufferData = (decltype(glBufferData)) get_proc("glBufferData");
+	glBufferSubData = (decltype(glBufferSubData)) get_proc("glBufferSubData");
 	glBufferStorage = (decltype(glBufferStorage)) get_proc("glBufferStorage");
 	glMapBufferRange = (decltype(glMapBufferRange)) get_proc("glMapBufferRange");
 
