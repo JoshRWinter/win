@@ -89,9 +89,9 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 		0, 1, 2, 0, 2, 3
 	};
 
-	static_assert((object_data_length * 2 - 2) <= 32767, "we gon' need a bigger boat here cap'n");
-	std::uint16_t draw_ids[(object_data_length * 2) - 2];
-	for (int i = 0; i < (object_data_length * 2) - 2; ++i)
+	static_assert((object_data_length * 2 - 1) <= 32767, "we gon' need a bigger boat here cap'n");
+	std::uint16_t draw_ids[(object_data_length * 2) - 1];
+	for (int i = 0; i < (object_data_length * 2) - 1; ++i)
 		draw_ids[i] = i;
 
 	// shaders and uniforms
