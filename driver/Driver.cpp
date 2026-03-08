@@ -44,6 +44,8 @@ int main()
 
 	win::gl_load_functions();
 
+	fprintf(stderr, "%s\n%s\n\n", (const char*)glGetString(GL_VENDOR), (const char*)glGetString(GL_RENDERER));
+
 	win::gl_enable_debug();
 
 #if defined WINPLAT_LINUX
