@@ -31,6 +31,106 @@ static void *get_proc(const char *name)
 }
 #endif
 
+static void APIENTRY debug_callback(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *userParam)
+{
+	// ignore non-significant error/warning codes
+	// if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+
+	const char *source_string;
+
+	switch (source)
+	{
+		case GL_DEBUG_SOURCE_API:
+			source_string = "API";
+			break;
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+			source_string = "Window System";
+			break;
+		case GL_DEBUG_SOURCE_SHADER_COMPILER:
+			source_string = "Shader Compiler";
+			break;
+		case GL_DEBUG_SOURCE_THIRD_PARTY:
+			source_string = "Third Party";
+			break;
+		case GL_DEBUG_SOURCE_APPLICATION:
+			source_string = "Application";
+			break;
+		case GL_DEBUG_SOURCE_OTHER:
+			source_string = "Other";
+			break;
+		default:
+			source_string = "Unknown";
+			break;
+	}
+
+	const char *type_string;
+
+	switch (type)
+	{
+		case GL_DEBUG_TYPE_ERROR:
+			type_string = "Error";
+			break;
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+			type_string = "Deprecated Behaviour";
+			break;
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+			type_string = "Undefined Behaviour";
+			break;
+		case GL_DEBUG_TYPE_PORTABILITY:
+			type_string = "Portability";
+			break;
+		case GL_DEBUG_TYPE_PERFORMANCE:
+			type_string = "Performance";
+			break;
+		case GL_DEBUG_TYPE_MARKER:
+			type_string = "Marker";
+			break;
+		case GL_DEBUG_TYPE_PUSH_GROUP:
+			type_string = "Push Group";
+			break;
+		case GL_DEBUG_TYPE_POP_GROUP:
+			type_string = "Pop Group";
+			break;
+		case GL_DEBUG_TYPE_OTHER:
+			type_string = "Other";
+			break;
+		default:
+			type_string = "Unknown";
+			break;
+	}
+
+	const char *severity_string;
+
+	switch (severity)
+	{
+		case GL_DEBUG_SEVERITY_HIGH:
+			severity_string = "high";
+			break;
+		case GL_DEBUG_SEVERITY_MEDIUM:
+			severity_string = "medium";
+			break;
+		case GL_DEBUG_SEVERITY_LOW:
+			severity_string = "low";
+			break;
+		case GL_DEBUG_SEVERITY_NOTIFICATION:
+			severity_string = "notification";
+			break;
+		default:
+			severity_string = "Unknown";
+			break;
+	}
+
+	fprintf(stderr, "[Severity: %s, Source: %s, Type: %s]\n%s\n\n", severity_string, source_string, type_string, message);
+}
+
+void gl_enable_debug()
+{
+	glEnable(GL_DEBUG_OUTPUT);
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	glDebugMessageCallback(debug_callback, NULL);
+	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+}
+
 void gl_check_error()
 {
 	const char *errname;

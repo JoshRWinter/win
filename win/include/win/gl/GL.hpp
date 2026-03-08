@@ -364,6 +364,7 @@ private:
 	GLsync sync;
 };
 
+void gl_enable_debug();
 void gl_check_error();
 void gl_load_functions();
 GLuint gl_load_shaders(const std::string &, const std::string &);

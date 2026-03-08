@@ -25,17 +25,6 @@ struct Block
 	float x, y, xv, yv;
 };
 
-static float distance(float x1, float y1, float x2, float y2)
-{
-	return std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));;
-}
-
-static void sound_config(float listenerx, float listenery, float sourcex, float sourcey, float *volume, float *balance)
-{
-	*volume = 1.0f;// - (distance(listenerx, listenery, sourcex, sourcey) / 38.0f);
-	*balance = (sourcex - listenerx) / 15.0f;
-}
-
 #if defined WINPLAT_WINDOWS && defined NDEBUG
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #else
@@ -48,11 +37,14 @@ int main()
 	display_options.height = 600;
 	display_options.gl_major = 4;
 	display_options.gl_minor = 4;
+	display_options.debug = true;
 
 	win::Display display(display_options);
 	display.cursor(true);
 
 	win::gl_load_functions();
+
+	win::gl_enable_debug();
 
 #if defined WINPLAT_LINUX
 	win::AssetRoll roll("roll");
