@@ -53,6 +53,9 @@ public:
 
 	template<typename... Ts> T &add(Ts &&...ts)
 	{
+		if (count == std::numeric_limits<int>::max())
+			win::bug("win::Heap: max size");
+
 		unsigned char *spot;
 
 		if (freelist.empty())

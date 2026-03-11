@@ -1,20 +1,10 @@
 #pragma once
 
-#include <memory>
-#include <vector>
-
+#include <win/Heap.hpp>
 #include <win/Win.hpp>
 
 namespace win
 {
-
-namespace impl
-{
-
-template<typename T> struct PoolNodeStorage
-{
-	alignas(alignof(T)) unsigned char item[sizeof(T)];
-};
 
 template<typename T> struct PoolNode : T
 {
@@ -27,20 +17,11 @@ template<typename T> struct PoolNode : T
 	PoolNode<T> *next;
 };
 
-template<typename T, int capacity> struct PoolPartition
+namespace impl
 {
-	WIN_NO_COPY_MOVE(PoolPartition);
-
-	PoolPartition() = default;
-
-	std::unique_ptr<PoolPartition<T, capacity>> next;
-	PoolNodeStorage<PoolNode<T>> storage[capacity];
-};
 
 template<typename T> class PoolIterator
 {
-	friend class Pool;
-
 public:
 	explicit PoolIterator(PoolNode<T> *node)
 		: node(node)
@@ -107,24 +88,20 @@ private:
 
 }
 
-template<typename T, int partition_capacity, bool first_partition_inline> class Pool
+template<typename T, int partition_capacity, bool first_partition_inline, bool use_shared_heap = false> class Pool
 {
-	struct Empty
-	{
-	};
-
 	WIN_NO_COPY_MOVE(Pool);
 
 public:
 	typedef impl::PoolIterator<T> Iterator;
 	typedef impl::PoolConstIterator<T> ConstIterator;
 
-	Pool()
-	{
-		static_assert(partition_capacity > 0, "Capacity must be greater than zero.");
+	Pool() { static_assert(!use_shared_heap, "Must supply a heap object when use_shared_heap is true"); }
 
-		if constexpr (!first_partition_inline)
-			first_partition_heap_ptr.reset(new impl::PoolPartition<T, partition_capacity>);
+	explicit Pool(win::Heap<PoolNode<T>, partition_capacity, first_partition_inline> &heap)
+		: heap(heap)
+	{
+		static_assert(use_shared_heap, "Must NOT supply a heap object when use_shared_heap is true");
 	}
 
 	~Pool() { clear(); }
@@ -137,24 +114,18 @@ public:
 
 	ConstIterator end() const { return ConstIterator(NULL); }
 
-	int size() const { return count; }
+	int size() const { return heap.size(); }
 
 	void clear()
 	{
 		Iterator it = begin();
 		while (it != end())
 			it = remove(it);
-
-		count = 0;
 	}
 
 	template<typename... Ts> T &add(Ts &&...ts)
 	{
-		if (count == std::numeric_limits<int>::max())
-			win::bug("win::Pool: max size");
-
-		auto *const spot = find_spot();
-		auto *const node = std::launder(new (spot) impl::PoolNode<T>(std::forward<Ts>(ts)...));
+		auto node = &heap.add(std::forward<Ts>(ts)...);
 
 		node->next = NULL;
 		node->prev = tail;
@@ -166,7 +137,6 @@ public:
 
 		tail = node;
 
-		++count;
 		return *node;
 	}
 
@@ -177,7 +147,7 @@ public:
 private:
 	Iterator erase(T &object)
 	{
-		auto node = static_cast<impl::PoolNode<T> *>(&object);
+		auto node = static_cast<PoolNode<T> *>(&object);
 
 		if (node->prev != NULL)
 			node->prev->next = node->next;
@@ -189,68 +159,22 @@ private:
 		else
 			tail = node->prev;
 
-		if (--count == 0)
-			freelist.clear(); // this is the last one. wipe the free list
-		else
-			freelist.push_back(node);
+		auto next = node->next;
 
-		impl::PoolNode<T> *next = node->next;
-
-#ifndef NDEBUG
-		node->next = NULL;
-#endif
-
-		node->~PoolNode();
+		heap.remove(*node);
 
 		return Iterator(next);
 	}
 
-	impl::PoolNode<T> *find_spot()
-	{
-		if (!freelist.empty())
-		{
-			auto spot = freelist[freelist.size() - 1];
-			freelist.pop_back();
+	PoolNode<T> *head = NULL;
+	PoolNode<T> *tail = NULL;
 
-			return spot;
-		}
-
-		const int partition_number = count / partition_capacity;
-		int partition_index = count % partition_capacity;
-
-		auto partition = get_first_partition();
-		for (int i = 0; i < partition_number; ++i)
-		{
-			if (!partition->next)
-				partition->next.reset(new impl::PoolPartition<T, partition_capacity>());
-
-			partition = partition->next.get();
-		}
-
-		// The reinterpret_cast comes close to violating strict-aliasing here, but since the pointer is not dereferenced, it's ok
-		return reinterpret_cast<impl::PoolNode<T> *>(&partition->storage[partition_index].item);
-	}
-
-	constexpr impl::PoolPartition<T, partition_capacity> *get_first_partition()
-	{
-		if constexpr (first_partition_inline)
-			return &first_partition_storage;
-		else
-			return first_partition_heap_ptr.get();
-	}
-
-	impl::PoolNode<T> *head = NULL;
-	impl::PoolNode<T> *tail = NULL;
-
-	[[no_unique_address]]
-	std::conditional_t<!first_partition_inline, std::unique_ptr<impl::PoolPartition<T, partition_capacity>>, Empty> first_partition_heap_ptr;
-
-	[[no_unique_address]]
-	std::conditional_t<first_partition_inline, impl::PoolPartition<T, partition_capacity>, Empty> first_partition_storage;
-
-	std::vector<impl::PoolNode<T> *> freelist;
-
-	int count = 0;
+	// hoo boy clang format does my boy dirty here
+	// clang-format off
+	std::conditional_t<use_shared_heap,
+					   win::Heap<PoolNode<T>, partition_capacity, first_partition_inline> &,
+					   win::Heap<PoolNode<T>, partition_capacity, first_partition_inline>> heap;
+	// clang-format on
 };
 
 }
