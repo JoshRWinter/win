@@ -42,7 +42,7 @@ public:
 		static_assert(partition_capacity > 0, "Capacity must be greater than zero.");
 
 		if constexpr (!first_partition_inline)
-			first_partition_heap_ptr.reset(new impl::HeapPartition<T, partition_capacity>);
+			first_partition.reset(new impl::HeapPartition<T, partition_capacity>);
 	}
 
 	~Heap()
@@ -103,16 +103,13 @@ private:
 	constexpr impl::HeapPartition<T, partition_capacity> *get_first_partition()
 	{
 		if constexpr (first_partition_inline)
-			return &first_partition_storage;
+			return &first_partition;
 		else
-			return first_partition_heap_ptr.get();
+			return first_partition.get();
 	}
 
-	[[no_unique_address]]
-	std::conditional_t<first_partition_inline, impl::HeapPartition<T, partition_capacity>, Empty> first_partition_storage;
-
-	[[no_unique_address]]
-	std::conditional_t<!first_partition_inline, std::unique_ptr<impl::HeapPartition<T, partition_capacity>>, Empty> first_partition_heap_ptr;
+	std::conditional_t<first_partition_inline, impl::HeapPartition<T, partition_capacity>, std::unique_ptr<impl::HeapPartition<T, partition_capacity>>>
+		first_partition;
 
 	std::vector<unsigned char *> freelist;
 
