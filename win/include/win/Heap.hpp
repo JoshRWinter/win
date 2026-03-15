@@ -30,10 +30,6 @@ template<typename T, int capacity> struct HeapPartition
 
 template<typename T, int partition_capacity, bool first_partition_inline> class Heap
 {
-	struct Empty
-	{
-	};
-
 	WIN_NO_COPY_MOVE(Heap);
 
 public:
