@@ -8,20 +8,20 @@ namespace win
 
 class Win32MonitorEnumerator : public MonitorEnumeratorBase
 {
-	WIN_NO_COPY_MOVE(Win32MonitorEnumerator);
+    WIN_NO_COPY_MOVE(Win32MonitorEnumerator);
 
 public:
-	Win32MonitorEnumerator();
+    Win32MonitorEnumerator();
 
-	void refresh() override;
+    void refresh() override;
 
-	int count() const override;
-	const Monitor &operator[](int index) const override;
-	std::vector<Monitor>::const_iterator begin() const override;
-	std::vector<Monitor>::const_iterator end() const override;
+    int count() const override;
+    const Monitor &operator[](int index) const override;
+    std::vector<Monitor>::const_iterator begin() const override;
+    std::vector<Monitor>::const_iterator end() const override;
 
 private:
-	std::vector<Monitor> monitors;
+    std::vector<Monitor> monitors;
 };
 
 }

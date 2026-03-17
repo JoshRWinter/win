@@ -20,56 +20,56 @@ namespace win
 
 struct UdpId
 {
-	WIN_NO_COPY_MOVE(UdpId);
+    WIN_NO_COPY_MOVE(UdpId);
 
-	UdpId()
-		: len(sizeof(sockaddr_storage))
-	{
-		reset();
-	}
+    UdpId()
+        : len(sizeof(sockaddr_storage))
+    {
+        reset();
+    }
 
-	void reset()
-	{
-		memset(&storage, 0, sizeof(storage));
-		initialized = false;
-	}
+    void reset()
+    {
+        memset(&storage, 0, sizeof(storage));
+        initialized = false;
+    }
 
-	bool initialized;
-	sockaddr_storage storage;
-	socklen_t len;
+    bool initialized;
+    sockaddr_storage storage;
+    socklen_t len;
 };
 
 class UdpServer
 {
-	WIN_NO_COPY(UdpServer);
+    WIN_NO_COPY(UdpServer);
 
 #ifdef WINPLAT_WINDOWS
-	static constexpr int WOULDBLOCK = WSAEWOULDBLOCK;
-	static constexpr int CONNRESET = WSAECONNRESET;
+    static constexpr int WOULDBLOCK = WSAEWOULDBLOCK;
+    static constexpr int CONNRESET = WSAECONNRESET;
 #else
-	static constexpr int WOULDBLOCK = EWOULDBLOCK;
-	static constexpr int CONNRESET = ECONNRESET;
+    static constexpr int WOULDBLOCK = EWOULDBLOCK;
+    static constexpr int CONNRESET = ECONNRESET;
 #endif
 
 public:
-	UdpServer();
-	explicit UdpServer(unsigned short port);
-	UdpServer(UdpServer &&rhs) noexcept;
-	~UdpServer();
+    UdpServer();
+    explicit UdpServer(unsigned short port);
+    UdpServer(UdpServer &&rhs) noexcept;
+    ~UdpServer();
 
-	UdpServer &operator=(UdpServer &&rhs) noexcept;
+    UdpServer &operator=(UdpServer &&rhs) noexcept;
 
-	operator bool() const;
-	void close();
-	void send(const void *buffer, int len, const UdpId &id);
-	int recv(void *buffer, int len, UdpId &id);
-	unsigned peek();
-	bool error() const;
+    operator bool() const;
+    void close();
+    void send(const void *buffer, int len, const UdpId &id);
+    int recv(void *buffer, int len, UdpId &id);
+    unsigned peek();
+    bool error() const;
 
 private:
-	bool bind(unsigned short port);
+    bool bind(unsigned short port);
 
-	int sock;
+    int sock;
 };
 
 }

@@ -6,7 +6,7 @@ namespace win
 void initialize_wsa()
 {
 #ifdef WINPLAT_WINDOWS
-	static WinWsaInit global;
+    static WinWsaInit global;
 #endif
 }
 

@@ -12,21 +12,21 @@ namespace win
 
 class GLFont : public Font
 {
-	WIN_NO_COPY(GLFont);
+    WIN_NO_COPY(GLFont);
 
-	friend class GLTextRenderer;
+    friend class GLTextRenderer;
 
-	GLFont(const Dimensions<int> &screen_dimensions, const Area<float> &screen_area, float font_size, Stream font_file);
+    GLFont(const Dimensions<int> &screen_dimensions, const Area<float> &screen_area, float font_size, Stream font_file);
 
 public:
-	GLFont(GLFont &&) = default;
+    GLFont(GLFont &&) = default;
 
-	GLFont &operator=(GLFont &&) = default;
+    GLFont &operator=(GLFont &&) = default;
 
-	GLuint texture() const { return tex.get(); }
+    GLuint texture() const { return tex.get(); }
 
 private:
-	GLTexture tex;
+    GLTexture tex;
 };
 
 }
