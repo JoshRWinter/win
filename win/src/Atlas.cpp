@@ -1,8 +1,8 @@
 #include <cstdint>
 #include <cstring>
 
-#include <win/Win.hpp>
 #include <win/Atlas.hpp>
+#include <win/Win.hpp>
 
 #ifdef WIN_USE_OPENGL
 #include <GL/gl.h>
@@ -16,9 +16,9 @@ Atlas::Atlas(Stream raw)
 {
 	// check magic
 	char magic[6];
-	raw.read((unsigned char*)magic, 5);
+	raw.read((unsigned char *)magic, 5);
 	magic[5] = 0;
-	if(strcmp(magic, "ATLAS"))
+	if (strcmp(magic, "ATLAS"))
 		Atlas::corrupt();
 
 	// how many images
@@ -29,7 +29,7 @@ Atlas::Atlas(Stream raw)
 
 	textures = std::make_unique<AtlasItem[]>(num);
 
-	for(int i = 0; i < num; ++i)
+	for (int i = 0; i < num; ++i)
 	{
 		std::uint16_t xpos, ypos, width, height;
 
@@ -47,7 +47,7 @@ Atlas::Atlas(Stream raw)
 		textures[i].y2 = (float)(ypos + height) / canvas_height;
 	}
 
-	if(raw.size() - raw.tell() != canvas_width * canvas_height * 4)
+	if (raw.size() - raw.tell() != canvas_width * canvas_height * 4)
 		Atlas::corrupt();
 
 	imgdata.reset(new unsigned char[canvas_width * canvas_height * 4]);
@@ -62,7 +62,7 @@ int Atlas::count() const
 const AtlasItem &Atlas::item(int index) const
 {
 #ifndef NDEBUG
-	if(index >= num || index < 0)
+	if (index >= num || index < 0)
 		win::bug("Atlas: item out of bounds");
 #endif
 

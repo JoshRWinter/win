@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
-#include <functional>
 #include <chrono>
+#include <functional>
+#include <vector>
 
 #include <win/Win.hpp>
 
@@ -14,7 +14,15 @@ class ListPanel
 
 	struct ListEntry
 	{
-		ListEntry(int id, const std::string &text, int x, int y, int w, int h) : id(id), text(text), x(x), y(y), w(w), h(h) {}
+		ListEntry(int id, const std::string &text, int x, int y, int w, int h)
+			: id(id)
+			, text(text)
+			, x(x)
+			, y(y)
+			, w(w)
+			, h(h)
+		{
+		}
 
 		int id;
 		std::string text;

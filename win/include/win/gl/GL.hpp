@@ -246,9 +246,13 @@ class GLProgram
 public:
 	explicit GLProgram(GLuint program)
 		: program(program)
-	{}
+	{
+	}
 
-	GLProgram() : program(-1) {}
+	GLProgram()
+		: program(-1)
+	{
+	}
 
 	GLProgram(GLProgram &&rhs) noexcept
 	{
@@ -287,10 +291,7 @@ class GLFramebuffer
 	WIN_NO_COPY(GLFramebuffer);
 
 public:
-	GLFramebuffer()
-	{
-		gl::glGenFramebuffers(1, &fbo);
-	}
+	GLFramebuffer() { gl::glGenFramebuffers(1, &fbo); }
 
 	GLFramebuffer(GLFramebuffer &&rhs)
 	{
@@ -330,7 +331,9 @@ class GLSyncObject
 
 public:
 	explicit GLSyncObject(GLsync s)
-		: sync(s) {}
+		: sync(s)
+	{
+	}
 
 	GLSyncObject(GLSyncObject &&rhs) noexcept
 	{

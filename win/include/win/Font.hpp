@@ -4,16 +4,20 @@
 #include <memory>
 #include <vector>
 
-#include <win/Win.hpp>
-#include <win/Utility.hpp>
 #include <win/Stream.hpp>
+#include <win/Utility.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
 
 struct FontKern
 {
-	FontKern(char right_char, float kern) : right_char(right_char), kern(kern) {}
+	FontKern(char right_char, float kern)
+		: right_char(right_char)
+		, kern(kern)
+	{
+	}
 
 	char right_char;
 	float kern;

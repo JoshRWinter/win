@@ -2,8 +2,8 @@
 
 #ifdef WIN_USE_OPENGL
 
-#include <cstring>
 #include <climits>
+#include <cstring>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -14,51 +14,57 @@
 using namespace win::gl;
 
 // font shaders
-static const char *vertexshader =
-"#version 440 core\n"
+static const char
+	*vertexshader =
+		"#version 440 core\n"
 
-"struct Object { vec2 position; uint dims; float index; };\n"
+		"struct Object { vec2 position; uint dims; float index; };\n"
 
-"layout (std140) uniform object_data { Object data[500]; };\n"
-"uniform mat4 projection;\n"
-"uniform float width;\n"
-"uniform float height;\n"
+		"layout (std140) uniform object_data { Object data[500]; };\n"
+		"uniform mat4 projection;\n"
+		"uniform float width;\n"
+		"uniform float height;\n"
 
-"layout (location = 0) in vec2 vert;\n"
-"layout (location = 1) in ivec2 texcoord;\n"
-"layout (location = 2) in int draw_id;\n"
+		"layout (location = 0) in vec2 vert;\n"
+		"layout (location = 1) in ivec2 texcoord;\n"
+		"layout (location = 2) in int draw_id;\n"
 
-"out vec3 ftexcoord;\n"
+		"out vec3 ftexcoord;\n"
 
-"void main(){\n"
-"int i = draw_id % data.length();\n"
-"float w = (data[i].dims >> 16) / float(65535);\n"
-"float h = (data[i].dims & 65535) / float(65535);\n"
-"ftexcoord = vec3(float(texcoord.x) * w, float(texcoord.y) * h, data[i].index);\n"
-"mat4 t = mat4(width * w, 0.0, 0.0, 0.0,    0.0, height * h, 0.0, 0.0,    0.0, 0.0, 0.0, 0.0,    data[i].position.x, data[i].position.y, 0.0, 1.0);\n"
-"gl_Position = projection * t * vec4(vert.xy, 0.0, 1.0);\n"
-"}\n"
+		"void main(){\n"
+		"int i = draw_id % data.length();\n"
+		"float w = (data[i].dims >> 16) / float(65535);\n"
+		"float h = (data[i].dims & 65535) / float(65535);\n"
+		"ftexcoord = vec3(float(texcoord.x) * w, float(texcoord.y) * h, data[i].index);\n"
+		"mat4 t = mat4(width * w, 0.0, 0.0, 0.0,    0.0, height * h, 0.0, 0.0,    0.0, 0.0, 0.0, 0.0,    data[i].position.x, data[i].position.y, 0.0, 1.0);\n"
+		"gl_Position = projection * t * vec4(vert.xy, 0.0, 1.0);\n"
+		"}\n"
 
-, *fragmentshader =
-"#version 440 core\n"
+	,
+	*fragmentshader =
+		"#version 440 core\n"
 
-"layout (location = 0) out vec4 pixel;\n"
-"in vec3 ftexcoord;\n"
+		"layout (location = 0) out vec4 pixel;\n"
+		"in vec3 ftexcoord;\n"
 
-"uniform sampler2DArray tex;\n"
-"uniform vec4 color;\n"
+		"uniform sampler2DArray tex;\n"
+		"uniform vec4 color;\n"
 
-"void main(){\n"
-"vec4 smpl = texture(tex, ftexcoord);\n"
-"float alpha = smpl.r * color.a;\n"
-"pixel = vec4(color.rgb * alpha, alpha);\n"
-"}\n"
-;
+		"void main(){\n"
+		"vec4 smpl = texture(tex, ftexcoord);\n"
+		"float alpha = smpl.r * color.a;\n"
+		"pixel = vec4(color.rgb * alpha, alpha);\n"
+		"}\n";
 
 namespace win
 {
 
-GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &screen_area, GLenum texture_unit, bool texture_unit_owned, GLuint uniform_block_binding, bool uniform_block_binding_owned)
+GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions,
+							   const Area<float> &screen_area,
+							   GLenum texture_unit,
+							   bool texture_unit_owned,
+							   GLuint uniform_block_binding,
+							   bool uniform_block_binding_owned)
 	: screen_pixel_dimensions(screen_pixel_dimensions)
 	, screen_area(screen_area)
 	, texture_unit(texture_unit)
@@ -68,28 +74,13 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 	, current_font(NULL)
 	, current_color(0.0f, 0.0f, 0.0f, 1.0f)
 {
-	const float verts[] =
-	{
-		-0.5f, 0.5f,
-		-0.5f, -0.5f,
-		0.5f, -0.5f,
-		0.5f, 0.5f
-	};
+	const float verts[] = { -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f };
 
-	const std::uint8_t texcoords[] =
-	{
-		0, 1,
-		0, 0,
-		1, 0,
-		1, 1
-	};
+	const std::uint8_t texcoords[] = { 0, 1, 0, 0, 1, 0, 1, 1 };
 
-	const std::uint8_t indices[] =
-	{
-		0, 1, 2, 0, 2, 3
-	};
+	const std::uint8_t indices[] = { 0, 1, 2, 0, 2, 3 };
 
-	static_assert((object_data_length * 2 - 1) <= 32767, "we gon' need a bigger boat here cap'n");
+	static_assert((object_data_length * 2 - 1) <= 32'767, "we gon' need a bigger boat here cap'n");
 	std::uint16_t draw_ids[(object_data_length * 2) - 1];
 	for (int i = 0; i < (object_data_length * 2) - 1; ++i)
 		draw_ids[i] = i;
@@ -99,11 +90,13 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 	glUseProgram(program.get());
 
 	uniform_color = glGetUniformLocation(program.get(), "color");
-	if (uniform_color == -1) win::bug("GLTextRenderer - no uniform color");
+	if (uniform_color == -1)
+		win::bug("GLTextRenderer - no uniform color");
 	glUniform4f(uniform_color, current_color.red, current_color.green, current_color.blue, current_color.alpha);
 
 	uniform_projection = glGetUniformLocation(program.get(), "projection");
-	if (uniform_projection == -1) win::bug("GLTextRenderer - no uniform projection");
+	if (uniform_projection == -1)
+		win::bug("GLTextRenderer - no uniform projection");
 	const glm::mat4 projection = glm::ortho(screen_area.left, screen_area.right, screen_area.bottom, screen_area.top);
 	glUniformMatrix4fv(uniform_projection, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -113,7 +106,8 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 		win::bug("no height");
 
 	const auto uniform_sampler = glGetUniformLocation(program.get(), "tex");
-	if (uniform_sampler == -1) win::bug("no tex");
+	if (uniform_sampler == -1)
+		win::bug("no tex");
 	glUniform1i(uniform_sampler, texture_unit - GL_TEXTURE0);
 
 	glBindVertexArray(vao.get());
@@ -144,7 +138,8 @@ GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions, c
 	// object data
 	glBindBuffer(GL_UNIFORM_BUFFER, uniform_object_data.get());
 	const auto object_data_block_index = glGetUniformBlockIndex(program.get(), "object_data");
-	if (object_data_block_index == GL_INVALID_INDEX) win::bug("No object data uniform block index");
+	if (object_data_block_index == GL_INVALID_INDEX)
+		win::bug("No object data uniform block index");
 	glUniformBlockBinding(program.get(), object_data_block_index, uniform_block_binding);
 	glBindBufferBase(GL_UNIFORM_BUFFER, uniform_block_binding, uniform_object_data.get());
 	glBufferStorage(GL_UNIFORM_BUFFER, sizeof(ObjectBytes) * object_data_length, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
@@ -188,7 +183,7 @@ void GLTextRenderer::flush()
 
 	for (const auto &str : string_queue)
 	{
-		const GLFont &font = *(GLFont*)str.font;
+		const GLFont &font = *(GLFont *)str.font;
 		const FontMetric &metric = font.font_metric();
 
 		if (current_font != &font)

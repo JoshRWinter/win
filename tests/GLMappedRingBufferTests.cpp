@@ -1,7 +1,18 @@
 #include <win/gl/GLMappedRingBuffer.hpp>
 
 int successfull = 0;
-#define assert(exp) do { if (!(exp)) { win::bug("assert failed on line " + std::to_string(__LINE__)); } else { ++successfull; } } while (false)
+#define assert(exp)                                                                                                                                            \
+	do                                                                                                                                                         \
+	{                                                                                                                                                          \
+		if (!(exp))                                                                                                                                            \
+		{                                                                                                                                                      \
+			win::bug("assert failed on line " + std::to_string(__LINE__));                                                                                     \
+		}                                                                                                                                                      \
+		else                                                                                                                                                   \
+		{                                                                                                                                                      \
+			++successfull;                                                                                                                                     \
+		}                                                                                                                                                      \
+	} while (false)
 
 int main()
 {

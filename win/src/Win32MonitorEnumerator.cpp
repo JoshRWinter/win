@@ -22,7 +22,7 @@ struct Win32MonitorInfo
 
 static BOOL __stdcall callback(HMONITOR monitor, HDC hdc, LPRECT rect, LPARAM lp)
 {
-	std::vector<Win32MonitorInfo>& v = *(std::vector<Win32MonitorInfo>*)lp;
+	std::vector<Win32MonitorInfo> &v = *(std::vector<Win32MonitorInfo> *)lp;
 
 	MONITORINFOEX info;
 	info.cbSize = sizeof(MONITORINFOEX);
@@ -62,7 +62,7 @@ void Win32MonitorEnumerator::refresh()
 
 	std::vector<DXGI_MODE_DESC> modes;
 
-	result = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&factory);
+	result = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void **)&factory);
 
 	if (result != S_OK)
 	{
@@ -70,7 +70,7 @@ void Win32MonitorEnumerator::refresh()
 		return;
 	}
 
-	std::vector<Win32MonitorInfo> win32_monitors;;
+	std::vector<Win32MonitorInfo> win32_monitors;
 	EnumDisplayMonitors(NULL, NULL, callback, (LPARAM)&win32_monitors);
 
 	UINT i = 0;
@@ -156,7 +156,13 @@ void Win32MonitorEnumerator::refresh()
 			if (closestmode == NULL)
 				win::bug("Couldn't determine active mode for monitor " + win32mon->name);
 
-			monitors.emplace_back(name, primary, desc.DesktopCoordinates.left, desc.DesktopCoordinates.top, closestmode->Width, closestmode->Height, closestmode->RefreshRate.Numerator / (float)closestmode->RefreshRate.Denominator);
+			monitors.emplace_back(name,
+								  primary,
+								  desc.DesktopCoordinates.left,
+								  desc.DesktopCoordinates.top,
+								  closestmode->Width,
+								  closestmode->Height,
+								  closestmode->RefreshRate.Numerator / (float)closestmode->RefreshRate.Denominator);
 
 			output->Release();
 			++i2;

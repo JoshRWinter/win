@@ -50,8 +50,19 @@ private:
 	Win32MonitorEnumerator monitors;
 	float rrate;
 	const win::DisplayOptions options;
-	struct { int w = 0, h = 0; } window_prop_cache;
-	struct { bool resize = false; std::chrono::time_point<std::chrono::steady_clock> time; } resize_state;;
+
+	struct
+	{
+		int w = 0, h = 0;
+	} window_prop_cache;
+
+	struct
+	{
+		bool resize = false;
+		std::chrono::time_point<std::chrono::steady_clock> time;
+	} resize_state;
+
+	;
 };
 
 }

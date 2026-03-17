@@ -1,5 +1,5 @@
-#include <string>
 #include <cmath>
+#include <string>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -63,8 +63,8 @@ Font::Font(const Dimensions<int> &screen_pixel_dimensions, const Area<float> &sc
 		if (error)
 			win::bug(std::string("Error rendering char ") + std::to_string((int)character) + " (" + std::to_string(character) + ")");
 
-		const int width_pixels = face->glyph->bitmap.width;//(face->glyph->metrics.width / (float)face->units_per_EM) * face->size->metrics.x_ppem;
-		const int height_pixels = face->glyph->bitmap.rows;//(face->glyph->metrics.height / (float)face->units_per_EM) * face->size->metrics.y_ppem;
+		const int width_pixels = face->glyph->bitmap.width; //(face->glyph->metrics.width / (float)face->units_per_EM) * face->size->metrics.x_ppem;
+		const int height_pixels = face->glyph->bitmap.rows; //(face->glyph->metrics.height / (float)face->units_per_EM) * face->size->metrics.y_ppem;
 
 		// fill in the metrics
 		const int metric_index = character - char_low;

@@ -5,12 +5,12 @@
 namespace win
 {
 
-template <typename T> T distance(T x1, T y1, T x2, T y2)
+template<typename T> T distance(T x1, T y1, T x2, T y2)
 {
 	return std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2));
 }
 
-template <typename T> static float normalize_angle(T a)
+template<typename T> static float normalize_angle(T a)
 {
 	const T PI2 = 2.0f * M_PI;
 
@@ -23,7 +23,7 @@ template <typename T> static float normalize_angle(T a)
 	return a;
 }
 
-template <typename T> T angle_align(T angle, T target, const T step)
+template<typename T> T angle_align(T angle, T target, const T step)
 {
 	target = normalize_angle(target);
 	angle = normalize_angle(angle);
@@ -41,14 +41,16 @@ template <typename T> T angle_align(T angle, T target, const T step)
 				if (angle < target)
 					angle = target;
 			}
-		} else
+		}
+		else
 		{
 			angle += step;
 
 			if (angle > target)
 				angle = target;
 		}
-	} else
+	}
+	else
 	{
 		if (angle - target > M_PI)
 		{
@@ -61,7 +63,8 @@ template <typename T> T angle_align(T angle, T target, const T step)
 				if (angle > target)
 					angle = target;
 			}
-		} else
+		}
+		else
 		{
 			angle -= step;
 
@@ -73,7 +76,7 @@ template <typename T> T angle_align(T angle, T target, const T step)
 	return angle;
 }
 
-template <typename T> T angle_diff(T a, T b)
+template<typename T> T angle_diff(T a, T b)
 {
 	a = normalize(a);
 	b = normalize(b);
@@ -85,14 +88,15 @@ template <typename T> T angle_diff(T a, T b)
 	return diff;
 }
 
-template <typename T> T target(T f, T target, T approach)
+template<typename T> T target(T f, T target, T approach)
 {
 	if (f > target)
 	{
 		f -= approach;
 		if (f < target)
 			f = target;
-	} else if (f < target)
+	}
+	else if (f < target)
 	{
 		f += approach;
 		if (f > target)
@@ -102,7 +106,7 @@ template <typename T> T target(T f, T target, T approach)
 	return f;
 }
 
-template <typename T> T zero(T f, T approach)
+template<typename T> T zero(T f, T approach)
 {
 	return target<T>(f, 0.0, approach);
 }

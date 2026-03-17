@@ -1,12 +1,12 @@
 #pragma once
 
 #include <filesystem>
+#include <mutex>
 #include <string>
 #include <vector>
-#include <mutex>
 
-#include <win/Win.hpp>
 #include <win/Stream.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -32,9 +32,8 @@ private:
 	explicit AssetRoll(Stream stream);
 
 public:
-
-	Stream operator[](const char*);
-	bool exists(const char*);
+	Stream operator[](const char *);
+	bool exists(const char *);
 
 private:
 	Stream substream(unsigned long long start, unsigned long long length);

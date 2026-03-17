@@ -5,7 +5,8 @@ namespace win
 
 SoundRepo::SoundRepo(win::AssetRoll &roll)
 	: roll(roll)
-{}
+{
+}
 
 SoundRepo::~SoundRepo()
 {
@@ -23,7 +24,7 @@ Sound &SoundRepo::load(const char *name, bool cache, int seek)
 {
 	SoundRepoCacheEntry *cached = NULL;
 	// create a cache entry if one doesn't exist yet
-	for (auto &entry: cache_entries)
+	for (auto &entry : cache_entries)
 	{
 		if (entry.key_name == name && entry.key_seek == seek)
 		{
@@ -39,7 +40,7 @@ Sound &SoundRepo::load(const char *name, bool cache, int seek)
 	{
 		auto &cached_source = cached_sources.add(cached->channels, cached->pcm.get(), cached->length);
 
-		return entries.add((PcmSource&) cached_source, *cached, (DecodingPcmSource *)NULL, (CachingPcmSource *)NULL, &cached_source);
+		return entries.add((PcmSource &)cached_source, *cached, (DecodingPcmSource *)NULL, (CachingPcmSource *)NULL, &cached_source);
 	}
 	else if (cache) // no cached data exists, but we want to cache
 	{

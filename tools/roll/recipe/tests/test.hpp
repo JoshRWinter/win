@@ -3,15 +3,16 @@
 
 #pragma once
 
-#include <vector>
 #include <iostream>
+#include <vector>
 
 struct Test
 {
 	Test(void (*fn)(), int lineno)
 		: fn(fn)
 		, lineno(lineno)
-	{}
+	{
+	}
 
 	void (*fn)();
 	int lineno;
@@ -69,7 +70,7 @@ inline int run_tests(int line = -1)
 			return 1;
 		}
 
-		if(!run_test(tests.at(index)))
+		if (!run_test(tests.at(index)))
 			return false;
 
 		std::cout << "Test on line " << line << " passed" << std::endl;
@@ -77,15 +78,33 @@ inline int run_tests(int line = -1)
 	}
 }
 
-inline std::string stringify(const std::string &str) { return str; }
-inline std::string stringify(const char *str) { return std::string(str); }
-template <typename T> std::string stringify(const T &t) { return std::to_string(t); }
+inline std::string stringify(const std::string &str)
+{
+	return str;
+}
+
+inline std::string stringify(const char *str)
+{
+	return std::string(str);
+}
+
+template<typename T> std::string stringify(const T &t)
+{
+	return std::to_string(t);
+}
 
 // preprocessor jankery
 #define CONCAT2(a, b) a##b
 #define CONCAT(a, b) CONCAT2(a, b)
 
-#define TEST() void CONCAT(test_fn_, __LINE__)(); bool CONCAT(test_dummy_, __LINE__) = (add_test(Test(CONCAT(test_fn_, __LINE__), __LINE__)), true); void CONCAT(test_fn_, __LINE__)()
+#define TEST()                                                                                                                                                 \
+	void CONCAT(test_fn_, __LINE__)();                                                                                                                         \
+	bool CONCAT(test_dummy_, __LINE__) = (add_test(Test(CONCAT(test_fn_, __LINE__), __LINE__)), true);                                                         \
+	void CONCAT(test_fn_, __LINE__)()
 
-#define is_true(exp) if (!(exp)) throw std::runtime_error(std::to_string(__LINE__) + ": Assertion failed");
-#define are_equal(expected, actual) if (stringify(expected) != stringify(actual)) throw std::runtime_error(std::to_string(__LINE__) + ": expected '" + stringify(expected) + "', actual '" + stringify(actual) + "'")
+#define is_true(exp)                                                                                                                                           \
+	if (!(exp))                                                                                                                                                \
+		throw std::runtime_error(std::to_string(__LINE__) + ": Assertion failed");
+#define are_equal(expected, actual)                                                                                                                            \
+	if (stringify(expected) != stringify(actual))                                                                                                              \
+	throw std::runtime_error(std::to_string(__LINE__) + ": expected '" + stringify(expected) + "', actual '" + stringify(actual) + "'")

@@ -3,8 +3,8 @@
 
 #include <vorbis/vorbisfile.h>
 
-#include <win/Win.hpp>
 #include <win/sound/DecodingPcmSource.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -117,7 +117,8 @@ void DecodingPcmSource::set_channels(int c)
 	channels_initialized_signal.count_down();
 }
 
-[[noreturn]] static void ogg_vorbis_error(const std::string &msg)
+[[noreturn]]
+static void ogg_vorbis_error(const std::string &msg)
 {
 	win::bug("Ogg-Vorbis: " + msg);
 }
@@ -166,7 +167,7 @@ void DecodingPcmSource::decodeogg(win::DecodingPcmSource &parent, win::Stream &d
 
 	ogg_sync_wrote(&state, bytes);
 
-	if(ogg_sync_pageout(&state, &page) != 1)
+	if (ogg_sync_pageout(&state, &page) != 1)
 	{
 		ogg_vorbis_error("Input does not appear to be an Ogg bitstream");
 	}
@@ -175,37 +176,37 @@ void DecodingPcmSource::decodeogg(win::DecodingPcmSource &parent, win::Stream &d
 
 	vorbis_info_init(&info);
 	vorbis_comment_init(&comment);
-	if(ogg_stream_pagein(&stream, &page) < 0)
+	if (ogg_stream_pagein(&stream, &page) < 0)
 		ogg_vorbis_error("Could not read the first page of the Ogg bitstream data");
 
-	if(ogg_stream_packetout(&stream, &packet) != 1)
+	if (ogg_stream_packetout(&stream, &packet) != 1)
 		ogg_vorbis_error("Could not read initial header packet");
 
-	if(vorbis_synthesis_headerin(&info, &comment, &packet) < 0)
+	if (vorbis_synthesis_headerin(&info, &comment, &packet) < 0)
 		ogg_vorbis_error("This Ogg bitstream does not contain Vorbis audio data");
 
 	i = 0;
-	while(i < 2)
+	while (i < 2)
 	{
-		while(i < 2)
+		while (i < 2)
 		{
 			int result = ogg_sync_pageout(&state, &page);
-			if(result == 0)
+			if (result == 0)
 				break;
-			if(result == 1)
+			if (result == 1)
 			{
 				ogg_stream_pagein(&stream, &page);
 
-				while(i < 2)
+				while (i < 2)
 				{
 					result = ogg_stream_packetout(&stream, &packet);
-					if(result == 0)
+					if (result == 0)
 						break;
-					if(result < 0)
+					if (result < 0)
 						ogg_vorbis_error("Corrupt secondary header");
 
 					result = vorbis_synthesis_headerin(&info, &comment, &packet);
-					if(result < 0)
+					if (result < 0)
 						ogg_vorbis_error("Corrupt secondary header");
 
 					++i;
@@ -214,13 +215,13 @@ void DecodingPcmSource::decodeogg(win::DecodingPcmSource &parent, win::Stream &d
 		}
 
 		buffer = ogg_sync_buffer(&state, 4096);
-		if(datafile.size() - datafile.tell() >= 4096)
+		if (datafile.size() - datafile.tell() >= 4096)
 			bytes = 4096;
 		else
 			bytes = datafile.size() - datafile.tell();
 		datafile.read(buffer, bytes);
 
-		if(bytes < 4096 && i < 2)
+		if (bytes < 4096 && i < 2)
 			ogg_vorbis_error("EOF before reading all Vorbis headers");
 
 		ogg_sync_wrote(&state, bytes);
@@ -235,54 +236,54 @@ void DecodingPcmSource::decodeogg(win::DecodingPcmSource &parent, win::Stream &d
 	const long long convsize = 4096 / info.channels;
 	std::int16_t convbuffer[4096];
 
-	if(vorbis_synthesis_init(&dsp, &info) != 0)
+	if (vorbis_synthesis_init(&dsp, &info) != 0)
 		ogg_vorbis_error("Corrupt header during playback initialization");
 
 	vorbis_block_init(&dsp, &block);
-	while(!eos)
+	while (!eos)
 	{
-		while(!eos)
+		while (!eos)
 		{
 			int result = ogg_sync_pageout(&state, &page);
-			if(result == 0)
+			if (result == 0)
 				break;
-			if(result < 0)
+			if (result < 0)
 				ogg_vorbis_error("Corrupt or missing data in the bitstream");
 
 			ogg_stream_pagein(&stream, &page);
 
-			while(1)
+			while (1)
 			{
 				result = ogg_stream_packetout(&stream, &packet);
 
-				if(result == 0)
+				if (result == 0)
 					break;
-				if(result < 0)
+				if (result < 0)
 					ogg_vorbis_error("Corrupt or missing data in the bitstream");
 
 				float **pcm;
 				int samples;
 
-				if(vorbis_synthesis(&block, &packet) == 0)
+				if (vorbis_synthesis(&block, &packet) == 0)
 					vorbis_synthesis_blockin(&dsp, &block);
 
-				while((samples = vorbis_synthesis_pcmout(&dsp, &pcm)) > 0)
+				while ((samples = vorbis_synthesis_pcmout(&dsp, &pcm)) > 0)
 				{
 					int j;
 					int bout = samples < convsize ? samples : convsize;
 
-					for(i = 0; i < info.channels; ++i)
+					for (i = 0; i < info.channels; ++i)
 					{
 						ogg_int16_t *ptr = convbuffer + i;
 
 						float *mono = pcm[i];
-						for(j = 0; j < bout; ++j)
+						for (j = 0; j < bout; ++j)
 						{
 							int val = std::floor(mono[j] * 32767.0f + 0.5f);
-							if(val > 32767)
-								val = 32767;
-							else if(val < -32768)
-								val = -32768;
+							if (val > 32'767)
+								val = 32'767;
+							else if (val < -32'768)
+								val = -32'768;
 
 							*ptr = val;
 							ptr += info.channels;
@@ -305,7 +306,7 @@ void DecodingPcmSource::decodeogg(win::DecodingPcmSource &parent, win::Stream &d
 					for (int k = 0; k < want_to_write_samples; ++k)
 						floatconv[k] = convbuffer[k] / (convbuffer[k] < 0 ? 32768.0f : 32767.0f);
 
-					for(;;)
+					for (;;)
 					{
 						samples_written += parent.buffer.write(floatconv + samples_written, want_to_write_samples - samples_written);
 
@@ -322,23 +323,23 @@ void DecodingPcmSource::decodeogg(win::DecodingPcmSource &parent, win::Stream &d
 				}
 			}
 
-			if(ogg_page_eos(&page))
+			if (ogg_page_eos(&page))
 				eos = 1;
 		}
 
-		if(!eos)
+		if (!eos)
 		{
 			buffer = ogg_sync_buffer(&state, 4096);
 			unsigned long long bigness = datafile.size();
 			unsigned long long place = datafile.tell();
-			if(bigness - place >= 4096)
+			if (bigness - place >= 4096)
 				bytes = 4096;
 			else
 				bytes = bigness - place;
 
 			datafile.read(buffer, bytes);
 			ogg_sync_wrote(&state, bytes);
-			if(bytes == 0)
+			if (bytes == 0)
 				eos = 1;
 		}
 	}

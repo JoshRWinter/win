@@ -5,7 +5,8 @@ namespace win
 
 FileStream::FileStream(const std::filesystem::path &path)
 	: FileStream(path, 0, std::filesystem::file_size(path))
-{}
+{
+}
 
 FileStream::FileStream(const std::filesystem::path &path, unsigned long long start, unsigned long long length)
 	: path(path)
@@ -25,9 +26,14 @@ void FileStream::read(void *dest, unsigned long long len)
 
 	const auto position = (unsigned long long)file.tellg() - start;
 	if (position + len > length)
-		bug("FileStream: overread position = " + std::to_string(position) + ", length = " + std::to_string(length) + ", requested read = " + std::to_string(len));
+		bug("FileStream: overread position = " +
+			std::to_string(position) +
+			", length = " +
+			std::to_string(length) +
+			", requested read = " +
+			std::to_string(len));
 
-	file.read((char*)dest, len);
+	file.read((char *)dest, len);
 	if (file.gcount() != len)
 		bug("FileStream: couldn't read " + std::to_string(len) + " bytes");
 }
@@ -41,7 +47,7 @@ std::unique_ptr<unsigned char[]> FileStream::read_all()
 	file.seekg(start);
 
 	std::unique_ptr<unsigned char[]> bytes(new unsigned char[length]);
-	file.read((char*)bytes.get(), length);
+	file.read((char *)bytes.get(), length);
 
 	if (file.gcount() != length)
 		bug("FileStream: couldn't read " + std::to_string(length) + " bytes");

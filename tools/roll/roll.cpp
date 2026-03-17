@@ -1,25 +1,24 @@
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <memory>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <memory>
 #include <random>
+#include <vector>
 
 #include <string.h>
 
 #include <zlib.h>
 
-#include "roll.hpp"
 #include "recipe/recipe.hpp"
+#include "roll.hpp"
 
 using namespace std::string_literals;
 
 static constexpr const char *const helptext =
-"Asset Roll\n"
-"       roll [--hex] outputfile recipefile\n"
-"       roll --inspect input.roll\n"
-"       roll --help\n"
-;
+	"Asset Roll\n"
+	"       roll [--hex] outputfile recipefile\n"
+	"       roll --inspect input.roll\n"
+	"       roll --help\n";
 
 const char *MAGIC = "ASSETROLL";
 const char *HEXMAGIC = "0x41,0x53,0x53,0x45,0x54,0x52,0x4F,0x4C,0x4C";
@@ -27,9 +26,9 @@ const char *HEXMAGIC = "0x41,0x53,0x53,0x45,0x54,0x52,0x4F,0x4C,0x4C";
 static std::string format(size_t size)
 {
 	char convert[26];
-	if(size < 1000)
+	if (size < 1000)
 		snprintf(convert, sizeof(convert), "%dB", (int)size);
-	else if(size < 1000 * 1000)
+	else if (size < 1000 * 1000)
 		snprintf(convert, sizeof(convert), "%.2fKB", (double)size / 1000);
 	else
 		snprintf(convert, sizeof(convert), "%.2fMB", (double)size / 1000 / 1000);
@@ -51,7 +50,7 @@ static bool is_asset_roll(const std::string &filename, bool hex)
 
 	in.read(test, len);
 
-	if(in.gcount() != len)
+	if (in.gcount() != len)
 		return false;
 
 	test[len] = 0;
@@ -61,68 +60,69 @@ static bool is_asset_roll(const std::string &filename, bool hex)
 
 static void inspect(const std::string &roll)
 {
-	if(!std::filesystem::exists(roll))
+	if (!std::filesystem::exists(roll))
 		throw std::runtime_error("File \"" + roll + "\" does not exist");
 
-	if(!is_asset_roll(roll, false))
+	if (!is_asset_roll(roll, false))
 		throw std::runtime_error("File \"" + roll + "\" does not appear to be an asset roll");
 
 	std::ifstream in(roll, std::ifstream::binary);
-	if(!in)
+	if (!in)
 		throw std::runtime_error("Could not open file \"" + roll + "\" in read mode");
 
 	in.seekg(strlen(MAGIC));
 
 	// read number of files
 	std::uint16_t file_count = 0;
-	in.read((char*)&file_count, sizeof(file_count));
-	if(in.gcount() != sizeof(file_count))
+	in.read((char *)&file_count, sizeof(file_count));
+	if (in.gcount() != sizeof(file_count))
 		throw std::runtime_error("File \"" + roll + "\" is corrupt");
 
 	std::cout << roll << ": " << file_count << " files" << std::endl;
 
-	for(int i = 0; i < file_count; ++i)
+	for (int i = 0; i < file_count; ++i)
 	{
 		Header rh;
 
-		in.read((char*)&rh.compressed, sizeof(rh.compressed));
-		if(in.gcount() != sizeof(rh.compressed))
+		in.read((char *)&rh.compressed, sizeof(rh.compressed));
+		if (in.gcount() != sizeof(rh.compressed))
 			throw std::runtime_error("File \"" + roll + "\" is corrupt");
 
-		in.read((char*)&rh.uncompressed_size, sizeof(rh.uncompressed_size));
-		if(in.gcount() != sizeof(rh.uncompressed_size))
+		in.read((char *)&rh.uncompressed_size, sizeof(rh.uncompressed_size));
+		if (in.gcount() != sizeof(rh.uncompressed_size))
 			throw std::runtime_error("File \"" + roll + "\" is corrupt");
 
 		in.seekg(sizeof(rh.begin), std::ifstream::cur);
 
-		in.read((char*)&rh.size, sizeof(rh.size));
-		if(in.gcount() != sizeof(rh.size))
+		in.read((char *)&rh.size, sizeof(rh.size));
+		if (in.gcount() != sizeof(rh.size))
 			throw std::runtime_error("File \"" + roll + "\" is corrupt");
 
-		in.read((char*)&rh.filename_length, sizeof(rh.filename_length));
-		if(in.gcount() != sizeof(rh.filename_length))
+		in.read((char *)&rh.filename_length, sizeof(rh.filename_length));
+		if (in.gcount() != sizeof(rh.filename_length))
 			throw std::runtime_error("File \"" + roll + "\" is corrupt");
 
 		std::unique_ptr<char[]> fname = std::make_unique<char[]>(rh.filename_length + 1);
 		in.read(fname.get(), rh.filename_length);
-		if(in.gcount() != rh.filename_length)
+		if (in.gcount() != rh.filename_length)
 			throw std::runtime_error("File \"" + roll + "\" is corrupt");
 		fname[rh.filename_length] = 0;
 		rh.filename = fname.get();
 
-		std::cout << (i + 1) << ": \"" << rh.filename << "\" (" << format(rh.compressed ? rh.uncompressed_size : rh.size) << (rh.compressed ? "/" + format(rh.size) + " compressed" : "") << ")" << std::endl;
+		std::cout << (i + 1) << ": \"" << rh.filename << "\" (" << format(rh.compressed ? rh.uncompressed_size : rh.size)
+				  << (rh.compressed ? "/" + format(rh.size) + " compressed" : "") << ")" << std::endl;
 	}
 }
 
 // replace backslashes with forward slashes
 static std::string forward_slash(const std::string &name)
 {
-	if(name.find('\\') == std::string::npos)
+	if (name.find('\\') == std::string::npos)
 		return name;
 
 	std::string newname = name;
-	for(char &c : newname)
-		if(c == '\\')
+	for (char &c : newname)
+		if (c == '\\')
 			c = '/';
 
 	return newname;
@@ -149,20 +149,20 @@ static void create(bool hex, const std::filesystem::path &out_file, const std::v
 	const int file_count = in_files.size();
 
 	// make sure the output file doesn't exist, or is already an asset roll
-	if(std::filesystem::exists(out_file) && !is_asset_roll(out_file, hex))
+	if (std::filesystem::exists(out_file) && !is_asset_roll(out_file, hex))
 		throw std::runtime_error("Not willing to overwrite file \""s + out_file.string() + "\"");
 
 	// make sure all the input files exist
-	for(const RollItem &in : in_files)
+	for (const RollItem &in : in_files)
 	{
-		if(!std::filesystem::exists(in.real_file))
+		if (!std::filesystem::exists(in.real_file))
 			throw std::runtime_error("File \"" + in.real_file + "\" does not exist");
 	}
 
 	// construct the headers
 
 	std::vector<Header> headers;
-	for(int i = 0; i < file_count; ++i)
+	for (int i = 0; i < file_count; ++i)
 	{
 		Header h;
 
@@ -186,24 +186,24 @@ static void create(bool hex, const std::filesystem::path &out_file, const std::v
 
 	// embedded file count
 	const std::uint16_t file_count_short = file_count;
-	out.write((char*)&file_count_short, sizeof(file_count_short));
+	out.write((char *)&file_count_short, sizeof(file_count_short));
 
 	// write the headers
 	std::uint64_t offset = strlen(MAGIC) + sizeof(std::uint16_t); // magic length plus filecount length
-	for(const Header &h : headers)
+	for (const Header &h : headers)
 	{
-		out.write((const char*)&h.compressed, sizeof(h.compressed));
-		out.write((const char*)&h.uncompressed_size, sizeof(h.uncompressed_size));
-		out.write((const char*)&h.begin, sizeof(h.begin));
-		out.write((const char*)&h.size, sizeof(h.size));
-		out.write((const char*)&h.filename_length, sizeof(h.filename_length));
-		out.write((const char*)h.filename.c_str(), h.filename.length());
+		out.write((const char *)&h.compressed, sizeof(h.compressed));
+		out.write((const char *)&h.uncompressed_size, sizeof(h.uncompressed_size));
+		out.write((const char *)&h.begin, sizeof(h.begin));
+		out.write((const char *)&h.size, sizeof(h.size));
+		out.write((const char *)&h.filename_length, sizeof(h.filename_length));
+		out.write((const char *)h.filename.c_str(), h.filename.length());
 
 		offset += h.length();
 	}
 
 	// write the files
-	for(int i = 0; i < file_count; ++i)
+	for (int i = 0; i < file_count; ++i)
 	{
 		const long long fsize = std::filesystem::file_size(in_files.at(i).real_file);
 
@@ -211,26 +211,26 @@ static void create(bool hex, const std::filesystem::path &out_file, const std::v
 		headers[i].compressed = in_files[i].compress;
 		headers[i].uncompressed_size = fsize;
 		headers[i].begin = offset;
-		if(!headers[i].compressed)
+		if (!headers[i].compressed)
 			headers[i].size = fsize;
 
 		std::ifstream in(in_files.at(i).real_file, std::ifstream::binary);
-		if(!in)
+		if (!in)
 			throw std::runtime_error("Could not open file \"" + in_files.at(i).real_file + "\" for reading");
 
 		// write the file contents
-		if(headers[i].compressed)
+		if (headers[i].compressed)
 		{
 			// compress with zlib; load the entire file into memory
 			std::vector<unsigned char> contents(fsize);
-			in.read((char*)contents.data(), fsize);
-			if(in.gcount() != fsize)
+			in.read((char *)contents.data(), fsize);
+			if (in.gcount() != fsize)
 				throw std::runtime_error("Could not read the contents of file \"" + in_files.at(i).real_file + "\"");
 
 			// go go gadget zlib
 			uLongf compressed_size = (fsize * 1.1) + 12;
-			unsigned char *const compressed_data = (unsigned char*)malloc(compressed_size);
-			if(compress(compressed_data, &compressed_size, contents.data(), fsize) != Z_OK)
+			unsigned char *const compressed_data = (unsigned char *)malloc(compressed_size);
+			if (compress(compressed_data, &compressed_size, contents.data(), fsize) != Z_OK)
 			{
 				free(compressed_data);
 				throw std::runtime_error("Zlib error: Could not compress the data");
@@ -240,7 +240,7 @@ static void create(bool hex, const std::filesystem::path &out_file, const std::v
 			headers[i].size = compressed_size;
 
 			// write
-			out.write((const char*)compressed_data, compressed_size);
+			out.write((const char *)compressed_data, compressed_size);
 			free(compressed_data);
 
 			offset += compressed_size;
@@ -250,11 +250,11 @@ static void create(bool hex, const std::filesystem::path &out_file, const std::v
 			// write the file normally
 			unsigned char buffer[4096];
 			long long written = 0;
-			while(written != fsize)
+			while (written != fsize)
 			{
-				in.read((char*)buffer, sizeof(buffer));
+				in.read((char *)buffer, sizeof(buffer));
 				const int got = in.gcount();
-				out.write((const char*)buffer, got);
+				out.write((const char *)buffer, got);
 				written += got;
 			}
 
@@ -264,12 +264,12 @@ static void create(bool hex, const std::filesystem::path &out_file, const std::v
 
 	// rewrite all the headers with proper info
 	out.seekp(strlen(MAGIC) + sizeof(std::uint16_t));
-	for(const Header &h : headers)
+	for (const Header &h : headers)
 	{
-		out.write((const char*)&h.compressed, sizeof(h.compressed));
-		out.write((const char*)&h.uncompressed_size, sizeof(h.uncompressed_size));
-		out.write((const char*)&h.begin, sizeof(h.begin));
-		out.write((const char*)&h.size, sizeof(h.size));
+		out.write((const char *)&h.compressed, sizeof(h.compressed));
+		out.write((const char *)&h.uncompressed_size, sizeof(h.uncompressed_size));
+		out.write((const char *)&h.begin, sizeof(h.begin));
+		out.write((const char *)&h.size, sizeof(h.size));
 
 		out.seekp(sizeof(h.filename_length) + h.filename_length, std::ofstream::cur);
 	}
@@ -285,7 +285,7 @@ static void create(bool hex, const std::filesystem::path &out_file, const std::v
 
 		const auto len = std::filesystem::file_size(destfile);
 		std::unique_ptr<unsigned char[]> binary(new unsigned char[len]);
-		in.read((char*)binary.get(), len);
+		in.read((char *)binary.get(), len);
 		if (in.gcount() != len)
 			throw std::runtime_error("Couldn't read " + std::to_string(len) + " from " + destfile.string());
 
@@ -420,7 +420,7 @@ int main(int argc, char **argv)
 	{
 		return go(argc, argv);
 	}
-	catch(const std::exception &e)
+	catch (const std::exception &e)
 	{
 		std::cout << "Fatal: " << e.what() << std::endl;
 		return 1;

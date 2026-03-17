@@ -18,10 +18,7 @@ struct WinWsaInit
 		WSAStartup(MAKEWORD(1, 1), &wsa);
 	}
 
-	~WinWsaInit()
-	{
-		WSACleanup();
-	}
+	~WinWsaInit() { WSACleanup(); }
 };
 #endif
 

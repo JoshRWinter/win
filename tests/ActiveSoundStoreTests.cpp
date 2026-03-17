@@ -4,7 +4,9 @@
 #include <win/sound/ActiveSoundStore.hpp>
 #undef private
 
-#define assert(exp) if (!(exp)) win::bug("Assertion failed (" #exp ") on line " + std::to_string(__LINE__))
+#define assert(exp)                                                                                                                                            \
+	if (!(exp))                                                                                                                                                \
+	win::bug("Assertion failed (" #exp ") on line " + std::to_string(__LINE__))
 
 struct TestObject
 {
@@ -14,17 +16,23 @@ struct TestObject
 	{
 		++num;
 	}
-	~TestObject()
-	{
-		--num;
-	}
+
+	~TestObject() { --num; }
 
 	int &num;
 	const std::string name;
 };
 
-static std::uint16_t get_id(std::uint32_t key) { return key >> 16; }
-static std::uint16_t get_index(std::uint32_t key) { return key & 0xffff; }
+static std::uint16_t get_id(std::uint32_t key)
+{
+	return key >> 16;
+}
+
+static std::uint16_t get_index(std::uint32_t key)
+{
+	return key & 0xffff;
+}
+
 static std::uint32_t get_key(std::uint16_t id, std::uint16_t index)
 {
 	std::uint32_t key = id;
@@ -198,7 +206,8 @@ static void smoke_with_iterators()
 	assert(it == store.end());
 
 	it = store.begin();
-	++it; ++it;
+	++it;
+	++it;
 	assert(it->name == "yellow");
 
 	it = store.remove(it);

@@ -4,8 +4,8 @@
 
 #ifdef WIN_USE_OPENGL
 
-#include <win/gl/GL.hpp>
 #include <win/Font.hpp>
+#include <win/gl/GL.hpp>
 
 namespace win
 {
@@ -19,9 +19,9 @@ class GLFont : public Font
 	GLFont(const Dimensions<int> &screen_dimensions, const Area<float> &screen_area, float font_size, Stream font_file);
 
 public:
-	GLFont(GLFont&&) = default;
+	GLFont(GLFont &&) = default;
 
-	GLFont &operator=(GLFont&&) = default;
+	GLFont &operator=(GLFont &&) = default;
 
 	GLuint texture() const { return tex.get(); }
 

@@ -22,7 +22,15 @@ class ControlPanel
 	struct Button
 	{
 		Button() = default;
-		Button(const std::string &text, int x, int y, int w, int h) : text(text), x(x), y(y), w(w), h(h) {}
+
+		Button(const std::string &text, int x, int y, int w, int h)
+			: text(text)
+			, x(x)
+			, y(y)
+			, w(w)
+			, h(h)
+		{
+		}
 
 		std::string text;
 		int x = 0, y = 0, w = 0, h = 0;
@@ -32,7 +40,17 @@ class ControlPanel
 	struct BorderBox
 	{
 		BorderBox() = default;
-		BorderBox(const std::string &text, win::Color<unsigned char> rgba, int x, int y, int w, int h, int weight) : text(text), rgba(rgba), x(x), y(y), w(w), h(h), weight(weight) {}
+
+		BorderBox(const std::string &text, win::Color<unsigned char> rgba, int x, int y, int w, int h, int weight)
+			: text(text)
+			, rgba(rgba)
+			, x(x)
+			, y(y)
+			, w(w)
+			, h(h)
+			, weight(weight)
+		{
+		}
 
 		std::string text;
 		win::Color<unsigned char> rgba;
@@ -79,13 +97,13 @@ private:
 	Button load, save, add, remove, reload, padding_up, padding_down, move_up, move_down;
 	BorderBox padding;
 
-	std::function<void()> fn_import = [](){};
-	std::function<void()> fn_export = [](){};
-	std::function<void()> fn_add = [](){};
-	std::function<void()> fn_remove = [](){};
-	std::function<void()> fn_reload = [](){};
-	std::function<void()> fn_padding_up = [](){};
-	std::function<void()> fn_padding_down = [](){};
-	std::function<void()> fn_move_up = [](){};
-	std::function<void()> fn_move_down = [](){};
+	std::function<void()> fn_import = []() {};
+	std::function<void()> fn_export = []() {};
+	std::function<void()> fn_add = []() {};
+	std::function<void()> fn_remove = []() {};
+	std::function<void()> fn_reload = []() {};
+	std::function<void()> fn_padding_up = []() {};
+	std::function<void()> fn_padding_down = []() {};
+	std::function<void()> fn_move_up = []() {};
+	std::function<void()> fn_move_down = []() {};
 };

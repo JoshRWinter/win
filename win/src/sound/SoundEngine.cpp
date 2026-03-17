@@ -3,9 +3,9 @@
 #include <win/sound/SoundEngine.hpp>
 
 #if defined WINPLAT_LINUX
+#include <win/sound/SoundEngineLinuxDummy.hpp>
 #include <win/sound/SoundEngineLinuxPipeWire.hpp>
 #include <win/sound/SoundEngineLinuxPulseAudio.hpp>
-#include <win/sound/SoundEngineLinuxDummy.hpp>
 #elif defined WINPLAT_WINDOWS
 #include <win/sound/SoundEngineWindowsDirectSound.hpp>
 #endif
@@ -42,7 +42,14 @@ SoundEngine::SoundEngine(AssetRoll &roll)
 #endif
 }
 
-std::uint32_t SoundEngine::play(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, bool cache, int seek)
+std::uint32_t SoundEngine::play(const char *name,
+								int residency_priority,
+								float compression_priority,
+								float left,
+								float right,
+								bool looping,
+								bool cache,
+								int seek)
 {
 	SoundEnginePlayCommand cmd(name, residency_priority, compression_priority, left, right, looping, cache, seek);
 	return inner->play(cmd);

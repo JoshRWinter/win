@@ -72,7 +72,15 @@ std::string LayoutExporter::serialize_item(const AtlasItemDescriptor &item)
 	std::filesystem::path path = std::filesystem::canonical(exportfile).parent_path();
 	std::filesystem::path newname = std::filesystem::relative(item.filename, path);
 
-	return newname.string() + ":" + std::to_string(item.x) + ":" + std::to_string(item.y) + ":" + std::to_string(item.width) + ":" + std::to_string(item.height);
+	return newname.string() +
+		   ":" +
+		   std::to_string(item.x) +
+		   ":" +
+		   std::to_string(item.y) +
+		   ":" +
+		   std::to_string(item.width) +
+		   ":" +
+		   std::to_string(item.height);
 }
 
 AtlasItemDescriptor LayoutExporter::deserialize_item(const std::string &line)

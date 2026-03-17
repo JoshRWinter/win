@@ -11,11 +11,12 @@
 #include <ws2tcpip.h>
 #define ssize_t SSIZE_T
 #else
-#include <netinet/in.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #endif
 
-namespace win {
+namespace win
+{
 
 struct UdpId
 {

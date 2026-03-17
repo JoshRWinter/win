@@ -25,7 +25,8 @@ template<typename T> struct Object : T
 
 	Object()
 		: state(ObjectExchangerState::empty)
-	{}
+	{
+	}
 
 	std::atomic<ObjectExchangerState> state;
 };
@@ -56,7 +57,7 @@ public:
 
 	void writer_release(T *t)
 	{
-		auto object = (impl::Object<T> *) t;
+		auto object = (impl::Object<T> *)t;
 		object->state.store(impl::ObjectExchangerState::ready);
 
 		for (int i = 0; i < slots; ++i)
@@ -83,7 +84,7 @@ public:
 
 	void reader_release(T *t)
 	{
-		auto object = (impl::Object<T> *) t;
+		auto object = (impl::Object<T> *)t;
 		object->state.store(impl::ObjectExchangerState::empty);
 	}
 

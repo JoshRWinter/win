@@ -18,10 +18,14 @@ class GLAtlas : public Atlas
 	WIN_NO_COPY(GLAtlas);
 
 public:
-	enum class Mode { linear, nearest };
+	enum class Mode
+	{
+		linear,
+		nearest
+	};
 
 	GLAtlas(Stream, Mode, GLenum texture_unit);
-	GLAtlas(GLAtlas&&) = default;
+	GLAtlas(GLAtlas &&) = default;
 
 	GLuint texture() const;
 

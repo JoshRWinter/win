@@ -1,13 +1,13 @@
 #pragma once
 
-#include <win/Win.hpp>
 #include <win/AssetRoll.hpp>
 #include <win/Pool.hpp>
-#include <win/sound/Sound.hpp>
-#include <win/sound/PcmSource.hpp>
-#include <win/sound/DecodingPcmSource.hpp>
-#include <win/sound/CachingPcmSource.hpp>
 #include <win/sound/CachedPcmSource.hpp>
+#include <win/sound/CachingPcmSource.hpp>
+#include <win/sound/DecodingPcmSource.hpp>
+#include <win/sound/PcmSource.hpp>
+#include <win/sound/Sound.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -21,7 +21,8 @@ struct SoundRepoCacheEntry
 		, key_seek(seek)
 		, channels(-1)
 		, length(-1)
-	{}
+	{
+	}
 
 	std::string key_name;
 	int key_seek;
@@ -41,7 +42,8 @@ struct SoundRepoEntry : Sound
 		, decoder(decoder)
 		, cacher(cacher)
 		, cached(cached)
-	{}
+	{
+	}
 
 	SoundRepoCacheEntry &cache_entry;
 
@@ -55,7 +57,7 @@ class SoundRepo
 	WIN_NO_COPY_MOVE(SoundRepo);
 
 public:
-	explicit SoundRepo(win::AssetRoll&);
+	explicit SoundRepo(win::AssetRoll &);
 	~SoundRepo();
 
 	Sound &load(const char *name, bool cache, int seek);

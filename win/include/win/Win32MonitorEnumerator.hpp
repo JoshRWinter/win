@@ -1,7 +1,7 @@
 #pragma once
 
-#include <win/Win.hpp>
 #include <win/MonitorEnumerator.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {

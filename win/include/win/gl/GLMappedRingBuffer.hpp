@@ -17,14 +17,14 @@ struct GLMappedRingBufferReservation
 		: buffer_length(buffer_length)
 		, start(start)
 		, length(length)
-	{}
+	{
+	}
 
 	bool conflicts(const GLMappedRingBufferReservation &rhs) const
 	{
-		return
-			(start < rhs.start + rhs.length && start + length > rhs.start) ||
-			(start + buffer_length < rhs.start + rhs.length && start + buffer_length + length > rhs.start) ||
-			(start < rhs.start + buffer_length + rhs.length && start + length > rhs.start + buffer_length);
+		return (start < rhs.start + rhs.length && start + length > rhs.start) ||
+			   (start + buffer_length < rhs.start + rhs.length && start + buffer_length + length > rhs.start) ||
+			   (start < rhs.start + buffer_length + rhs.length && start + length > rhs.start + buffer_length);
 	}
 
 	int buffer_length;
@@ -52,8 +52,9 @@ struct GLMappedRingBufferLockedRange
 	GLMappedRingBufferReservation reservation;
 };
 
-template <typename T> class GLMappedRingBuffer;
-template <typename T> class GLMappedRingBufferRange : public MappedRingBufferRange<T>
+template<typename T> class GLMappedRingBuffer;
+
+template<typename T> class GLMappedRingBufferRange : public MappedRingBufferRange<T>
 {
 	WIN_NO_COPY_MOVE(GLMappedRingBufferRange);
 	friend class GLMappedRingBuffer<T>;
@@ -62,7 +63,8 @@ template <typename T> class GLMappedRingBufferRange : public MappedRingBufferRan
 	explicit GLMappedRingBufferRange(MappedRingBufferRange<T> &&original)
 		: MappedRingBufferRange<T>(std::move(original))
 		, locked(false)
-	{}
+	{
+	}
 
 public:
 	~GLMappedRingBufferRange()
@@ -75,24 +77,27 @@ private:
 	bool locked;
 };
 
-template <typename T> class GLMappedRingBuffer
+template<typename T> class GLMappedRingBuffer
 {
 	WIN_NO_COPY(GLMappedRingBuffer);
 
 public:
 	GLMappedRingBuffer()
 		: inner(NULL, -1)
-	{}
+	{
+	}
 
 	GLMappedRingBuffer(void *mem, int length_elements)
 		: inner(mem, length_elements)
-	{}
+	{
+	}
 
 	GLMappedRingBuffer(GLMappedRingBuffer<T> &&rhs) noexcept = default;
 
 	GLMappedRingBuffer<T> &operator=(GLMappedRingBuffer<T> &&rhs) noexcept = default;
 
 	int head() const { return inner.head(); }
+
 	int length() const { return inner.length(); }
 
 	GLMappedRingBufferRange<T> reserve(int len)
@@ -135,7 +140,7 @@ private:
 		{
 			const auto result = glClientWaitSync(sync, flags, timeout);
 
-			switch(result)
+			switch (result)
 			{
 				case GL_WAIT_FAILED:
 					win::bug("glClientWaitSync() returned GL_WAIT_FAILED");

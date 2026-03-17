@@ -16,14 +16,9 @@ class SoundEngineLinuxDummy : public SoundEngineBase
 public:
 	SoundEngineLinuxDummy() = default;
 
-	std::uint32_t play(const SoundEnginePlayCommand&) override
-	{
-		return -1;
-	}
+	std::uint32_t play(const SoundEnginePlayCommand &) override { return -1; }
 
-	void save(const std::vector<SoundEnginePlaybackCommand>&, const std::vector<SoundEngineConfigCommand>&) override
-	{
-	}
+	void save(const std::vector<SoundEnginePlaybackCommand> &, const std::vector<SoundEngineConfigCommand> &) override {}
 };
 
 }

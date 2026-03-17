@@ -1,5 +1,5 @@
-#include <cstring>
 #include <cmath>
+#include <cstring>
 
 #include <win/TextRenderer.hpp>
 
@@ -77,6 +77,7 @@ float TextRenderer::find_kern(char c, const FontCharacterMetric &cmetric_last_ch
 
 	return 0.0f;
 }
+
 float TextRenderer::text_width(const Font &font, const char *text)
 {
 	const auto len = strlen(text);

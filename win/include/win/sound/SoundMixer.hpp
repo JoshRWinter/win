@@ -1,13 +1,13 @@
 #pragma once
 
-#include <memory>
-#include <chrono>
 #include <array>
+#include <chrono>
+#include <memory>
 
-#include <win/Win.hpp>
+#include <win/AssetRoll.hpp>
 #include <win/sound/ActiveSoundStore.hpp>
 #include <win/sound/SoundRepo.hpp>
-#include <win/AssetRoll.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -25,7 +25,8 @@ struct SoundMixerSound
 		, looping(looping)
 		, playing(true)
 		, done(false)
-	{}
+	{
+	}
 
 	Sound &sound;
 	int residency_priority;
@@ -39,7 +40,10 @@ struct SoundMixerSound
 	bool done;
 };
 
-struct StereoLimiter { float *left, *right; };
+struct StereoLimiter
+{
+	float *left, *right;
+};
 
 class SoundMixer
 {
@@ -62,8 +66,8 @@ public:
 
 private:
 	void calculate_stereo_limiters(int count, int len, const std::array<StereoLimiter, max_sounds> &limiters, const std::array<float, max_sounds> &priorities);
-	static void extract_stereo_f32(SoundMixerSound&, float *dest, int len);
-	static void zero_float(float*, int len);
+	static void extract_stereo_f32(SoundMixerSound &, float *dest, int len);
+	static void zero_float(float *, int len);
 
 	std::unique_ptr<float[]> conversion_buffers_owner;
 	float *conversion_buffers;

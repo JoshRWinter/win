@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include <win/Win.hpp>
 #include <win/Stream.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -22,7 +22,7 @@ class Atlas
 
 public:
 	explicit Atlas(Stream);
-	Atlas(Atlas&&) = default;
+	Atlas(Atlas &&) = default;
 
 	int count() const;
 	const AtlasItem &item(int) const;

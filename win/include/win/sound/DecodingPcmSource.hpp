@@ -1,13 +1,13 @@
 #pragma once
 
-#include <thread>
 #include <atomic>
 #include <latch>
+#include <thread>
 
-#include <win/Win.hpp>
-#include <win/Stream.hpp>
 #include <win/ConcurrentRingBuffer.hpp>
 #include <win/sound/PcmSource.hpp>
+#include <win/Stream.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -15,7 +15,7 @@ namespace win
 class DecodingPcmSource : public PcmSource
 {
 	WIN_NO_COPY_MOVE(DecodingPcmSource);
-	constexpr static int buffersize = 44100 * 2 * 2; // 2 seconds of stereo, or 4 of mono
+	constexpr static int buffersize = 44'100 * 2 * 2; // 2 seconds of stereo, or 4 of mono
 
 public:
 	DecodingPcmSource(Stream data, int seek_start, int cached_channels, bool compute_total_size);

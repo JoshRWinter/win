@@ -8,11 +8,15 @@
 
 #include "WindowsPlatform.hpp"
 
-std::optional<std::vector<std::filesystem::path>> WindowsPlatform::file_picker(const std::string &title, bool open, bool multiple, const std::string &ext_filter, const std::filesystem::path &dir) const
+std::optional<std::vector<std::filesystem::path>> WindowsPlatform::file_picker(const std::string &title,
+																			   bool open,
+																			   bool multiple,
+																			   const std::string &ext_filter,
+																			   const std::filesystem::path &dir) const
 {
 	std::string filter_description;
 	if (ext_filter == "tga")
-		filter_description = std::string("TARGA images") + (char)0 + "*.tga" + (char)0 +  "All files" + (char)0 + "*" + (char)0 + (char)0;
+		filter_description = std::string("TARGA images") + (char)0 + "*.tga" + (char)0 + "All files" + (char)0 + "*" + (char)0 + (char)0;
 	else if (ext_filter == "txt")
 		filter_description = std::string("Text files") + (char)0 + "*.txt" + (char)0 + "All files" + (char)0 + "*" + (char)0 + (char)0;
 	else
@@ -69,7 +73,7 @@ std::optional<std::vector<std::filesystem::path>> WindowsPlatform::file_picker(c
 	const auto splits = split(filebuf, 0);
 
 	if (splits.size() < 1)
-		return std::nullopt; // this shouldn't happen i think
+		return std::nullopt;	// this shouldn't happen i think
 	else if (splits.size() < 2) // only one item was selected
 	{
 		std::vector<std::filesystem::path> v;
@@ -143,7 +147,6 @@ std::vector<std::filesystem::path> WindowsPlatform::split(const char *buf, const
 	{
 		if (buf[i] == c)
 		{
-
 			if (i - start > 0)
 				results.emplace_back(std::string(buf + start, 0, i - start));
 

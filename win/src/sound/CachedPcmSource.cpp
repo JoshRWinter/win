@@ -11,7 +11,8 @@ CachedPcmSource::CachedPcmSource(int channel_count, const float *data, long leng
 	, bookmark(0)
 	, pcmdata(data)
 	, pcmdata_length(length)
-{}
+{
+}
 
 int CachedPcmSource::channels()
 {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <type_traits>
 #include <atomic>
+#include <type_traits>
 
 #include <cstring>
 
@@ -10,14 +10,13 @@
 namespace win
 {
 
-template <typename T, int desired_length = -1> class ConcurrentRingBuffer
+template<typename T, int desired_length = -1> class ConcurrentRingBuffer
 {
 	WIN_NO_COPY_MOVE(ConcurrentRingBuffer);
 
 	static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 
 public:
-
 	constexpr static auto length = desired_length;
 
 	ConcurrentRingBuffer(T *user_buffer, int user_length)
@@ -57,7 +56,7 @@ public:
 		}
 		else
 		{
-	    	const int available = write_cursor - read_cursor;
+			const int available = write_cursor - read_cursor;
 			take = std::min(available, len);
 
 			// no wrapping here

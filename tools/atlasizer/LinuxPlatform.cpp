@@ -4,15 +4,19 @@
 
 #include <cstring>
 
-#include <wordexp.h>
 #include <unistd.h>
+#include <wordexp.h>
 
 #include "LinuxPlatform.hpp"
 
 struct RunCmdResult
 {
 	RunCmdResult(bool notfound, int return_code, const std::string &out)
-		: notfound(notfound), return_code(return_code), out(out) {}
+		: notfound(notfound)
+		, return_code(return_code)
+		, out(out)
+	{
+	}
 
 	bool notfound;
 	int return_code;
@@ -21,7 +25,11 @@ struct RunCmdResult
 
 static RunCmdResult run_cmd(const std::string &cmd);
 
-std::optional<std::vector<std::filesystem::path>> LinuxPlatform::file_picker(const std::string &title, bool open, bool multiple, const std::string &ext_filter, const std::filesystem::path &dir) const
+std::optional<std::vector<std::filesystem::path>> LinuxPlatform::file_picker(const std::string &title,
+																			 bool open,
+																			 bool multiple,
+																			 const std::string &ext_filter,
+																			 const std::filesystem::path &dir) const
 {
 	const std::string opt_save = open ? "" : " --save";
 	const std::string opt_multiple = multiple ? " --multiple" : "";
@@ -98,7 +106,7 @@ std::vector<std::filesystem::path> LinuxPlatform::split(const std::string &s, co
 
 RunCmdResult run_cmd(const std::string &cmd)
 {
-	//fprintf(stderr, "\"%s\"\n", cmd.c_str());
+	// fprintf(stderr, "\"%s\"\n", cmd.c_str());
 
 	FILE *proc;
 	if ((proc = popen(cmd.c_str(), "r")) == NULL)

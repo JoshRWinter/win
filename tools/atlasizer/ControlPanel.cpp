@@ -25,9 +25,9 @@ void ControlPanel::click(bool down)
 			fn_export();
 		else if (mouse_is_over(add) && add.enabled)
 			fn_add();
-		else if(mouse_is_over(remove) && remove.enabled)
+		else if (mouse_is_over(remove) && remove.enabled)
 			fn_remove();
-		else if(mouse_is_over(reload) && reload.enabled)
+		else if (mouse_is_over(reload) && reload.enabled)
 			fn_reload();
 		else if (mouse_is_over(padding_up) && padding_up.enabled)
 			fn_padding_up();
@@ -166,7 +166,7 @@ void ControlPanel::reflow()
 	x += padding.w + (spacing / 2);
 
 	padding_up = Button("^", x, centerline_y + 2, small_button_width, small_button_height);
-	padding_down = Button("v", x,centerline_y - small_button_height - 2, small_button_width, small_button_height);
+	padding_down = Button("v", x, centerline_y - small_button_height - 2, small_button_width, small_button_height);
 	x += padding_up.w + (spacing * 2);
 
 	move_up = Button("Up", x, centerline_y - (button_height / 2), button_width, button_height);

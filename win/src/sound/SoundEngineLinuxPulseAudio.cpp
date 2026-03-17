@@ -6,7 +6,7 @@
 
 #include <win/sound/SoundEngineLinuxPulseAudio.hpp>
 
-static void underflow(pa_stream*, void*)
+static void underflow(pa_stream *, void *)
 {
 	fprintf(stderr, "PulseAudio: underflow\n");
 }
@@ -15,22 +15,27 @@ namespace win
 {
 
 // function pointers
-static pa_threaded_mainloop* (*pa_threaded_mainloop_new)();
-static pa_mainloop_api* (*pa_threaded_mainloop_get_api)(pa_threaded_mainloop*);
+static pa_threaded_mainloop *(*pa_threaded_mainloop_new)();
+static pa_mainloop_api *(*pa_threaded_mainloop_get_api)(pa_threaded_mainloop *);
 static void (*pa_threaded_mainloop_lock)(pa_threaded_mainloop *loop);
 static void (*pa_threaded_mainloop_unlock)(pa_threaded_mainloop *loop);
 static int (*pa_threaded_mainloop_start)(pa_threaded_mainloop *loop);
 static void (*pa_threaded_mainloop_stop)(pa_threaded_mainloop *loop);
 static void (*pa_threaded_mainloop_free)(pa_threaded_mainloop *loop);
 
-static pa_context* (*pa_context_new)(pa_mainloop_api *loop, const char *name);
+static pa_context *(*pa_context_new)(pa_mainloop_api *loop, const char *name);
 static pa_context_state_t (*pa_context_get_state)(const pa_context *context);
 static void (*pa_context_disconnect)(pa_context *context);
 static int (*pa_context_connect)(pa_context *context, const char *server, pa_context_flags_t flags, const pa_spawn_api *api);
 static void (*pa_context_unref)(pa_context *context);
 
-static pa_stream* (*pa_stream_new)(const pa_context *context, const char *name, const pa_sample_spec *ss, const pa_channel_map *map);
-static int (*pa_stream_connect_playback)(const pa_stream *stream, const char *dev, const pa_buffer_attr *attr, pa_stream_flags_t flags, const pa_cvolume *volume, pa_stream *sync_stream);
+static pa_stream *(*pa_stream_new)(const pa_context *context, const char *name, const pa_sample_spec *ss, const pa_channel_map *map);
+static int (*pa_stream_connect_playback)(const pa_stream *stream,
+										 const char *dev,
+										 const pa_buffer_attr *attr,
+										 pa_stream_flags_t flags,
+										 const pa_cvolume *volume,
+										 pa_stream *sync_stream);
 static void (*pa_stream_set_write_callback)(pa_stream *stream, pa_stream_request_cb_t callback, void *userdata);
 static void (*pa_stream_set_underflow_callback)(pa_stream *stream, pa_stream_notify_cb_t callback, void *userdata);
 static int (*pa_stream_begin_write)(pa_stream *stream, void **data, size_t *nbytes);
@@ -38,7 +43,7 @@ static int (*pa_stream_write)(pa_stream *stream, const void *data, size_t nbytes
 static pa_stream_state_t (*pa_stream_get_state)(const pa_stream *stream);
 static int (*pa_stream_disconnect)(pa_stream *stream);
 static void (*pa_stream_unref)(pa_stream *stream);
-static pa_operation *(*pa_stream_cork)(pa_stream*, int, pa_stream_success_cb_t, void*);
+static pa_operation *(*pa_stream_cork)(pa_stream *, int, pa_stream_success_cb_t, void *);
 
 void (*pa_operation_unref)(pa_operation *op);
 
@@ -89,10 +94,10 @@ SoundEngineLinuxPulseAudio::SoundEngineLinuxPulseAudio(AssetRoll &asset_roll, co
 	pa_sample_spec spec;
 	spec.format = PA_SAMPLE_S16LE;
 	spec.channels = 2;
-	spec.rate = 44100;
+	spec.rate = 44'100;
 
 	stream = pa_stream_new(context, "wet fart", &spec, NULL);
-	if(stream == NULL)
+	if (stream == NULL)
 		win::bug("PulseAudio: Couldn't create stream");
 
 	pa_stream_set_write_callback(stream, process, this);
@@ -106,8 +111,8 @@ SoundEngineLinuxPulseAudio::SoundEngineLinuxPulseAudio(AssetRoll &asset_roll, co
 	attr.maxlength = pulseaudio_is_lame_latency_stereo * 3;
 	attr.tlength = pulseaudio_is_lame_latency;
 	attr.prebuf = 0;
-	attr.minreq = (std::uint32_t) -1;
-	attr.fragsize = (std::uint32_t) -1;
+	attr.minreq = (std::uint32_t)-1;
+	attr.fragsize = (std::uint32_t)-1;
 
 	if (pa_stream_connect_playback(stream, NULL, &attr, PA_STREAM_START_CORKED, NULL, NULL))
 		win::bug("PulseAudio: Couldn't connect stream");
@@ -150,7 +155,6 @@ SoundEngineLinuxPulseAudio::~SoundEngineLinuxPulseAudio()
 	}
 
 	pa_stream_unref(stream);
-
 
 	pa_context_disconnect(context);
 	pa_context_unref(context);
@@ -196,7 +200,7 @@ void SoundEngineLinuxPulseAudio::save(const std::vector<SoundEnginePlaybackComma
 
 void SoundEngineLinuxPulseAudio::process(pa_stream *stream, const size_t request_bytes, void *userdata)
 {
-	SoundEngineLinuxPulseAudio &engine = *(SoundEngineLinuxPulseAudio*)userdata;
+	SoundEngineLinuxPulseAudio &engine = *(SoundEngineLinuxPulseAudio *)userdata;
 
 	size_t sent_bytes = 0;
 
@@ -204,7 +208,7 @@ void SoundEngineLinuxPulseAudio::process(pa_stream *stream, const size_t request
 	{
 		std::int16_t *dest = NULL;
 		size_t give_bytes = request_bytes - sent_bytes;
-		if (pa_stream_begin_write(stream, (void**)&dest, &give_bytes))
+		if (pa_stream_begin_write(stream, (void **)&dest, &give_bytes))
 			win::bug("PulseAudio: begin write failed");
 
 		const size_t give_samples = give_bytes / 2;
@@ -219,40 +223,39 @@ void SoundEngineLinuxPulseAudio::process(pa_stream *stream, const size_t request
 	}
 }
 
-static void *load_pa_fn(const char*, void *so);
+static void *load_pa_fn(const char *, void *so);
 
 void SoundEngineLinuxPulseAudio::load_functions()
 {
-	pa_threaded_mainloop_new = (decltype(pa_threaded_mainloop_new)) load_pa_fn("pa_threaded_mainloop_new", so);
-	pa_threaded_mainloop_get_api = (decltype(pa_threaded_mainloop_get_api)) load_pa_fn("pa_threaded_mainloop_get_api",
-																					   so);
-	pa_threaded_mainloop_lock = (decltype(pa_threaded_mainloop_lock)) load_pa_fn("pa_threaded_mainloop_lock", so);
-	pa_threaded_mainloop_unlock = (decltype(pa_threaded_mainloop_unlock)) load_pa_fn("pa_threaded_mainloop_unlock", so);
-	pa_threaded_mainloop_start = (decltype(pa_threaded_mainloop_start)) load_pa_fn("pa_threaded_mainloop_start", so);
-	pa_threaded_mainloop_stop = (decltype(pa_threaded_mainloop_stop)) load_pa_fn("pa_threaded_mainloop_stop", so);
-	pa_threaded_mainloop_free = (decltype(pa_threaded_mainloop_free)) load_pa_fn("pa_threaded_mainloop_free", so);
+	pa_threaded_mainloop_new = (decltype(pa_threaded_mainloop_new))load_pa_fn("pa_threaded_mainloop_new", so);
+	pa_threaded_mainloop_get_api = (decltype(pa_threaded_mainloop_get_api))load_pa_fn("pa_threaded_mainloop_get_api", so);
+	pa_threaded_mainloop_lock = (decltype(pa_threaded_mainloop_lock))load_pa_fn("pa_threaded_mainloop_lock", so);
+	pa_threaded_mainloop_unlock = (decltype(pa_threaded_mainloop_unlock))load_pa_fn("pa_threaded_mainloop_unlock", so);
+	pa_threaded_mainloop_start = (decltype(pa_threaded_mainloop_start))load_pa_fn("pa_threaded_mainloop_start", so);
+	pa_threaded_mainloop_stop = (decltype(pa_threaded_mainloop_stop))load_pa_fn("pa_threaded_mainloop_stop", so);
+	pa_threaded_mainloop_free = (decltype(pa_threaded_mainloop_free))load_pa_fn("pa_threaded_mainloop_free", so);
 
-	pa_context_new = (decltype(pa_context_new)) load_pa_fn("pa_context_new", so);
-	pa_context_get_state = (decltype(pa_context_get_state)) load_pa_fn("pa_context_get_state", so);
-	pa_context_disconnect = (decltype(pa_context_disconnect)) load_pa_fn("pa_context_disconnect", so);
-	pa_context_connect = (decltype(pa_context_connect)) load_pa_fn("pa_context_connect", so);
-	pa_context_unref = (decltype(pa_context_unref)) load_pa_fn("pa_context_unref", so);
+	pa_context_new = (decltype(pa_context_new))load_pa_fn("pa_context_new", so);
+	pa_context_get_state = (decltype(pa_context_get_state))load_pa_fn("pa_context_get_state", so);
+	pa_context_disconnect = (decltype(pa_context_disconnect))load_pa_fn("pa_context_disconnect", so);
+	pa_context_connect = (decltype(pa_context_connect))load_pa_fn("pa_context_connect", so);
+	pa_context_unref = (decltype(pa_context_unref))load_pa_fn("pa_context_unref", so);
 
-	pa_stream_new = (decltype(pa_stream_new)) load_pa_fn("pa_stream_new", so);
-	pa_stream_connect_playback = (decltype(pa_stream_connect_playback)) load_pa_fn("pa_stream_connect_playback", so);
-	pa_stream_get_state = (decltype(pa_stream_get_state)) load_pa_fn("pa_stream_get_state", so);
-	pa_stream_disconnect = (decltype(pa_stream_disconnect)) load_pa_fn("pa_stream_disconnect", so);
-	pa_stream_set_write_callback = (decltype(pa_stream_set_write_callback)) load_pa_fn("pa_stream_set_write_callback", so);
-	pa_stream_set_underflow_callback = (decltype(pa_stream_set_underflow_callback)) load_pa_fn("pa_stream_set_underflow_callback", so);
-	pa_stream_begin_write = (decltype(pa_stream_begin_write)) load_pa_fn("pa_stream_begin_write", so);
-	pa_stream_write = (decltype(pa_stream_write)) load_pa_fn("pa_stream_write", so);
-	pa_stream_unref = (decltype(pa_stream_unref)) load_pa_fn("pa_stream_unref", so);
-	pa_stream_cork = (decltype(pa_stream_cork)) load_pa_fn("pa_stream_cork", so);
+	pa_stream_new = (decltype(pa_stream_new))load_pa_fn("pa_stream_new", so);
+	pa_stream_connect_playback = (decltype(pa_stream_connect_playback))load_pa_fn("pa_stream_connect_playback", so);
+	pa_stream_get_state = (decltype(pa_stream_get_state))load_pa_fn("pa_stream_get_state", so);
+	pa_stream_disconnect = (decltype(pa_stream_disconnect))load_pa_fn("pa_stream_disconnect", so);
+	pa_stream_set_write_callback = (decltype(pa_stream_set_write_callback))load_pa_fn("pa_stream_set_write_callback", so);
+	pa_stream_set_underflow_callback = (decltype(pa_stream_set_underflow_callback))load_pa_fn("pa_stream_set_underflow_callback", so);
+	pa_stream_begin_write = (decltype(pa_stream_begin_write))load_pa_fn("pa_stream_begin_write", so);
+	pa_stream_write = (decltype(pa_stream_write))load_pa_fn("pa_stream_write", so);
+	pa_stream_unref = (decltype(pa_stream_unref))load_pa_fn("pa_stream_unref", so);
+	pa_stream_cork = (decltype(pa_stream_cork))load_pa_fn("pa_stream_cork", so);
 
-	pa_operation_unref = (decltype(pa_operation_unref)) load_pa_fn("pa_operation_unref", so);
+	pa_operation_unref = (decltype(pa_operation_unref))load_pa_fn("pa_operation_unref", so);
 }
 
-static void* load_pa_fn(const char *name, void *so)
+static void *load_pa_fn(const char *name, void *so)
 {
 	void *fn = dlsym(so, name);
 

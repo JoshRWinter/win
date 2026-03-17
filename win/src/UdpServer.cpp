@@ -1,22 +1,24 @@
 #include <win/Win.hpp>
 
 #ifdef WINPLAT_LINUX
+#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include <fcntl.h>
 #else
 #include <Ws2tcpip.h>
 #endif
 
-#include <win/WsaSingleton.hpp>
 #include <win/UdpServer.hpp>
+#include <win/WsaSingleton.hpp>
 
 namespace win
 {
 
 // errno related stuff
 #define NET_WOULDBLOCK
-static int get_errno(){
+
+static int get_errno()
+{
 #ifdef _WIN32
 	return WSAGetLastError();
 #else
@@ -87,7 +89,7 @@ void UdpServer::send(const void *buffer, int len, const UdpId &id)
 		bug("UdpId not initialized");
 
 	// no such thing as partial sends for sendto with udp
-	const int result = sendto(sock, (const char*)buffer, len, 0, (sockaddr*)&id.storage, id.len);
+	const int result = sendto(sock, (const char *)buffer, len, 0, (sockaddr *)&id.storage, id.len);
 	if (result != len && get_errno() != WOULDBLOCK)
 	{
 		this->close();
@@ -98,15 +100,15 @@ void UdpServer::send(const void *buffer, int len, const UdpId &id)
 // non blocking recv
 int UdpServer::recv(void *buffer, int len, UdpId &id)
 {
-	if(sock == -1)
+	if (sock == -1)
 		bug("UdpServer closed");
 
 	// no partial receives
-	const int result = recvfrom(sock, (char*)buffer, len, 0, (sockaddr*)&id.storage, &id.len);
-	if(result == -1)
+	const int result = recvfrom(sock, (char *)buffer, len, 0, (sockaddr *)&id.storage, &id.len);
+	if (result == -1)
 	{
 		const auto eno = get_errno();
-		if(eno == WOULDBLOCK || eno == CONNRESET)
+		if (eno == WOULDBLOCK || eno == CONNRESET)
 			return 0;
 		else
 			this->close();
@@ -127,9 +129,9 @@ unsigned UdpServer::peek()
 
 #ifdef _WIN32
 	u_long available;
-	ioctlsocket(sock,FIONREAD,&available);
+	ioctlsocket(sock, FIONREAD, &available);
 #else
-	int available=0;
+	int available = 0;
 	ioctl(sock, FIONREAD, &available);
 #endif // _WIN32
 
@@ -169,7 +171,7 @@ bool UdpServer::bind(unsigned short port)
 
 	// create the socket
 	sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-	if(sock == -1)
+	if (sock == -1)
 	{
 		this->close();
 		return false;
@@ -178,7 +180,7 @@ bool UdpServer::bind(unsigned short port)
 #ifdef _WIN32
 	// make this a dual stack socket
 	u_long optmode = 0;
-	setsockopt(sock, IPPROTO_IPV6, 27, (char*)&optmode, 40);
+	setsockopt(sock, IPPROTO_IPV6, 27, (char *)&optmode, 40);
 #else
 	// make this socket reusable
 	int reuse = 1;

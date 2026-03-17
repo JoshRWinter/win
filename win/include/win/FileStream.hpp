@@ -3,8 +3,8 @@
 #include <filesystem>
 #include <fstream>
 
-#include <win/Win.hpp>
 #include <win/Stream.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {

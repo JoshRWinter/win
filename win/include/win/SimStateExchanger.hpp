@@ -5,11 +5,11 @@
 #endif
 
 #include <chrono>
-#include <thread>
 #include <cstdint>
+#include <thread>
 
-#include <win/Win.hpp>
 #include <win/ObjectExchanger.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -17,14 +17,14 @@ namespace win
 namespace impl
 {
 
-template <typename SimState> struct SimStateContainer : SimState
+template<typename SimState> struct SimStateContainer : SimState
 {
 	std::int64_t time;
 };
 
 }
 
-template <typename SimState> class SimStateExchanger
+template<typename SimState> class SimStateExchanger
 {
 	WIN_NO_COPY_MOVE(SimStateExchanger);
 
@@ -64,7 +64,7 @@ public:
 		std::int64_t end;
 		get_interval_bounds_nanos(sim_frequency, NULL, &end);
 
-		auto container = (impl::SimStateContainer<SimState>*)&simstate;
+		auto container = (impl::SimStateContainer<SimState> *)&simstate;
 		container->time = end;
 
 		exchanger.writer_release(container);

@@ -218,19 +218,21 @@ int Atlasizer::get_padding() const
 	return padding;
 }
 
-const std::vector<AtlasizerItem*> &Atlasizer::get_items_layout_order() const
+const std::vector<AtlasizerItem *> &Atlasizer::get_items_layout_order() const
 {
 	return items_layout_order;
 }
 
-const std::vector<AtlasizerItem*> &Atlasizer::get_items_display_order() const
+const std::vector<AtlasizerItem *> &Atlasizer::get_items_display_order() const
 {
 	return items_display_order;
 }
 
 void Atlasizer::check_validity()
 {
-	for (auto item : items_display_order) item->valid = true;
+	for (auto item : items_display_order)
+		item->valid = true;
+
 	for (auto item : items_display_order)
 	{
 		for (auto item2 : items_display_order)
@@ -249,11 +251,7 @@ void Atlasizer::check_validity()
 
 bool Atlasizer::collide(const AtlasizerItem &a, const AtlasizerItem &b) const
 {
-	return
-		a.x + a.w + padding > b.x &&
-		a.x < b.x + b.w + padding &&
-		a.y + a.h + padding > b.y &&
-		a.y < b.y + b.h + padding;
+	return a.x + a.w + padding > b.x && a.x < b.x + b.w + padding && a.y + a.h + padding > b.y && a.y < b.y + b.h + padding;
 }
 
 Atlasizer::CollisionSide Atlasizer::collision_side(const AtlasizerItem &a, const AtlasizerItem &b) const

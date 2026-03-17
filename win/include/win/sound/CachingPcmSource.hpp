@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include <win/sound/DecodingPcmSource.hpp>
 #include <win/sound/CachedPcmSource.hpp>
+#include <win/sound/DecodingPcmSource.hpp>
 
 namespace win
 {

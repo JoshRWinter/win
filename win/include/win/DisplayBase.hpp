@@ -2,8 +2,8 @@
 
 #include <functional>
 
-#include <win/Win.hpp>
 #include <win/Event.hpp>
+#include <win/Win.hpp>
 
 #ifdef WINPLAT_LINUX
 #include <X11/Xlib.h>
@@ -15,13 +15,12 @@ namespace win
 #if defined WINPLAT_WINDOWS
 typedef HWND NativeWindowHandle;
 #elif defined WINPLAT_LINUX
-typedef Window* NativeWindowHandle;
+typedef Window *NativeWindowHandle;
 #endif
 
 struct DisplayOptions
 {
-	DisplayOptions()
-	{}
+	DisplayOptions() {}
 
 	std::string caption;
 	std::string monitor_name;
@@ -39,9 +38,13 @@ class DisplayBase
 	WIN_NO_COPY_MOVE(DisplayBase);
 
 	static void default_window_handler(WindowEvent event) {}
+
 	static void default_resize_handler(int w, int y) {}
+
 	static void default_button_handler(Button button, bool press) {}
+
 	static void default_character_handler(int c) {}
+
 	static void default_mouse_handler(int x, int y) {}
 
 public:

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
-#include <win/Win.hpp>
 #include <win/AssetRoll.hpp>
 #include <win/Display.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -21,7 +21,8 @@ struct SoundEnginePlayCommand
 		, looping(looping)
 		, cache(cache)
 		, seek(seek)
-	{}
+	{
+	}
 
 	const char *name;
 	int residency_priority;
@@ -39,7 +40,8 @@ struct SoundEnginePlaybackCommand
 		: key(key)
 		, playing(playing)
 		, stop(stop)
-	{}
+	{
+	}
 
 	std::uint32_t key;
 	bool playing;
@@ -52,7 +54,8 @@ struct SoundEngineConfigCommand
 		: key(key)
 		, left(left)
 		, right(right)
-	{}
+	{
+	}
 
 	std::uint32_t key;
 	float left;
@@ -75,7 +78,7 @@ public:
 #if defined WINPLAT_WINDOWS
 typedef HWND WindowHandle;
 #elif defined WINPLAT_LINUX
-typedef void* window_handle;
+typedef void *window_handle;
 #endif
 
 class SoundEngine
@@ -83,7 +86,7 @@ class SoundEngine
 	WIN_NO_COPY_MOVE(SoundEngine);
 
 public:
-	SoundEngine(AssetRoll&);
+	SoundEngine(AssetRoll &);
 
 	// name must live until the save() call returns
 	std::uint32_t play(const char *name, int residency_priority, float compression_priority, float left, float right, bool looping, bool cache, int seek = 0);

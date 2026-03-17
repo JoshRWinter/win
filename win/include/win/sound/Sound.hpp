@@ -1,7 +1,7 @@
 #pragma once
 
-#include <win/Win.hpp>
 #include <win/sound/PcmSource.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -13,7 +13,8 @@ class Sound
 public:
 	explicit Sound(PcmSource &source)
 		: source(source)
-	{}
+	{
+	}
 
 	win::PcmSource &source;
 };

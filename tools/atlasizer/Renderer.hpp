@@ -4,11 +4,11 @@
 
 #include <glm/glm.hpp>
 
-#include <win/Win.hpp>
-#include <win/gl/GL.hpp>
-#include <win/Targa.hpp>
-#include <win/gl/GLTextRenderer.hpp>
 #include <win/AssetRoll.hpp>
+#include <win/gl/GL.hpp>
+#include <win/gl/GLTextRenderer.hpp>
+#include <win/Targa.hpp>
+#include <win/Win.hpp>
 
 struct Texture
 {

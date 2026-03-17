@@ -1,13 +1,13 @@
+#include <cstring>
 #include <fstream>
 #include <string>
-#include <cstring>
 
 #include <zlib.h>
 
-#include <win/Win.hpp>
 #include <win/AssetRoll.hpp>
-#include <win/MemoryStream.hpp>
 #include <win/FileStream.hpp>
+#include <win/MemoryStream.hpp>
+#include <win/Win.hpp>
 
 using namespace std::string_literals;
 
@@ -38,26 +38,26 @@ AssetRoll::AssetRoll(Stream stream2)
 	stream.read(magic, sizeof(magic) - 1);
 
 	magic[9] = 0;
-	if(strcmp(magic, "ASSETROLL"))
+	if (strcmp(magic, "ASSETROLL"))
 		bug("Not an asset roll");
 
 	// number of files stored within
 	std::uint16_t file_count = 0;
-	stream.read((char*)&file_count, sizeof(file_count));
+	stream.read((char *)&file_count, sizeof(file_count));
 
-	for(int i = 0; i < file_count; ++i)
+	for (int i = 0; i < file_count; ++i)
 	{
 		AssetRollResource rh;
-		stream.read((char*)&rh.compressed, sizeof(rh.compressed));
-		stream.read((char*)&rh.uncompressed_size, sizeof(rh.uncompressed_size));
-		stream.read((char*)&rh.begin, sizeof(rh.begin));
-		stream.read((char*)&rh.size, sizeof(rh.size));
+		stream.read((char *)&rh.compressed, sizeof(rh.compressed));
+		stream.read((char *)&rh.uncompressed_size, sizeof(rh.uncompressed_size));
+		stream.read((char *)&rh.begin, sizeof(rh.begin));
+		stream.read((char *)&rh.size, sizeof(rh.size));
 
 		std::uint16_t filename_length;
-		stream.read((char*)&filename_length, sizeof(filename_length));
+		stream.read((char *)&filename_length, sizeof(filename_length));
 
 		auto fname = std::make_unique<char[]>(filename_length + 1);
-		stream.read((char*)fname.get(), filename_length);
+		stream.read((char *)fname.get(), filename_length);
 		fname[filename_length] = 0;
 		rh.name = fname.get();
 
@@ -73,14 +73,14 @@ Stream AssetRoll::operator[](const char *resourcename)
 	int index = -1;
 	for (int i = 0; i < (int)resources.size(); ++i)
 	{
-		if(resources[i].name == resourcename)
+		if (resources[i].name == resourcename)
 		{
 			index = i;
 			break;
 		}
 	}
 
-	if(index == -1)
+	if (index == -1)
 		bug("AssetRoll: no asset " + std::string(resourcename));
 
 	const AssetRollResource &resource = resources[index];
@@ -91,11 +91,11 @@ Stream AssetRoll::operator[](const char *resourcename)
 
 		auto compressed_data = std::make_unique<unsigned char[]>(resource.size);
 		stream.seek(resource.begin);
-		stream.read((char*)compressed_data.get(), resource.size);
+		stream.read((char *)compressed_data.get(), resource.size);
 
 		auto data = new unsigned char[uncompressed_size];
 
-		if(uncompress(data, &uncompressed_size, compressed_data.get(), resource.size) != Z_OK)
+		if (uncompress(data, &uncompressed_size, compressed_data.get(), resource.size) != Z_OK)
 			bug("Could not inflate " + resource.name + " (" + resourcename + ")");
 
 		return Stream(new MemoryStream(data, resource.uncompressed_size, true));
@@ -111,7 +111,7 @@ bool AssetRoll::exists(const char *resourcename)
 	std::lock_guard lock(guard);
 
 	for (const AssetRollResource &rh : resources)
-		if(rh.name == resourcename)
+		if (rh.name == resourcename)
 			return true;
 
 	return false;
@@ -126,7 +126,12 @@ Stream AssetRoll::substream(unsigned long long start, unsigned long long length)
 	else if (original_data != NULL)
 	{
 		if (start + length > original_data_length)
-			bug("AssetRoll: cannot substream length = " + std::to_string(original_data_length) + ", requested start = " + std::to_string(start) + ", requested length = " + std::to_string(length));
+			bug("AssetRoll: cannot substream length = " +
+				std::to_string(original_data_length) +
+				", requested start = " +
+				std::to_string(start) +
+				", requested length = " +
+				std::to_string(length));
 
 		return Stream(new MemoryStream(original_data + start, length, false));
 	}

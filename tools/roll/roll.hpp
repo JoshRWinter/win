@@ -5,7 +5,11 @@
 struct RollItem
 {
 	RollItem(const std::string &real_file, const std::string &recorded_file, bool compress)
-		: real_file(real_file), recorded_file(recorded_file), compress(compress) {}
+		: real_file(real_file)
+		, recorded_file(recorded_file)
+		, compress(compress)
+	{
+	}
 
 	std::string real_file;
 	std::string recorded_file;
@@ -21,5 +25,8 @@ struct Header
 	std::uint16_t filename_length;
 	std::string filename;
 
-	std::uint64_t length() const { return sizeof(compressed) + sizeof(uncompressed_size) + sizeof(begin) + sizeof(size) + sizeof(filename_length) + filename_length; }
+	std::uint64_t length() const
+	{
+		return sizeof(compressed) + sizeof(uncompressed_size) + sizeof(begin) + sizeof(size) + sizeof(filename_length) + filename_length;
+	}
 };

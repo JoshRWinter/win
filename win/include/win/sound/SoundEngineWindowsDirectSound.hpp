@@ -4,12 +4,12 @@
 
 #ifdef WINPLAT_WINDOWS
 
+#include <chrono>
 #include <mutex>
 #include <thread>
-#include <chrono>
 
-#include <mmsystem.h>
 #include <dsound.h>
+#include <mmsystem.h>
 
 #include <win/AssetRoll.hpp>
 #include <win/sound/SoundEngine.hpp>
@@ -42,7 +42,7 @@ private:
 	std::mutex loop_lock;
 
 	IDirectSound8 *context;
-	//IDirectSoundBuffer *primary;
+	// IDirectSoundBuffer *primary;
 	IDirectSoundBuffer8 *secondary;
 	DWORD write_position;
 

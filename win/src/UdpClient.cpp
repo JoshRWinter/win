@@ -3,22 +3,24 @@
 #include <cstring>
 
 #ifdef WINPLAT_LINUX
+#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include <fcntl.h>
 #else
 #include <Ws2tcpip.h>
 #endif
 
-#include <win/WsaSingleton.hpp>
 #include <win/UdpClient.hpp>
+#include <win/WsaSingleton.hpp>
 
 namespace win
 {
 
 // errno related stuff
 #define NET_WOULDBLOCK
-static int get_errno(){
+
+static int get_errno()
+{
 #ifdef _WIN32
 	return WSAGetLastError();
 #else
@@ -47,15 +49,15 @@ UdpClient::UdpClient(const char *address, unsigned short port)
 
 	// convert port to string
 	char port_string[20];
-	sprintf(port_string,"%hu",port);
+	sprintf(port_string, "%hu", port);
 
 	// resolve hostname
-	if (getaddrinfo(address, port_string, (const addrinfo*)&hints, &ai) != 0)
+	if (getaddrinfo(address, port_string, (const addrinfo *)&hints, &ai) != 0)
 		return;
 
 	// create the socket
 	sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-	if(sock == -1)
+	if (sock == -1)
 		return;
 
 	// set to non blocking
@@ -105,7 +107,7 @@ void UdpClient::send(const void *buffer, unsigned len)
 		bug("UdpClient closed");
 
 	// no such thing as a partial send for udp with sendto
-	const ssize_t result = sendto(sock, (const char*)buffer, len, 0, ai->ai_addr, ai->ai_addrlen);
+	const ssize_t result = sendto(sock, (const char *)buffer, len, 0, ai->ai_addr, ai->ai_addrlen);
 	if ((unsigned)result != len && get_errno() != WOULDBLOCK)
 		this->close();
 }
@@ -116,11 +118,11 @@ int UdpClient::recv(void *buffer, unsigned len)
 		bug("UdpClient closed");
 
 	// no such thing as a partial send for udp with sendto
-	const ssize_t result = recvfrom(sock, (char*)buffer, len, 0, NULL, NULL);
+	const ssize_t result = recvfrom(sock, (char *)buffer, len, 0, NULL, NULL);
 	if (result == -1)
 	{
 		const auto eno = get_errno();
-		if(eno == WOULDBLOCK || eno == CONNRESET)
+		if (eno == WOULDBLOCK || eno == CONNRESET)
 			return 0;
 		else
 			this->close();
@@ -133,7 +135,7 @@ int UdpClient::recv(void *buffer, unsigned len)
 
 unsigned UdpClient::peek()
 {
-	if(sock == -1)
+	if (sock == -1)
 		bug("UdpClient closed");
 
 #ifdef _WIN32
@@ -155,12 +157,12 @@ unsigned UdpClient::peek()
 
 bool UdpClient::error() const
 {
-	return sock	== -1;
+	return sock == -1;
 }
 
 void UdpClient::close()
 {
-	if( sock != -1)
+	if (sock != -1)
 	{
 #ifdef _WIN32
 		::closesocket(sock);

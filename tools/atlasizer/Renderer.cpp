@@ -1,8 +1,8 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <win/gl/GL.hpp>
 #include <win/AssetRoll.hpp>
+#include <win/gl/GL.hpp>
 
 #include "Renderer.hpp"
 
@@ -39,6 +39,7 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	uniform_use_color = get_uniform(program, "use_color");
 	uniform_color = get_uniform(program, "color");
 
+	// clang-format off
 	const float verts[]
 	{
 		-0.5f, 0.5f, 0.0f, 1.0f,
@@ -48,6 +49,7 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 		0.5f, -0.5f, 1.0f, 0.0f,
 		0.5f, 0.5f, 1.0f, 1.0f
 	};
+    // clang-format off
 
 	glBindVertexArray(vao.get());
 	glBindBuffer(GL_ARRAY_BUFFER, vbo.get());
@@ -55,7 +57,7 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, NULL);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*)(sizeof(float) * 2));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void *)(sizeof(float) * 2));
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 
 	glEnable(GL_BLEND);
@@ -194,7 +196,11 @@ void Renderer::render(const Texture *texture, const win::Color<unsigned char> *c
 	glUniform1i(uniform_use_color, color != NULL);
 
 	if (color != NULL)
-		glUniform4f(uniform_color, color->red / (float)std::numeric_limits<unsigned char>::max(), (float)color->green / std::numeric_limits<unsigned char>::max(), (float)color->blue / std::numeric_limits<unsigned char>::max(), (float)color->alpha / std::numeric_limits<unsigned char>::max());
+		glUniform4f(uniform_color,
+					color->red / (float)std::numeric_limits<unsigned char>::max(),
+					(float)color->green / std::numeric_limits<unsigned char>::max(),
+					(float)color->blue / std::numeric_limits<unsigned char>::max(),
+					(float)color->alpha / std::numeric_limits<unsigned char>::max());
 
 	if (texture != NULL)
 	{

@@ -4,8 +4,7 @@
 #include "AtlasCompiler.hpp"
 #include "LayoutExporter.hpp"
 
-static const char *helptext =
-		"atlasizer layout_file output_file";
+static const char *helptext = "atlasizer layout_file output_file";
 
 void gui();
 

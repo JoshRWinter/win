@@ -74,10 +74,7 @@ void Recipe::process_root_line(const RecipeInputLine &line)
 		compress = true;
 	}
 
-	if (
-		std::filesystem::last_write_time(real_file) > roll_file_lastwrite ||
-		recipe_file_lastwrite > roll_file_lastwrite
-	)
+	if (std::filesystem::last_write_time(real_file) > roll_file_lastwrite || recipe_file_lastwrite > roll_file_lastwrite)
 	{
 		recreate = true;
 	}
@@ -141,16 +138,16 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
 		if (!real_file.has_extension() || (real_file.extension() != ".svg" && real_file.extension() != ".SVG"))
 			throw std::runtime_error(std::to_string(line.line_number) + ": Expected .svg file \"" + real_file.string() + "\"");
 
-		if (converted_png.empty()) converted_png = get_random_temp_file().string() + ".png";
+		if (converted_png.empty())
+			converted_png = get_random_temp_file().string() + ".png";
 		const std::filesystem::path converted_tga = (real_file.parent_path() / real_file.stem()).string() + ".tga";
 		const std::filesystem::path recorded_converted_tga = (recorded_file.parent_path() / recorded_file.stem()).string() + ".tga";
 		const bool converted_tga_exists = std::filesystem::exists(converted_tga);
 
-		const bool conversion_needed =
-			!converted_tga_exists ||
-			std::filesystem::last_write_time(real_file) > std::filesystem::last_write_time(converted_tga) ||
-			recipe_file_lastwrite > std::filesystem::last_write_time(converted_tga)
-		;
+		const bool conversion_needed = !converted_tga_exists ||
+									   std::filesystem::last_write_time(real_file) >
+									   std::filesystem::last_write_time(converted_tga) ||
+									   recipe_file_lastwrite > std::filesystem::last_write_time(converted_tga);
 
 		if (conversion_needed)
 		{
@@ -194,9 +191,7 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
 			throw std::runtime_error(std::to_string(line.line_number) + ": Layout file \"" + real_layout_file.string() + "\" doesn't exist");
 
 		bool conversion_needed =
-			!real_atlas_file_exists ||
-			std::filesystem::last_write_time(real_layout_file) > std::filesystem::last_write_time(real_atlas_file)
-		;
+			!real_atlas_file_exists || std::filesystem::last_write_time(real_layout_file) > std::filesystem::last_write_time(real_atlas_file);
 
 		const std::vector<std::string> atlas_items = run_cmd("atlasizer --list " + real_layout_file.string(), false);
 		for (const std::string &item : atlas_items)

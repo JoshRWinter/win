@@ -1,6 +1,6 @@
-#include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
 #include "../recipeparser.hpp"
 #include "test.hpp"
@@ -11,6 +11,7 @@ int main()
 }
 
 std::vector<std::string> cmds;
+
 static std::string write(const std::string &t)
 {
 	for (const std::string &cmd : cmds)

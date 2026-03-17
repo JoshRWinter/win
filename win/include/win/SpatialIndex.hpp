@@ -1,9 +1,9 @@
 #pragma once
 
-#include <vector>
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <unordered_set>
+#include <vector>
 
 #include <win/Win.hpp>
 
@@ -49,15 +49,23 @@ public:
 	}
 
 private:
-	struct { bool acquired = false; T item; } items[size];
+	struct
+	{
+		bool acquired = false;
+		T item;
+	} items[size];
 };
 
 struct BlockKey
 {
-	BlockKey(std::int16_t x, std::int16_t y) : x(x), y(y)
-	{}
+	BlockKey(std::int16_t x, std::int16_t y)
+		: x(x)
+		, y(y)
+	{
+	}
 
 	bool operator==(BlockKey rhs) const { return x == rhs.x && y == rhs.y; }
+
 	bool operator!=(BlockKey rhs) const { return !operator==(rhs); }
 
 	std::int16_t x;
@@ -67,10 +75,10 @@ struct BlockKey
 template<typename T> struct Block
 {
 	WIN_NO_COPY(Block);
-	Block(Block&&) = default;
-	Block &operator=(Block&&) = default;
+	Block(Block &&) = default;
+	Block &operator=(Block &&) = default;
 	Block() = default;
-	std::vector<T*> items;
+	std::vector<T *> items;
 	int ghosts = 0;
 };
 
@@ -86,7 +94,11 @@ template<typename T> class SpatialIndexIterator
 	friend class SpatialIndexIterable<T>;
 
 public:
-	SpatialIndexIterator(const SpatialIndex<T> &map, impl::BlockKey key1, impl::BlockKey key2, impl::BlockKey starting_key, std::unordered_set<const T*> *deduper)
+	SpatialIndexIterator(const SpatialIndex<T> &map,
+						 impl::BlockKey key1,
+						 impl::BlockKey key2,
+						 impl::BlockKey starting_key,
+						 std::unordered_set<const T *> *deduper)
 		: key1(key1)
 		, key2(key2)
 		, current_key(starting_key)
@@ -100,6 +112,7 @@ public:
 	SpatialIndexIterator(SpatialIndexIterator<T> &&rhs) = default;
 
 	T &operator*() { return *dereference(); }
+
 	bool operator!=(const SpatialIndexIterator<T> &rhs) const { return map_index != rhs.map_index || block_index != rhs.block_index; }
 
 	void operator++()
@@ -145,10 +158,7 @@ private:
 		return current_key.y > key2.y; // this iterator has completely exhausted its items
 	}
 
-	bool is_ghost() const
-	{
-		return dereference() == NULL;
-	}
+	bool is_ghost() const { return dereference() == NULL; }
 
 	bool is_dupe() const
 	{
@@ -202,7 +212,7 @@ private:
 	const impl::BlockKey key1, key2;
 	impl::BlockKey current_key;
 	const SpatialIndex<T> &map;
-	std::unordered_set<const T*> *deduper;
+	std::unordered_set<const T *> *deduper;
 };
 
 template<typename T> class SpatialIndexIterable
@@ -253,15 +263,19 @@ public:
 
 private:
 	const impl::BlockKey key1, key2, corrected_key1, corrected_key2;
-	std::unordered_set<const T*> *const deduper;
+	std::unordered_set<const T *> *const deduper;
 	SpatialIndex<T> &map;
 };
 
 struct SpatialIndexLocation
 {
 	explicit SpatialIndexLocation(float x, float y, float w, float h)
-		: x(x), y(y), w(w), h(h)
-	{}
+		: x(x)
+		, y(y)
+		, w(w)
+		, h(h)
+	{
+	}
 
 	const float x, y, w, h;
 };
@@ -285,7 +299,8 @@ public:
 		, map_width(0)
 		, map_height(0)
 		, open_iterables(0)
-	{}
+	{
+	}
 
 	void reset(float block_size, float map_left, float map_right, float map_bottom, float map_top)
 	{
@@ -312,17 +327,14 @@ public:
 			item.items.clear();
 
 		map.resize(map_width * map_height);
-		for (auto &block: map)
+		for (auto &block : map)
 			block.items.reserve(20);
 
 		vacuum_queue.clear();
 		vacuum_queue.reserve(map_width * map_height);
 	}
 
-	void add(const SpatialIndexLocation &loc, T &id)
-	{
-		add(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id);
-	}
+	void add(const SpatialIndexLocation &loc, T &id) { add(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id); }
 
 	void move(const SpatialIndexLocation &old_loc, const SpatialIndexLocation &new_loc, T &id)
 	{
@@ -339,14 +351,10 @@ public:
 		add(new_key1, new_key2, id);
 	}
 
-	void remove(const SpatialIndexLocation &loc, T &id)
-	{
-		remove(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id);
-	}
+	void remove(const SpatialIndexLocation &loc, T &id) { remove(sample(loc.x, loc.y), sample(loc.x + loc.w, loc.y + loc.h), id); }
 
 	SpatialIndexIterable<T> query(const SpatialIndexLocation &loc)
 	{
-
 		const auto key1 = sample(loc.x, loc.y);
 		const auto key2 = sample(loc.x + loc.w, loc.y + loc.h);
 
@@ -430,15 +438,12 @@ private:
 		return impl::BlockKey(blockx, blocky);
 	}
 
-	int index(impl::BlockKey key) const
-	{
-		return (key.y * map_width) + key.x;
-	}
+	int index(impl::BlockKey key) const { return (key.y * map_width) + key.x; }
 
 	float block_size, map_left, map_right, map_bottom, map_top;
 	int map_width, map_height;
 	std::vector<impl::Block<T>> map;
-	impl::SimplePool<std::unordered_set<const T*>, 4> pool;
+	impl::SimplePool<std::unordered_set<const T *>, 4> pool;
 	int open_iterables;
 	std::vector<int> vacuum_queue;
 };

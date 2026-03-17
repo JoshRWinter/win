@@ -24,7 +24,7 @@ public:
 	void save(const std::vector<SoundEnginePlaybackCommand> &playback, const std::vector<SoundEngineConfigCommand> &configs) override;
 
 private:
-	static void stream_process(void*);
+	static void stream_process(void *);
 	void load_functions();
 
 	void *so;

@@ -1,8 +1,8 @@
-#include <string>
 #include <string.h>
+#include <string>
 
-#include <win/Win.hpp>
 #include <win/Targa.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
@@ -40,7 +40,7 @@ void Targa::load_image_bytes(Stream &raw)
 	raw.read(&image_type, sizeof(image_type));
 
 	const bool compressed = (image_type >> 3) & 1;
-	if(compressed)
+	if (compressed)
 		win::bug("Compressed TARGAs are not supported");
 
 	// width
@@ -66,7 +66,7 @@ void Targa::load_image_bytes(Stream &raw)
 
 	const bool bottom_origin = !((imdesc >> 5) & 1);
 
-	if(raw.size() - 18 < w * h * cpp)
+	if (raw.size() - 18 < w * h * cpp)
 		win::bug("Corrupt targa: tried to read " + std::to_string(w * h * cpp) + " bytes from " + std::to_string(raw.size() - 18) + " bytes");
 
 	raw.seek(18);

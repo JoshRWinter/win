@@ -1,27 +1,35 @@
-#include <iostream>
 #include <cmath>
+#include <iostream>
 #include <thread>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <win/Display.hpp>
 #include <win/AssetRoll.hpp>
-#include <win/gl/GLAtlas.hpp>
-#include <win/sound/SoundEngine.hpp>
-#include <win/gl/GLTextRenderer.hpp>
+#include <win/Display.hpp>
 #include <win/Font.hpp>
 #include <win/gl/GL.hpp>
+#include <win/gl/GLAtlas.hpp>
+#include <win/gl/GLTextRenderer.hpp>
+#include <win/sound/SoundEngine.hpp>
 
 using namespace win::gl;
 
-extern const char *vertexshader,*fragmentshader;
+extern const char *vertexshader, *fragmentshader;
 
 struct Block
 {
 	static constexpr float SIZE = 1.0f;
-	Block() : x(0.0f), y(0.0f), xv(0.06f), yv(0.0f) {}
+
+	Block()
+		: x(0.0f)
+		, y(0.0f)
+		, xv(0.06f)
+		, yv(0.0f)
+	{
+	}
+
 	float x, y, xv, yv;
 };
 
@@ -44,7 +52,7 @@ int main()
 
 	win::gl_load_functions();
 
-	fprintf(stderr, "%s\n%s\n\n", (const char*)glGetString(GL_VENDOR), (const char*)glGetString(GL_RENDERER));
+	fprintf(stderr, "%s\n%s\n\n", (const char *)glGetString(GL_VENDOR), (const char *)glGetString(GL_RENDERER));
 
 	win::gl_enable_debug();
 
@@ -61,7 +69,12 @@ int main()
 
 	win::SoundEngine audio_engine(roll);
 
-	win::GLTextRenderer text_renderer(win::Dimensions<int>(display.width(), display.height()), win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f), GL_TEXTURE1, true, 0, true);
+	win::GLTextRenderer text_renderer(win::Dimensions<int>(display.width(), display.height()),
+									  win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f),
+									  GL_TEXTURE1,
+									  true,
+									  0,
+									  true);
 	win::GLFont font1 = text_renderer.create_font(0.5f, roll["assets/arial.ttf"]);
 	win::GLFont font2 = text_renderer.create_font(0.5f, roll["assets/CHE-THIS.TTF"]);
 	win::GLFont font3 = text_renderer.create_font(0.2f, roll["assets/NotoSansMono-Regular.ttf"]);
@@ -69,6 +82,8 @@ int main()
 	std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
 
 	const win::AtlasItem coords = atlas.item(4);
+
+	// clang-format off
 	const float verts[] =
 	{
 		-0.5f, 0.5f, coords.x1, coords.y2,
@@ -80,6 +95,7 @@ int main()
 	{
 		0, 1, 2, 0, 2, 3
 	};
+	// clang-format on
 
 	win::GLProgram program(win::gl_load_shaders(roll["vertex.vert"], roll["fragment.frag"]));
 	glUseProgram(program.get());
@@ -103,7 +119,7 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex.get());
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 4, NULL);
-	glVertexAttribPointer(3, 2, GL_FLOAT, false, sizeof(float) * 4, (void*)(sizeof(float) * 2));
+	glVertexAttribPointer(3, 2, GL_FLOAT, false, sizeof(float) * 4, (void *)(sizeof(float) * 2));
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(3);
 
@@ -133,28 +149,31 @@ int main()
 
 	bool quit = false;
 	bool paused = false;
-	display.register_button_handler([&](win::Button button, bool press)
-	{
-		if(press)
-			std::cerr << "key: " << win::key_name(button) << std::endl;
-		if(press && button == win::Button::esc)
-			quit = true;
-		else if(press)
-			audio_engine.play(effect, 5, 0.1f, 1.0f, 1.0f, false, true);
-	});
+	display.register_button_handler(
+		[&](win::Button button, bool press)
+		{
+			if (press)
+				std::cerr << "key: " << win::key_name(button) << std::endl;
+			if (press && button == win::Button::esc)
+				quit = true;
+			else if (press)
+				audio_engine.play(effect, 5, 0.1f, 1.0f, 1.0f, false, true);
+		});
 
 	float mousex = 0.0f, mousey = 0.0f;
-	display.register_mouse_handler([&mousex, &mousey](int x, int y)
-	{
-		mousex = ((x / 800.0f) * 8.0f) - 4.0f;
-		mousey = -(((y / 600.0f) * 6.0f) - 3.0f);
-	});
+	display.register_mouse_handler(
+		[&mousex, &mousey](int x, int y)
+		{
+			mousex = ((x / 800.0f) * 8.0f) - 4.0f;
+			mousey = -(((y / 600.0f) * 6.0f) - 3.0f);
+		});
 
-	display.register_window_handler([&quit](win::WindowEvent event)
-	{
-		if (event == win::WindowEvent::close)
-			quit = true;
-	});
+	display.register_window_handler(
+		[&quit](win::WindowEvent event)
+		{
+			if (event == win::WindowEvent::close)
+				quit = true;
+		});
 
 	// display.register_character_handle([](int key)
 	// {
@@ -162,7 +181,7 @@ int main()
 	// });
 
 	const auto block_sid = audio_engine.play(music, 5, 1.0f, 1.0f, 1.0f, true, false);
-	while(!quit)
+	while (!quit)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
 		display.process();
@@ -172,22 +191,22 @@ int main()
 			block.x += block.xv;
 			block.y += block.yv;
 
-			if(block.x + Block::SIZE > 4.0f)
+			if (block.x + Block::SIZE > 4.0f)
 			{
 				block.x = 4.0f - Block::SIZE;
 				block.xv = -block.xv;
 			}
-			else if(block.x < -4.0f)
+			else if (block.x < -4.0f)
 			{
 				block.x = -4.0f;
 				block.xv = -block.xv;
 			}
-			if(block.y + Block::SIZE > 3.0f)
+			if (block.y + Block::SIZE > 3.0f)
 			{
 				block.y = 3.0f - Block::SIZE;
 				block.yv = -block.yv;
 			}
-			else if(block.y < -3.0f)
+			else if (block.y < -3.0f)
 			{
 				block.y = -3.0f;
 				block.yv = -block.yv;
@@ -219,12 +238,15 @@ int main()
 		const time_t now = time(NULL);
 		struct tm *tm = localtime(&now);
 		char formatted[100];
-		if(0 == strftime(formatted, sizeof(formatted), "Today is %A, %B %d\n%I:%M:%S %p", tm))
+		if (0 == strftime(formatted, sizeof(formatted), "Today is %A, %B %d\n%I:%M:%S %p", tm))
 			strcpy(formatted, "null");
 
 		text_renderer.draw(font1, formatted, mousex, mousey, win::Color<float>(1.0f, 1.0f, 0.0f), true);
 		text_renderer.draw(font2, "test text", -1, 2, win::Color<float>(0.1f, 0.3f, 0.6f));
-		text_renderer.draw(font3, "this is some more test text down here", 4 - text_renderer.line_length(font3, "this is some more test text down here"), -3.0f);
+		text_renderer.draw(font3,
+						   "this is some more test text down here",
+						   4 - text_renderer.line_length(font3, "this is some more test text down here"),
+						   -3.0f);
 		text_renderer.flush();
 
 		win::gl_check_error();
@@ -232,7 +254,8 @@ int main()
 		display.swap();
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(4));
-		while(std::chrono::duration<float, std::micro>(std::chrono::high_resolution_clock::now() - start).count() < 16666.0f);
+		while (std::chrono::duration<float, std::micro>(std::chrono::high_resolution_clock::now() - start).count() < 16666.0f)
+			;
 	}
 
 	return 0;

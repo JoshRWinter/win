@@ -1,6 +1,6 @@
-#include <limits>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
+#include <limits>
 
 #include <win/sound/SoundMixer.hpp>
 
@@ -123,8 +123,10 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 	const auto start = std::chrono::high_resolution_clock::now();
 
 	len = std::min(len, mix_samples); // cap it
-	if (len % 2 != 0) --len; // make sure it's even
-	if (len <= 0) return 0;
+	if (len % 2 != 0)
+		--len; // make sure it's even
+	if (len <= 0)
+		return 0;
 
 	const float micros_since_last_call = std::chrono::duration<float, std::ratio<1, 1'000'000>>(start - last_call).count();
 	last_call = start;
@@ -218,7 +220,7 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 		constexpr int report_rate = 4000;
 		constexpr int budget_micros = 4000;
 
-		accum += std::chrono::duration<float, std::ratio<1, 1000000>>(end - start).count();
+		accum += std::chrono::duration<float, std::ratio<1, 1'000'000>>(end - start).count();
 		++cycles;
 
 		if (cycles == report_rate)
@@ -234,7 +236,10 @@ int SoundMixer::mix_stereo(std::int16_t *dest, int len)
 	return len;
 }
 
-void SoundMixer::calculate_stereo_limiters(const int count, const int len, const std::array<StereoLimiter, max_sounds> &limiters, const std::array<float, max_sounds> &priorities)
+void SoundMixer::calculate_stereo_limiters(const int count,
+										   const int len,
+										   const std::array<StereoLimiter, max_sounds> &limiters,
+										   const std::array<float, max_sounds> &priorities)
 {
 	float staging[mix_samples];
 	for (int i = 0; i < mix_samples; ++i)
@@ -323,10 +328,8 @@ void SoundMixer::calculate_stereo_limiters(const int count, const int len, const
 	{
 		if (left_global_overage > 0.0f && left_overage_contributors[i])
 		{
-			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[left_global_max_position]) *
-									*limiters[i].left;
-			const float accountability = left_accountabilities[i] *
-										 left_global_overage; // this wave is accountable for *this* much of the overage
+			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[left_global_max_position]) * *limiters[i].left;
+			const float accountability = left_accountabilities[i] * left_global_overage; // this wave is accountable for *this* much of the overage
 			float target = local_max - accountability;
 			if (target < 0.0f)
 			{
@@ -340,10 +343,8 @@ void SoundMixer::calculate_stereo_limiters(const int count, const int len, const
 
 		if (right_global_overage > 0.0f && right_overage_contributors[i])
 		{
-			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[right_global_max_position]) *
-									*limiters[i].right;
-			const float accountability = right_accountabilities[i] *
-										 right_global_overage; // this wave is accountable for *this* much of the overage
+			const float local_max = std::abs((conversion_buffers + (i * mix_samples))[right_global_max_position]) * *limiters[i].right;
+			const float accountability = right_accountabilities[i] * right_global_overage; // this wave is accountable for *this* much of the overage
 			float target = local_max - accountability;
 			if (target < 0.0f)
 			{
@@ -385,13 +386,13 @@ void SoundMixer::extract_stereo_f32(SoundMixerSound &sound, float *const dest, c
 				// now that it's been restarted, see if we can squeeze a bit more out of it
 				const int got2 = sound.sound.source.read_samples(extractbuf + got, read_samples - got);
 
-				if (got + got2 < read_samples) // gol dangit we were shorted again
+				if (got + got2 < read_samples)										  // gol dangit we were shorted again
 					zero_float(extractbuf + got + got2, read_samples - (got + got2)); // blank out the rest, this will cause a small skip in the audio. oh well
 			}
 			else
 			{
 				zero_float(extractbuf + got, read_samples - got); // blank out the rest
-				sound.done = true; // mark this sound as completed.
+				sound.done = true;								  // mark this sound as completed.
 			}
 		}
 		else

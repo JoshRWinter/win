@@ -10,7 +10,11 @@ namespace win
 struct TextRendererCharacter
 {
 	TextRendererCharacter(char c, float xpos, float ypos)
-		: c(c), xpos(xpos), ypos(ypos) {}
+		: c(c)
+		, xpos(xpos)
+		, ypos(ypos)
+	{
+	}
 
 	char c;
 	float xpos;
@@ -24,7 +28,8 @@ struct TextRendererString
 		, text_queue_length(text_queue_length)
 		, color(color)
 		, font(&font)
-	{}
+	{
+	}
 
 	int text_queue_start;
 	int text_queue_length;

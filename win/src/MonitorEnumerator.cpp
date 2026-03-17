@@ -28,7 +28,7 @@ int MonitorEnumerator::count() const
 	return inner->count();
 }
 
-const Monitor & MonitorEnumerator::operator[](int index) const
+const Monitor &MonitorEnumerator::operator[](int index) const
 {
 	return inner->operator[](index);
 }

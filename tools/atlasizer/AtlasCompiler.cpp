@@ -127,7 +127,17 @@ void compileatlas(const std::string &layoutfile, const std::string &atlasfile)
 	{
 		AtlasItem &added = items.emplace_back(desc.filename, desc.x, desc.y);
 		if (added.width != desc.width || added.height != desc.height)
-			throw std::runtime_error("item " + desc.filename.string() + " dimensions (" + std::to_string(added.width) + "x" + std::to_string(added.height) + ") do not match original dimensions (" + std::to_string(desc.width) + "x" + std::to_string(desc.height) + ")");
+			throw std::runtime_error("item " +
+									 desc.filename.string() +
+									 " dimensions (" +
+									 std::to_string(added.width) +
+									 "x" +
+									 std::to_string(added.height) +
+									 ") do not match original dimensions (" +
+									 std::to_string(desc.width) +
+									 "x" +
+									 std::to_string(desc.height) +
+									 ")");
 	}
 
 	validate_items(items);
@@ -150,11 +160,11 @@ void compileatlas(const std::string &layoutfile, const std::string &atlasfile)
 
 	// write item count
 	int item_count = items.size();
-	out.write((char*)&item_count, sizeof(item_count));
+	out.write((char *)&item_count, sizeof(item_count));
 
 	// write atlas dims
-	out.write((char*)&width, sizeof(width));
-	out.write((char*)&height, sizeof(height));
+	out.write((char *)&width, sizeof(width));
+	out.write((char *)&height, sizeof(height));
 
 	// write locations and dims
 	for (const AtlasItem &item : items)
@@ -164,12 +174,12 @@ void compileatlas(const std::string &layoutfile, const std::string &atlasfile)
 		unsigned short w = item.width;
 		unsigned short h = item.height;
 
-		out.write((char*)&x, sizeof(x));
-		out.write((char*)&y, sizeof(y));
-		out.write((char*)&w, sizeof(w));
-		out.write((char*)&h, sizeof(h));
+		out.write((char *)&x, sizeof(x));
+		out.write((char *)&y, sizeof(y));
+		out.write((char *)&w, sizeof(w));
+		out.write((char *)&h, sizeof(h));
 	}
 
 	// write atlas
-	out.write((char*)atlas.get(), width * height * 4);
+	out.write((char *)atlas.get(), width * height * 4);
 }

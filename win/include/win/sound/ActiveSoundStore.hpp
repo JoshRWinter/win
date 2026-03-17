@@ -4,46 +4,63 @@
 
 #include <cstring>
 
-#include <win/Win.hpp>
 #include <win/Pool.hpp>
+#include <win/Win.hpp>
 
 namespace win
 {
 
-template <typename T> struct ActiveSoundStoreItem : T
+template<typename T> struct ActiveSoundStoreItem : T
 {
-	template <typename... Ts> ActiveSoundStoreItem(std::uint16_t id, std::uint16_t spot, Ts&&... ts)
+	template<typename... Ts> ActiveSoundStoreItem(std::uint16_t id, std::uint16_t spot, Ts &&...ts)
 		: T(std::forward<Ts>(ts)...)
 		, id(id)
 		, spot(spot)
-	{}
+	{
+	}
 
 	std::uint16_t id;
 	int spot;
 };
 
-template <typename T, int capacity> class ActiveSoundStore;
-template <typename T, int capacity> class ActiveSoundStoreIterator
+template<typename T, int capacity> class ActiveSoundStore;
+
+template<typename T, int capacity> class ActiveSoundStoreIterator
 {
 	friend class ActiveSoundStore<T, capacity>;
 
 public:
 	ActiveSoundStoreIterator(typename win::Pool<ActiveSoundStoreItem<T>, capacity, true>::Iterator iterator)
 		: iterator(iterator)
-	{}
+	{
+	}
 
-	ActiveSoundStoreIterator<T, capacity> operator++() { ++iterator; return *this; }
-	ActiveSoundStoreIterator<T, capacity> operator++(int) { ActiveSoundStoreIterator<T, capacity> copy = *this; ++iterator; return copy; }
+	ActiveSoundStoreIterator<T, capacity> operator++()
+	{
+		++iterator;
+		return *this;
+	}
+
+	ActiveSoundStoreIterator<T, capacity> operator++(int)
+	{
+		ActiveSoundStoreIterator<T, capacity> copy = *this;
+		++iterator;
+		return copy;
+	}
+
 	T &operator*() { return *iterator; }
+
 	T *operator->() { return iterator.operator->(); }
+
 	bool operator==(const ActiveSoundStoreIterator<T, capacity> rhs) { return iterator == rhs.iterator; }
+
 	bool operator!=(const ActiveSoundStoreIterator<T, capacity> rhs) { return iterator != rhs.iterator; }
 
 private:
 	typename win::Pool<ActiveSoundStoreItem<T>, capacity, true>::Iterator iterator;
 };
 
-template <typename T, int capacity> class ActiveSoundStore
+template<typename T, int capacity> class ActiveSoundStore
 {
 	WIN_NO_COPY_MOVE(ActiveSoundStore);
 	static_assert(capacity <= 32, "Reevaluate first_partition_inline for capacities other than 32");
@@ -60,15 +77,9 @@ public:
 		memset(index, 0, sizeof(index));
 	}
 
-	ActiveSoundStoreIterator<T, capacity> begin()
-	{
-		return ActiveSoundStoreIterator<T, capacity>(store.begin());
-	}
+	ActiveSoundStoreIterator<T, capacity> begin() { return ActiveSoundStoreIterator<T, capacity>(store.begin()); }
 
-	ActiveSoundStoreIterator<T, capacity> end()
-	{
-		return ActiveSoundStoreIterator<T, capacity>(store.end());
-	}
+	ActiveSoundStoreIterator<T, capacity> end() { return ActiveSoundStoreIterator<T, capacity>(store.end()); }
 
 	int size() const { return store.size(); }
 
@@ -93,7 +104,7 @@ public:
 		return item;
 	}
 
-	template <typename... Ts> std::uint32_t add(Ts&&... args)
+	template<typename... Ts> std::uint32_t add(Ts &&...args)
 	{
 		if (store.size() >= capacity)
 			return -1;

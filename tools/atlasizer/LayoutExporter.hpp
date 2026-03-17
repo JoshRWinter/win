@@ -3,8 +3,8 @@
 #include <filesystem>
 #include <vector>
 
-#include <win/Targa.hpp>
 #include <win/FileStream.hpp>
+#include <win/Targa.hpp>
 
 class AtlasItem
 {
@@ -49,10 +49,10 @@ public:
 	static std::vector<AtlasItemDescriptor> import(const std::filesystem::path &path, int &padding, bool translate_filenames = true);
 
 private:
-	std::string serialize_item(const AtlasItemDescriptor&);
-	static AtlasItemDescriptor deserialize_item(const std::string&);
-	static void get_fields(const std::string&, std::vector<std::string>&);
-	static std::vector<std::string> get_fields(const std::string&);
+	std::string serialize_item(const AtlasItemDescriptor &);
+	static AtlasItemDescriptor deserialize_item(const std::string &);
+	static void get_fields(const std::string &, std::vector<std::string> &);
+	static std::vector<std::string> get_fields(const std::string &);
 
 	std::filesystem::path exportfile;
 	int padding;

@@ -25,7 +25,12 @@ static void (*pw_thread_loop_stop)(pw_thread_loop *loop);
 static void (*pw_thread_loop_destroy)(pw_thread_loop *loop);
 
 static pw_stream *(*pw_stream_new_simple)(pw_loop *loop, const char *name, pw_properties *props, pw_stream_events *events, void *data);
-static int (*pw_stream_connect)(pw_stream *stream, spa_direction direction, uint32_t target_id, pw_stream_flags flags, const spa_pod **params, uint32_t nparams);
+static int (*pw_stream_connect)(pw_stream *stream,
+								spa_direction direction,
+								uint32_t target_id,
+								pw_stream_flags flags,
+								const spa_pod **params,
+								uint32_t nparams);
 static pw_stream_state (*pw_stream_get_state)(pw_stream *stream, const char **error);
 static int (*pw_stream_disconnect)(pw_stream *stream);
 static void (*pw_stream_destroy)(pw_stream *stream);
@@ -56,13 +61,11 @@ SoundEngineLinuxPipeWire::SoundEngineLinuxPipeWire(AssetRoll &roll, const char *
 	events.version = PW_VERSION_STREAM_EVENTS;
 	events.process = stream_process;
 
-	stream = pw_stream_new_simple(
-		pw_thread_loop_get_loop(loop),
-		"wet fart",
-		pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Playback", PW_KEY_MEDIA_ROLE, "Game", NULL),
-		&events,
-		this
-	);
+	stream = pw_stream_new_simple(pw_thread_loop_get_loop(loop),
+								  "wet fart",
+								  pw_properties_new(PW_KEY_MEDIA_TYPE, "Audio", PW_KEY_MEDIA_CATEGORY, "Playback", PW_KEY_MEDIA_ROLE, "Game", NULL),
+								  &events,
+								  this);
 
 	if (stream == NULL)
 		win::bug("PipeWire: Couldn't create stream");
@@ -71,17 +74,19 @@ SoundEngineLinuxPipeWire::SoundEngineLinuxPipeWire(AssetRoll &roll, const char *
 	memset(&info, 0, sizeof(info));
 	info.format = SPA_AUDIO_FORMAT_S16;
 	info.channels = 2;
-	info.rate = 44100;
+	info.rate = 44'100;
 
 	unsigned char pod[1024];
 	spa_pod_builder builder;
 	spa_pod_builder_init(&builder, pod, sizeof(pod));
 	const spa_pod *params = spa_format_audio_raw_build(&builder, SPA_PARAM_EnumFormat, &info);
 
-	const char *stuff;
-	const auto shit = pw_stream_get_state(stream, &stuff);
-
-	if (pw_stream_connect(stream, PW_DIRECTION_OUTPUT, PW_ID_ANY, (pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_RT_PROCESS), &params, 1) != 0)
+	if (pw_stream_connect(stream,
+						  PW_DIRECTION_OUTPUT,
+						  PW_ID_ANY,
+						  (pw_stream_flags)(PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_RT_PROCESS),
+						  &params,
+						  1) != 0)
 		win::bug("PipeWire: Couldn't connect stream");
 
 	const char *errortext;
@@ -148,7 +153,7 @@ void SoundEngineLinuxPipeWire::save(const std::vector<SoundEnginePlaybackCommand
 
 void SoundEngineLinuxPipeWire::stream_process(void *userdata)
 {
-	SoundEngineLinuxPipeWire &engine = *(SoundEngineLinuxPipeWire*)userdata;
+	SoundEngineLinuxPipeWire &engine = *(SoundEngineLinuxPipeWire *)userdata;
 
 	pw_buffer *pwbuffer = pw_stream_dequeue_buffer(engine.stream);
 	if (pwbuffer == NULL)
@@ -161,7 +166,7 @@ void SoundEngineLinuxPipeWire::stream_process(void *userdata)
 	if (buffer->n_datas > 0)
 	{
 		const auto pw_wants_samples = buffer->datas[0].maxsize / sizeof(std::int16_t);
-		const auto got_samples = engine.mixer.mix_stereo((std::int16_t*)buffer->datas[0].data, (int)pw_wants_samples);
+		const auto got_samples = engine.mixer.mix_stereo((std::int16_t *)buffer->datas[0].data, (int)pw_wants_samples);
 
 		buffer->datas[0].chunk->offset = 0;
 		buffer->datas[0].chunk->stride = sizeof(std::int16_t) * 2;
@@ -172,10 +177,10 @@ void SoundEngineLinuxPipeWire::stream_process(void *userdata)
 		win::bug("PipeWire: Couldn't queue buffer");
 }
 
-static void *load_fn(void*, const char*);
+static void *load_fn(void *, const char *);
+
 void SoundEngineLinuxPipeWire::load_functions()
 {
-
 	pw_init = (decltype(pw_init))load_fn(so, "pw_init");
 	pw_deinit = (decltype(pw_deinit))load_fn(so, "pw_deinit");
 

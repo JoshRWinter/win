@@ -4,7 +4,18 @@
 #include <win/SpatialIndex.hpp>
 
 static int successfull = 0;
-#define assert(expression) do { if (!(expression)) { win::bug("Assert failed on line " + std::to_string(__LINE__)); } else { ++successfull; } } while (false)
+#define assert(expression)                                                                                                                                     \
+	do                                                                                                                                                         \
+	{                                                                                                                                                          \
+		if (!(expression))                                                                                                                                     \
+		{                                                                                                                                                      \
+			win::bug("Assert failed on line " + std::to_string(__LINE__));                                                                                     \
+		}                                                                                                                                                      \
+		else                                                                                                                                                   \
+		{                                                                                                                                                      \
+			++successfull;                                                                                                                                     \
+		}                                                                                                                                                      \
+	} while (false)
 
 static void print_sequence(const std::vector<int> &seq)
 {
@@ -251,7 +262,7 @@ void move_tests()
 
 		auto items3 = to_list(index, win::SpatialIndexLocation(1.2f, 1.2f, 0.0, 0.0)); // check upper right quad
 		assert(items3.size() == 1);
-		assert(sequence_equal(items3, {0}));
+		assert(sequence_equal(items3, { 0 }));
 	}
 }
 
@@ -498,13 +509,13 @@ void out_of_bounds_tests()
 
 		int id = 0;
 		index.add(win::SpatialIndexLocation(-10.0f, -10.0f, 2.0f, 2.0f), id); // beyond lower left corner
-		index.add(win::SpatialIndexLocation(10.0f, -10.0f, 2.0f, 2.0f), id); // beyond lower right corner
-		index.add(win::SpatialIndexLocation(10.0f, 10.0f, 2.0f, 2.0f), id); // beyond upper right corner
-		index.add(win::SpatialIndexLocation(-10.0f, 10.0f, 2.0f, 2.0f), id); // beyond upper left corner
+		index.add(win::SpatialIndexLocation(10.0f, -10.0f, 2.0f, 2.0f), id);  // beyond lower right corner
+		index.add(win::SpatialIndexLocation(10.0f, 10.0f, 2.0f, 2.0f), id);	  // beyond upper right corner
+		index.add(win::SpatialIndexLocation(-10.0f, 10.0f, 2.0f, 2.0f), id);  // beyond upper left corner
 
 		index.add(win::SpatialIndexLocation(-10.0f, 0.0f, 2.0f, 2.0f), id); // beyond the left edge
-		index.add(win::SpatialIndexLocation(10.0f, 0.0f, 2.0f, 2.0f), id); // beyond the right edge
-		index.add(win::SpatialIndexLocation(0.0f, 10.0f, 2.0f, 2.0f), id); // beyond the top edge
+		index.add(win::SpatialIndexLocation(10.0f, 0.0f, 2.0f, 2.0f), id);	// beyond the right edge
+		index.add(win::SpatialIndexLocation(0.0f, 10.0f, 2.0f, 2.0f), id);	// beyond the top edge
 		index.add(win::SpatialIndexLocation(0.0f, -10.0f, 2.0f, 2.0f), id); // beyond the bottom edge
 
 		// query the whole range

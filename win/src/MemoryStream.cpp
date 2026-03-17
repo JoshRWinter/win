@@ -10,7 +10,8 @@ MemoryStream::MemoryStream(const unsigned char *data, unsigned long long len, bo
 	, data(data)
 	, position(0)
 	, data_len(len)
-{}
+{
+}
 
 MemoryStream::~MemoryStream()
 {
@@ -26,7 +27,12 @@ unsigned long long MemoryStream::size() const
 void MemoryStream::read(void *dest, unsigned long long len)
 {
 	if (position + len > data_len)
-		bug("MemoryStream: overread position = " + std::to_string(position) + ", data_len = " + std::to_string(data_len) + ", requested read = " + std::to_string(len));
+		bug("MemoryStream: overread position = " +
+			std::to_string(position) +
+			", data_len = " +
+			std::to_string(data_len) +
+			", requested read = " +
+			std::to_string(len));
 
 	memcpy(dest, data + position, len);
 	position += len;
@@ -43,7 +49,7 @@ std::string MemoryStream::read_all_as_string()
 {
 	if (data[data_len - 1] == 0)
 	{
-		return (char*)data;
+		return (char *)data;
 	}
 	else
 	{

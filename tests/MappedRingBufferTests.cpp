@@ -5,9 +5,20 @@
 #include <win/MappedRingBuffer.hpp>
 
 int successfull = 0;
-#define assert(exp) do { if (!(exp)) { win::bug("Assert failed on line " + std::to_string(__LINE__)); } else { ++successfull; } } while (false)
+#define assert(exp)                                                                                                                                            \
+	do                                                                                                                                                         \
+	{                                                                                                                                                          \
+		if (!(exp))                                                                                                                                            \
+		{                                                                                                                                                      \
+			win::bug("Assert failed on line " + std::to_string(__LINE__));                                                                                     \
+		}                                                                                                                                                      \
+		else                                                                                                                                                   \
+		{                                                                                                                                                      \
+			++successfull;                                                                                                                                     \
+		}                                                                                                                                                      \
+	} while (false)
 
-template <typename T> void test_mapped_buffer_reserve()
+template<typename T> void test_mapped_buffer_reserve()
 {
 	T mapped[5];
 	win::MappedRingBuffer<T> mbuf(mapped, 5);
@@ -56,7 +67,7 @@ template <typename T> void test_mapped_buffer_reserve()
 	}
 }
 
-template <typename T> void test_mapped_buffer_range_write()
+template<typename T> void test_mapped_buffer_range_write()
 {
 	T mapped[5] { 0, 0, 0, 0, 0 };
 	win::MappedRingBuffer<T> mbuf(mapped, 5);
@@ -139,7 +150,7 @@ template <typename T> void test_mapped_buffer_range_write()
 	}
 }
 
-template <typename T> void test_mapped_buffer_range_iterator()
+template<typename T> void test_mapped_buffer_range_iterator()
 {
 	T mapped[5] = { 0, 0, 0, 0, 0 };
 	win::MappedRingBuffer<T> mbuf(mapped, 5);
@@ -265,7 +276,7 @@ template <typename T> void test_mapped_buffer_range_iterator()
 	}
 }
 
-template <typename T> void test_mapped_buffer_range_subscript_operator()
+template<typename T> void test_mapped_buffer_range_subscript_operator()
 {
 	T mapped[5] = { 0, 0, 0, 0, 0 };
 	win::MappedRingBuffer<T> mbuf(mapped, 5);

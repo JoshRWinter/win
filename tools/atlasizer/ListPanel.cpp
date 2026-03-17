@@ -3,7 +3,8 @@
 ListPanel::ListPanel(Renderer &renderer, const win::Box<int> &box)
 	: renderer(renderer)
 	, box(box)
-{}
+{
+}
 
 void ListPanel::add(int id, const std::string &text)
 {
@@ -124,7 +125,8 @@ void ListPanel::draw()
 	{
 		if (item.y + item.h + scroll_yoffset > base_drawbox.y && item.y + scroll_yoffset < base_drawbox.y + base_drawbox.height)
 		{
-			const auto color = item.id == selection_id ? (mouse_is_over(item) ? entry_color_selected : entry_color_selected) : (mouse_is_over(item) ? entry_color_highlighted : entry_color);
+			const auto color = item.id == selection_id ? (mouse_is_over(item) ? entry_color_selected : entry_color_selected)
+													   : (mouse_is_over(item) ? entry_color_highlighted : entry_color);
 
 			renderer.set_drawbox(base_drawbox);
 			renderer.render(color, item.x, item.y + scroll_yoffset, item.w, item.h);
@@ -168,8 +170,10 @@ void ListPanel::reflow()
 
 bool ListPanel::mouse_is_over(const ListEntry &entry) const
 {
+	// clang-format off
 	return mouse_x >= box.x && mouse_y >= box.y && mouse_x < box.x + box.width && mouse_y < box.y + box.height &&
 	mouse_x >= entry.x && mouse_x < entry.x + entry.w && mouse_y >= entry.y + scroll_yoffset && mouse_y < (entry.y + entry.h) + scroll_yoffset;
+	// clang-format on
 }
 
 win::Box<int> ListPanel::drawbox_intersection(const win::Box<int> &base, const win::Box<int> &box)
