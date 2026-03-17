@@ -10,43 +10,43 @@
 #include <winsock2.h>
 #define ssize_t SSIZE_T
 #else
-#include <netinet/in.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #endif
 
-namespace win {
-
+namespace win
+{
 
 class UdpClient
 {
-	WIN_NO_COPY(UdpClient);
+    WIN_NO_COPY(UdpClient);
 
 #ifdef WINPLAT_WINDOWS
-	static constexpr int WOULDBLOCK = WSAEWOULDBLOCK;
-	static constexpr int CONNRESET = WSAECONNRESET;
+    static constexpr int WOULDBLOCK = WSAEWOULDBLOCK;
+    static constexpr int CONNRESET = WSAECONNRESET;
 #else
-	static constexpr int WOULDBLOCK = EWOULDBLOCK;
-	static constexpr int CONNRESET = ECONNRESET;
+    static constexpr int WOULDBLOCK = EWOULDBLOCK;
+    static constexpr int CONNRESET = ECONNRESET;
 #endif
 
 public:
-	UdpClient();
-	UdpClient(const char *address, unsigned short port);
-	UdpClient(UdpClient &&rhs) noexcept;
-	~UdpClient();
+    UdpClient();
+    UdpClient(const char *address, unsigned short port);
+    UdpClient(UdpClient &&rhs) noexcept;
+    ~UdpClient();
 
-	UdpClient &operator=(UdpClient &&rhs) noexcept;
+    UdpClient &operator=(UdpClient &&rhs) noexcept;
 
-	operator bool() const;
-	void close();
-	void send(const void *buffer, unsigned len);
-	int recv(void *buffer, unsigned len);
-	unsigned peek();
-	bool error() const;
+    operator bool() const;
+    void close();
+    void send(const void *buffer, unsigned len);
+    int recv(void *buffer, unsigned len);
+    unsigned peek();
+    bool error() const;
 
 private:
-	int sock;
-	addrinfo *ai;
+    int sock;
+    addrinfo *ai;
 };
 
 }

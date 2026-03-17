@@ -4,48 +4,47 @@
 #include "AtlasCompiler.hpp"
 #include "LayoutExporter.hpp"
 
-static const char *helptext =
-		"atlasizer layout_file output_file";
+static const char *helptext = "atlasizer layout_file output_file";
 
 void gui();
 
 int main(int argc, char **argv)
 {
-	if (argc < 2)
-	{
+    if (argc < 2)
+    {
 #ifdef NOGUI
-		std::cerr << "This version of atlasizer does not include a GUI" << std::endl;
-		return 1;
+        std::cerr << "This version of atlasizer does not include a GUI" << std::endl;
+        return 1;
 #else
-		gui();
-		return 0;
+        gui();
+        return 0;
 #endif
-	}
-	else if (argc == 2 || argc > 3)
-	{
-		std::cout << helptext << std::endl;
-		return 0;
-	}
+    }
+    else if (argc == 2 || argc > 3)
+    {
+        std::cout << helptext << std::endl;
+        return 0;
+    }
 
-	try
-	{
-		if (!strcmp(argv[1], "--list"))
-		{
-			int padding;
-			const auto descriptors = LayoutExporter::import(argv[2], padding, false);
-			for (const auto &descriptor : descriptors)
-				std::cout << descriptor.filename.string() << std::endl;
+    try
+    {
+        if (!strcmp(argv[1], "--list"))
+        {
+            int padding;
+            const auto descriptors = LayoutExporter::import(argv[2], padding, false);
+            for (const auto &descriptor : descriptors)
+                std::cout << descriptor.filename.string() << std::endl;
 
-			return 0;
-		}
+            return 0;
+        }
 
-		compileatlas(argv[2], argv[1]);
-	}
-	catch (const std::exception &e)
-	{
-		std::cerr << e.what() << std::endl;
-		return 1;
-	}
+        compileatlas(argv[2], argv[1]);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
 
-	return 0;
+    return 0;
 }

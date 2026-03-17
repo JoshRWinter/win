@@ -110,11 +110,11 @@ WIN_STORAGE PFNGLACTIVETEXTUREPROC glActiveTexture;
 
 struct DrawElementsIndirectCommand
 {
-	unsigned count;
-	unsigned instance_count;
-	unsigned first_index;
-	unsigned base_vertex;
-	unsigned base_instance;
+    unsigned count;
+    unsigned instance_count;
+    unsigned first_index;
+    unsigned base_vertex;
+    unsigned base_instance;
 };
 
 }
@@ -124,244 +124,247 @@ namespace win
 
 class GLVertexArray
 {
-	WIN_NO_COPY(GLVertexArray);
+    WIN_NO_COPY(GLVertexArray);
 
 public:
-	GLVertexArray() { gl::glGenVertexArrays(1, &vao); }
+    GLVertexArray() { gl::glGenVertexArrays(1, &vao); }
 
-	GLVertexArray(GLVertexArray &&rhs) noexcept
-	{
-		vao = rhs.vao;
-		rhs.vao = -1;
-	}
+    GLVertexArray(GLVertexArray &&rhs) noexcept
+    {
+        vao = rhs.vao;
+        rhs.vao = -1;
+    }
 
-	~GLVertexArray()
-	{
-		if (vao != -1)
-			gl::glDeleteVertexArrays(1, &vao);
-	}
+    ~GLVertexArray()
+    {
+        if (vao != -1)
+            gl::glDeleteVertexArrays(1, &vao);
+    }
 
-	GLVertexArray &operator=(GLVertexArray &&rhs) noexcept
-	{
-		if (this == &rhs)
-			return *this;
+    GLVertexArray &operator=(GLVertexArray &&rhs) noexcept
+    {
+        if (this == &rhs)
+            return *this;
 
-		if (vao != -1)
-			gl::glDeleteVertexArrays(1, &vao);
+        if (vao != -1)
+            gl::glDeleteVertexArrays(1, &vao);
 
-		vao = rhs.vao;
-		rhs.vao = -1;
+        vao = rhs.vao;
+        rhs.vao = -1;
 
-		return *this;
-	}
+        return *this;
+    }
 
-	GLuint get() const { return vao; }
+    GLuint get() const { return vao; }
 
 private:
-	GLuint vao;
+    GLuint vao;
 };
 
 class GLBuffer
 {
-	WIN_NO_COPY(GLBuffer);
+    WIN_NO_COPY(GLBuffer);
 
 public:
-	GLBuffer() { gl::glGenBuffers(1, &buffer); }
+    GLBuffer() { gl::glGenBuffers(1, &buffer); }
 
-	GLBuffer(GLBuffer &&rhs) noexcept
-	{
-		buffer = rhs.buffer;
-		rhs.buffer = -1;
-	}
+    GLBuffer(GLBuffer &&rhs) noexcept
+    {
+        buffer = rhs.buffer;
+        rhs.buffer = -1;
+    }
 
-	~GLBuffer()
-	{
-		if (buffer != -1)
-			gl::glDeleteBuffers(1, &buffer);
-	}
+    ~GLBuffer()
+    {
+        if (buffer != -1)
+            gl::glDeleteBuffers(1, &buffer);
+    }
 
-	GLBuffer &operator=(GLBuffer &&rhs) noexcept
-	{
-		if (this == &rhs)
-			return *this;
+    GLBuffer &operator=(GLBuffer &&rhs) noexcept
+    {
+        if (this == &rhs)
+            return *this;
 
-		if (buffer != -1)
-			gl::glDeleteBuffers(1, &buffer);
+        if (buffer != -1)
+            gl::glDeleteBuffers(1, &buffer);
 
-		buffer = rhs.buffer;
-		rhs.buffer = -1;
+        buffer = rhs.buffer;
+        rhs.buffer = -1;
 
-		return *this;
-	}
+        return *this;
+    }
 
-	GLuint get() const { return buffer; }
+    GLuint get() const { return buffer; }
 
 private:
-	GLuint buffer;
+    GLuint buffer;
 };
 
 class GLTexture
 {
-	WIN_NO_COPY(GLTexture);
+    WIN_NO_COPY(GLTexture);
 
 public:
-	GLTexture() { glGenTextures(1, &texture); }
+    GLTexture() { glGenTextures(1, &texture); }
 
-	GLTexture(GLTexture &&rhs) noexcept
-	{
-		texture = rhs.texture;
-		rhs.texture = -1;
-	}
+    GLTexture(GLTexture &&rhs) noexcept
+    {
+        texture = rhs.texture;
+        rhs.texture = -1;
+    }
 
-	~GLTexture()
-	{
-		if (texture != -1)
-			glDeleteTextures(1, &texture);
-	}
+    ~GLTexture()
+    {
+        if (texture != -1)
+            glDeleteTextures(1, &texture);
+    }
 
-	GLTexture &operator=(GLTexture &&rhs) noexcept
-	{
-		if (this == &rhs)
-			return *this;
+    GLTexture &operator=(GLTexture &&rhs) noexcept
+    {
+        if (this == &rhs)
+            return *this;
 
-		if (texture != -1)
-			glDeleteTextures(1, &texture);
+        if (texture != -1)
+            glDeleteTextures(1, &texture);
 
-		texture = rhs.texture;
-		rhs.texture = -1;
+        texture = rhs.texture;
+        rhs.texture = -1;
 
-		return *this;
-	}
+        return *this;
+    }
 
-	GLuint get() const { return texture; }
+    GLuint get() const { return texture; }
 
 private:
-	GLuint texture;
+    GLuint texture;
 };
 
 class GLProgram
 {
-	WIN_NO_COPY(GLProgram);
+    WIN_NO_COPY(GLProgram);
 
 public:
-	explicit GLProgram(GLuint program)
-		: program(program)
-	{}
+    explicit GLProgram(GLuint program)
+        : program(program)
+    {
+    }
 
-	GLProgram() : program(-1) {}
+    GLProgram()
+        : program(-1)
+    {
+    }
 
-	GLProgram(GLProgram &&rhs) noexcept
-	{
-		program = rhs.program;
-		rhs.program = -1;
-	}
+    GLProgram(GLProgram &&rhs) noexcept
+    {
+        program = rhs.program;
+        rhs.program = -1;
+    }
 
-	~GLProgram()
-	{
-		if (program != -1)
-			gl::glDeleteProgram(program);
-	}
+    ~GLProgram()
+    {
+        if (program != -1)
+            gl::glDeleteProgram(program);
+    }
 
-	GLProgram &operator=(GLProgram &&rhs) noexcept
-	{
-		if (this == &rhs)
-			return *this;
+    GLProgram &operator=(GLProgram &&rhs) noexcept
+    {
+        if (this == &rhs)
+            return *this;
 
-		if (program != -1)
-			gl::glDeleteProgram(program);
+        if (program != -1)
+            gl::glDeleteProgram(program);
 
-		program = rhs.program;
-		rhs.program = -1;
+        program = rhs.program;
+        rhs.program = -1;
 
-		return *this;
-	}
+        return *this;
+    }
 
-	GLuint get() const { return program; }
+    GLuint get() const { return program; }
 
 private:
-	GLuint program;
+    GLuint program;
 };
 
 class GLFramebuffer
 {
-	WIN_NO_COPY(GLFramebuffer);
+    WIN_NO_COPY(GLFramebuffer);
 
 public:
-	GLFramebuffer()
-	{
-		gl::glGenFramebuffers(1, &fbo);
-	}
+    GLFramebuffer() { gl::glGenFramebuffers(1, &fbo); }
 
-	GLFramebuffer(GLFramebuffer &&rhs)
-	{
-		fbo = rhs.fbo;
-		rhs.fbo = -1;
-	}
+    GLFramebuffer(GLFramebuffer &&rhs)
+    {
+        fbo = rhs.fbo;
+        rhs.fbo = -1;
+    }
 
-	~GLFramebuffer()
-	{
-		if (fbo != -1)
-			gl::glDeleteFramebuffers(1, &fbo);
-	}
+    ~GLFramebuffer()
+    {
+        if (fbo != -1)
+            gl::glDeleteFramebuffers(1, &fbo);
+    }
 
-	GLFramebuffer &operator=(GLFramebuffer &&rhs)
-	{
-		if (this == &rhs)
-			return *this;
+    GLFramebuffer &operator=(GLFramebuffer &&rhs)
+    {
+        if (this == &rhs)
+            return *this;
 
-		if (fbo != -1)
-			gl::glDeleteFramebuffers(1, &fbo);
+        if (fbo != -1)
+            gl::glDeleteFramebuffers(1, &fbo);
 
-		fbo = rhs.fbo;
-		rhs.fbo = -1;
+        fbo = rhs.fbo;
+        rhs.fbo = -1;
 
-		return *this;
-	}
+        return *this;
+    }
 
-	GLuint get() const { return fbo; }
+    GLuint get() const { return fbo; }
 
 private:
-	GLuint fbo;
+    GLuint fbo;
 };
 
 class GLSyncObject
 {
-	WIN_NO_COPY(GLSyncObject);
+    WIN_NO_COPY(GLSyncObject);
 
 public:
-	explicit GLSyncObject(GLsync s)
-		: sync(s) {}
+    explicit GLSyncObject(GLsync s)
+        : sync(s)
+    {
+    }
 
-	GLSyncObject(GLSyncObject &&rhs) noexcept
-	{
-		sync = rhs.sync;
-		rhs.sync = NULL;
-	}
+    GLSyncObject(GLSyncObject &&rhs) noexcept
+    {
+        sync = rhs.sync;
+        rhs.sync = NULL;
+    }
 
-	~GLSyncObject()
-	{
-		if (sync != NULL)
-			gl::glDeleteSync(sync);
-	}
+    ~GLSyncObject()
+    {
+        if (sync != NULL)
+            gl::glDeleteSync(sync);
+    }
 
-	GLSyncObject &operator=(GLSyncObject &&rhs) noexcept
-	{
-		if (&rhs == this)
-			return *this;
+    GLSyncObject &operator=(GLSyncObject &&rhs) noexcept
+    {
+        if (&rhs == this)
+            return *this;
 
-		if (sync != NULL)
-			gl::glDeleteSync(sync);
+        if (sync != NULL)
+            gl::glDeleteSync(sync);
 
-		sync = rhs.sync;
-		rhs.sync = NULL;
+        sync = rhs.sync;
+        rhs.sync = NULL;
 
-		return *this;
-	}
+        return *this;
+    }
 
-	GLsync get() const { return sync; }
+    GLsync get() const { return sync; }
 
 private:
-	GLsync sync;
+    GLsync sync;
 };
 
 void gl_enable_debug();

@@ -12,16 +12,13 @@ namespace win
 #ifdef WINPLAT_WINDOWS
 struct WinWsaInit
 {
-	WinWsaInit()
-	{
-		WSADATA wsa;
-		WSAStartup(MAKEWORD(1, 1), &wsa);
-	}
+    WinWsaInit()
+    {
+        WSADATA wsa;
+        WSAStartup(MAKEWORD(1, 1), &wsa);
+    }
 
-	~WinWsaInit()
-	{
-		WSACleanup();
-	}
+    ~WinWsaInit() { WSACleanup(); }
 };
 #endif
 
