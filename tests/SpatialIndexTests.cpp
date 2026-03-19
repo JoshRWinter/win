@@ -1,3 +1,7 @@
+#include <chrono>
+#include <random>
+
+#include <win/Pool.hpp>
 #include <win/Win.hpp>
 
 #define private public
@@ -673,6 +677,107 @@ void out_of_bounds_tests()
     }
 }
 
+template<int objects, int loops> void performance_tests()
+{
+    std::mt19937 mersenne(6969);
+
+    std::vector<float> big_randoms;
+    std::vector<float> small_randoms;
+    std::vector<int> bool_randoms;
+
+    unsigned big_randoms_index = 0;
+    unsigned small_randoms_index = 0;
+    unsigned bool_randoms_index = 0;
+
+    for (int i = 0; i < 1000; ++i)
+    {
+        big_randoms.push_back(std::uniform_real_distribution<float>(-50, 50)(mersenne));
+        small_randoms.push_back(std::uniform_real_distribution<float>(1.0, 5.0)(mersenne));
+        bool_randoms.push_back(std::uniform_int_distribution<int>(0, 1)(mersenne));
+    }
+
+    const auto big_rando = [&big_randoms_index, &big_randoms]()
+    {
+        ++big_randoms_index;
+        return big_randoms[big_randoms_index % big_randoms.size()];
+    };
+    const auto small_rando = [&small_randoms_index, &small_randoms]()
+    {
+        ++small_randoms_index;
+        return small_randoms[small_randoms_index % small_randoms.size()];
+    };
+
+    const auto bool_rando = [&bool_randoms_index, &bool_randoms]()
+    {
+        ++bool_randoms_index;
+        return !!bool_randoms[bool_randoms_index % bool_randoms.size()];
+    };
+
+    struct CoolObject
+    {
+        explicit CoolObject(decltype(big_rando) &big_rando, decltype(small_rando) &small_rando)
+            : x(big_rando())
+            , y(big_rando())
+            , w(small_rando())
+            , h(small_rando())
+            , rot(small_rando())
+        {
+        }
+
+        float x, y, w, h, rot;
+    };
+
+    win::Pool<CoolObject, 20, false> pool;
+    win::SpatialIndex<CoolObject> index;
+    index.reset(25, -50, 50, -50, 50);
+
+    for (int i = 0; i < objects; ++i)
+    {
+        auto &item = pool.add(big_rando, small_rando);
+        win::SpatialIndexLocation loc(item.x, item.y, item.w, item.h);
+
+        index.add(loc, item);
+    }
+
+    // delete some items to shake things up
+    for (auto it = pool.begin(); it != pool.end();)
+    {
+        if (bool_rando())
+        {
+            index.remove(win::SpatialIndexLocation(it->x, it->y, it->w, it->h), *it);
+            it = pool.remove(it);
+        }
+        else
+            ++it;
+    }
+
+    const auto start = std::chrono::high_resolution_clock::now();
+    int hits = 0;
+
+    for (int i = 0; i < loops; ++i)
+    {
+        const win::SpatialIndexLocation loc(big_rando(), big_rando(), small_rando(), small_rando());
+        for (const auto &o : index.query(loc))
+        {
+            ++hits;
+        }
+    }
+
+    const auto end = std::chrono::high_resolution_clock::now();
+    const auto elapsed_micros = std::chrono::duration<float, std::micro>(end - start).count();
+
+    fprintf(stderr, "Performance tests: elapsed %.4f (%d hits)\n", elapsed_micros, hits);
+}
+
+void performance_tests()
+{
+#ifndef NDEBUG
+    fprintf(stderr, "WARNING: better to run the performance tests in release mode you dingdong\n");
+#endif
+
+    performance_tests<200, 1000>();
+}
+
 int main()
 {
     basic_tests();
@@ -681,6 +786,7 @@ int main()
     dedupe_tests();
     remove_tests();
     out_of_bounds_tests();
+    performance_tests();
 
     fprintf(stderr, "all %d tests ran successfully\n", successfull);
 }
