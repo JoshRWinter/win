@@ -22,7 +22,7 @@ add_library(win STATIC
 	include/win/Utility.hpp
 	src/Utility.cpp
 
-	include/win/Heap.hpp
+	include/win/Bag.hpp
 
 	include/win/Pool.hpp
 
