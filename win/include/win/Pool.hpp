@@ -1,6 +1,6 @@
 #pragma once
 
-#include <win/Heap.hpp>
+#include <win/Bag.hpp>
 #include <win/Win.hpp>
 
 namespace win
@@ -88,23 +88,27 @@ private:
 
 }
 
-template<typename T, int partition_capacity, bool first_partition_inline, bool use_shared_heap = false> class Pool
+template<typename T, int partition_capacity, bool first_partition_inline, bool use_shared_bag = false> class Pool
 {
-    WIN_NO_COPY_MOVE(Pool);
+    WIN_NO_COPY(Pool);
 
 public:
     typedef impl::PoolIterator<T> Iterator;
     typedef impl::PoolConstIterator<T> ConstIterator;
 
-    Pool() { static_assert(!use_shared_heap, "Must supply a heap object when use_shared_heap is true"); }
+    Pool() { static_assert(!use_shared_bag, "Must supply a bag object when use_shared_bag is true"); }
 
-    explicit Pool(win::Heap<PoolNode<T>, partition_capacity, first_partition_inline> &heap)
-        : heap(heap)
+    explicit Pool(win::Bag<PoolNode<T>, partition_capacity, first_partition_inline> &bag)
+        : bag(bag)
     {
-        static_assert(use_shared_heap, "Must NOT supply a heap object when use_shared_heap is true");
+        static_assert(use_shared_bag, "Must NOT supply a bag object when use_shared_bag is true");
     }
 
+    Pool(Pool &&) = default;
+
     ~Pool() { clear(); }
+
+    Pool &operator=(Pool &&) = default;
 
     Iterator begin() { return Iterator(head); }
 
@@ -114,7 +118,7 @@ public:
 
     ConstIterator end() const { return ConstIterator(NULL); }
 
-    int size() const { return heap.size(); }
+    int size() const { return bag.size(); }
 
     void clear()
     {
@@ -125,7 +129,7 @@ public:
 
     template<typename... Ts> T &add(Ts &&...ts)
     {
-        auto node = &heap.add(std::forward<Ts>(ts)...);
+        auto node = &bag.add(std::forward<Ts>(ts)...);
 
         node->next = NULL;
         node->prev = tail;
@@ -161,7 +165,7 @@ private:
 
         auto next = node->next;
 
-        heap.remove(*node);
+        bag.remove(*node);
 
         return Iterator(next);
     }
@@ -171,9 +175,9 @@ private:
 
     // hoo boy clang format does my boy dirty here
     // clang-format off
-	std::conditional_t<use_shared_heap,
-					   win::Heap<PoolNode<T>, partition_capacity, first_partition_inline> &,
-					   win::Heap<PoolNode<T>, partition_capacity, first_partition_inline>> heap;
+	std::conditional_t<use_shared_bag,
+					   win::Bag<PoolNode<T>, partition_capacity, first_partition_inline> &,
+					   win::Bag<PoolNode<T>, partition_capacity, first_partition_inline>> bag;
     // clang-format on
 };
 

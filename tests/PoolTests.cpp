@@ -24,10 +24,10 @@ struct TestObject
     if (!(exp))                                                                                                                                                \
     win::bug("pool assert failed (" + std::to_string(__LINE__) + "): " #exp)
 
-template<int partition_capacity, bool first_partition_inline, bool use_shared_heap> void run(win::Pool<TestObject,
-                                                                                                       partition_capacity,
-                                                                                                       first_partition_inline,
-                                                                                                       use_shared_heap> &pool)
+template<int partition_capacity, bool first_partition_inline, bool use_shared_bag> void run(win::Pool<TestObject,
+                                                                                                      partition_capacity,
+                                                                                                      first_partition_inline,
+                                                                                                      use_shared_bag> &pool)
 {
     int num = 0;
 
@@ -42,7 +42,7 @@ template<int partition_capacity, bool first_partition_inline, bool use_shared_he
     poolassert(pool.size() == 7);
 
     {
-        const win::Pool<TestObject, partition_capacity, first_partition_inline, use_shared_heap> &constpool = pool;
+        const win::Pool<TestObject, partition_capacity, first_partition_inline, use_shared_bag> &constpool = pool;
         auto it = constpool.begin();
 
         poolassert(it->name == "red");
@@ -198,8 +198,8 @@ template<bool first_partition_inline> void run()
     }
 
     {
-        win::Heap<win::PoolNode<TestObject>, 1, first_partition_inline> heap;
-        win::Pool<TestObject, 1, first_partition_inline, true> pool(heap);
+        win::Bag<win::PoolNode<TestObject>, 1, first_partition_inline> bag;
+        win::Pool<TestObject, 1, first_partition_inline, true> pool(bag);
         run(pool);
         run(pool);
     }
@@ -211,8 +211,8 @@ template<bool first_partition_inline> void run()
     }
 
     {
-        win::Heap<win::PoolNode<TestObject>, 2, first_partition_inline> heap;
-        win::Pool<TestObject, 2, first_partition_inline, true> pool(heap);
+        win::Bag<win::PoolNode<TestObject>, 2, first_partition_inline> bag;
+        win::Pool<TestObject, 2, first_partition_inline, true> pool(bag);
         run(pool);
         run(pool);
     }
@@ -224,8 +224,8 @@ template<bool first_partition_inline> void run()
     }
 
     {
-        win::Heap<win::PoolNode<TestObject>, 3, first_partition_inline> heap;
-        win::Pool<TestObject, 3, first_partition_inline, true> pool(heap);
+        win::Bag<win::PoolNode<TestObject>, 3, first_partition_inline> bag;
+        win::Pool<TestObject, 3, first_partition_inline, true> pool(bag);
         run(pool);
         run(pool);
     }
@@ -237,8 +237,8 @@ template<bool first_partition_inline> void run()
     }
 
     {
-        win::Heap<win::PoolNode<TestObject>, 4, first_partition_inline> heap;
-        win::Pool<TestObject, 4, first_partition_inline, true> pool(heap);
+        win::Bag<win::PoolNode<TestObject>, 4, first_partition_inline> bag;
+        win::Pool<TestObject, 4, first_partition_inline, true> pool(bag);
         run(pool);
         run(pool);
     }
@@ -250,8 +250,8 @@ template<bool first_partition_inline> void run()
     }
 
     {
-        win::Heap<win::PoolNode<TestObject>, 5, first_partition_inline> heap;
-        win::Pool<TestObject, 5, first_partition_inline, true> pool(heap);
+        win::Bag<win::PoolNode<TestObject>, 5, first_partition_inline> bag;
+        win::Pool<TestObject, 5, first_partition_inline, true> pool(bag);
         run(pool);
         run(pool);
     }
@@ -263,8 +263,8 @@ template<bool first_partition_inline> void run()
     }
 
     {
-        win::Heap<win::PoolNode<TestObject>, 6, first_partition_inline> heap;
-        win::Pool<TestObject, 6, first_partition_inline, true> pool(heap);
+        win::Bag<win::PoolNode<TestObject>, 6, first_partition_inline> bag;
+        win::Pool<TestObject, 6, first_partition_inline, true> pool(bag);
         run(pool);
         run(pool);
     }
@@ -276,8 +276,8 @@ template<bool first_partition_inline> void run()
     }
 
     {
-        win::Heap<win::PoolNode<TestObject>, 7, first_partition_inline> heap;
-        win::Pool<TestObject, 7, first_partition_inline, true> pool(heap);
+        win::Bag<win::PoolNode<TestObject>, 7, first_partition_inline> bag;
+        win::Pool<TestObject, 7, first_partition_inline, true> pool(bag);
         run(pool);
         run(pool);
     }

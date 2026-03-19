@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -11,46 +12,53 @@ namespace win
 namespace impl
 {
 
-template<typename T> struct HeapItem
+template<typename T> struct BagItem
 {
     alignas(alignof(T)) unsigned char item[sizeof(T)];
 };
 
-template<typename T, int capacity> struct HeapPartition
+template<typename T, int capacity> struct BagPartition
 {
-    WIN_NO_COPY_MOVE(HeapPartition);
+    WIN_NO_COPY_MOVE(BagPartition);
 
-    HeapPartition() = default;
+    BagPartition() = default;
 
-    std::unique_ptr<HeapPartition<T, capacity>> next;
-    HeapItem<T> storage[capacity];
+    std::unique_ptr<BagPartition<T, capacity>> next;
+    BagItem<T> storage[capacity];
 };
 
 }
 
-template<typename T, int partition_capacity, bool first_partition_inline> class Heap
+template<typename T, int partition_capacity, bool first_partition_inline> class Bag
 {
-    WIN_NO_COPY_MOVE(Heap);
+    WIN_NO_COPY(Bag);
 
 public:
-    Heap()
+    constexpr static int bag_partition_capacity = partition_capacity;
+    constexpr static int bag_first_partition_inline = first_partition_inline;
+
+    Bag()
     {
         static_assert(partition_capacity > 0, "Capacity must be greater than zero.");
 
         if constexpr (!first_partition_inline)
-            first_partition.reset(new impl::HeapPartition<T, partition_capacity>);
+            first_partition.reset(new impl::BagPartition<T, partition_capacity>);
     }
 
-    ~Heap()
+    Bag(Bag &&) = default;
+
+    ~Bag()
     {
         if (count != 0)
-            win::bug("Heap not empty! (" + std::to_string(count) + " items)");
+            win::bug("Bag not empty! (" + std::to_string(count) + " items)");
     }
+
+    Bag &operator=(Bag &&) = default;
 
     template<typename... Ts> T &add(Ts &&...ts)
     {
         if (count == std::numeric_limits<int>::max())
-            win::bug("win::Heap: max size");
+            win::bug("win::Bag: max size");
 
         unsigned char *spot;
 
@@ -63,7 +71,7 @@ public:
             for (int i = 0; i < partition_number; ++i)
             {
                 if (!partition->next)
-                    partition->next.reset(new impl::HeapPartition<T, partition_capacity>());
+                    partition->next.reset(new impl::BagPartition<T, partition_capacity>());
 
                 partition = partition->next.get();
             }
@@ -96,7 +104,7 @@ public:
     int size() const { return count; }
 
 private:
-    constexpr impl::HeapPartition<T, partition_capacity> *get_first_partition()
+    constexpr impl::BagPartition<T, partition_capacity> *get_first_partition()
     {
         if constexpr (first_partition_inline)
             return &first_partition;
@@ -104,7 +112,7 @@ private:
             return first_partition.get();
     }
 
-    std::conditional_t<first_partition_inline, impl::HeapPartition<T, partition_capacity>, std::unique_ptr<impl::HeapPartition<T, partition_capacity>>>
+    std::conditional_t<first_partition_inline, impl::BagPartition<T, partition_capacity>, std::unique_ptr<impl::BagPartition<T, partition_capacity>>>
         first_partition;
 
     std::vector<unsigned char *> freelist;
