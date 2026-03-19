@@ -289,7 +289,7 @@ void vacuum_tests()
         for (auto &block : index.map)
         {
             for (auto &item : block.items)
-                if (item == NULL)
+                if (item.p == NULL)
                     ++ghosts;
         }
 
@@ -310,7 +310,7 @@ void vacuum_tests()
         for (auto &block : index.map)
         {
             for (auto &item : block.items)
-                if (item == NULL)
+                if (item.p == NULL)
                     ++ghosts;
         }
 
@@ -330,7 +330,7 @@ void vacuum_tests()
         for (auto &block : index.map)
         {
             for (auto &item : block.items)
-                if (item == NULL)
+                if (item.p == NULL)
                     ++ghosts;
         }
 
