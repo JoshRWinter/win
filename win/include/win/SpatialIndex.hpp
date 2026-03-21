@@ -88,25 +88,20 @@ template<typename T> class SpatialIndex;
 
 template<typename T> class SpatialIndexIterator
 {
-    WIN_NO_COPY(SpatialIndexIterator);
-
 public:
     SpatialIndexIterator(const SpatialIndex<T> &map,
+                         std::unordered_set<const T *> *deduper,
                          impl::BlockKey key1,
                          impl::BlockKey key2,
-                         impl::BlockKey starting_key,
-                         std::unordered_set<const T *> *deduper)
-        : key1(key1)
+                         impl::BlockKey starting_key)
+        : map(map)
+        , deduper(deduper)
+        , key1(key1)
         , key2(key2)
         , current_key(starting_key)
-        , map(map)
-        , deduper(deduper)
+        , map_index(map.index(starting_key))
     {
-        this->map_index = map.index(starting_key);
-        this->block_index = 0;
     }
-
-    SpatialIndexIterator(SpatialIndexIterator<T> &&rhs) = default;
 
     T &operator*() { return *dereference(); }
 
@@ -121,32 +116,34 @@ public:
 private:
     void seek_to_next_valid()
     {
-        while (block_index >= block_item_count())
+        while (true)
         {
-            ++current_key.x;
-
-            if (current_key.x > key2.x)
+            while (block_index >= block_item_count())
             {
-                current_key.x = key1.x;
-                ++current_key.y;
+                ++current_key.x;
 
-                map_index = map.index(current_key);
-                block_index = 0;
+                if (current_key.x > key2.x)
+                {
+                    current_key.x = key1.x;
+                    ++current_key.y;
 
-                if (is_exhausted())
-                    return;
+                    map_index = map.index(current_key);
+                    block_index = 0;
+
+                    if (is_exhausted()) // This entire index query is kaput
+                        return;
+                }
+                else
+                {
+                    map_index = map.index(current_key);
+                    block_index = 0;
+                }
             }
+
+            if (is_ghost() || is_dupe())
+                ++block_index;
             else
-            {
-                map_index = map.index(current_key);
-                block_index = 0;
-            }
-        }
-
-        if (is_ghost() || is_dupe())
-        {
-            ++block_index;
-            seek_to_next_valid(); // go go gadget tail call recursion?
+                return;
         }
     }
 
@@ -186,7 +183,7 @@ private:
 #endif
     }
 
-    T *dereference()
+    T *dereference() const
     {
 #ifndef NDEBUG
         return map.map.at(map_index).items.at(block_index);
@@ -195,21 +192,13 @@ private:
 #endif
     }
 
-    const T *dereference() const
-    {
-#ifndef NDEBUG
-        return map.map.at(map_index).items.at(block_index);
-#else
-        return map.map[map_index].items[block_index];
-#endif
-    }
-
-    int block_index;
-    int map_index;
-    const impl::BlockKey key1, key2;
-    impl::BlockKey current_key;
     const SpatialIndex<T> &map;
     std::unordered_set<const T *> *deduper;
+    const impl::BlockKey key1;
+    const impl::BlockKey key2;
+    impl::BlockKey current_key;
+    int block_index = 0;
+    int map_index;
 };
 
 template<typename T> class SpatialIndexQuery
@@ -217,51 +206,36 @@ template<typename T> class SpatialIndexQuery
     WIN_NO_COPY_MOVE(SpatialIndexQuery);
 
 public:
-    SpatialIndexQuery(SpatialIndex<T> &map, impl::BlockKey key1, impl::BlockKey key2)
-        : key1(key1)
-        , key2(key2)
-        , corrected_key1(std::max(key1.x, (short)0), std::max(key1.y, (short)0))
-        , corrected_key2(std::min(key2.x, (short)(map.map_width - 1)), std::min(key2.y, (short)(map.map_height - 1)))
-        , deduper(corrected_key1 != corrected_key2 ? &map.pool.acquire() : NULL)
-        , map(map)
+    SpatialIndexQuery(SpatialIndex<T> &map, std::unordered_set<const T *> *deduper, SpatialIndexIterator<T> it_begin, SpatialIndexIterator<T> it_end)
+        : map(map)
+        , deduper(deduper)
+        , it_begin(it_begin)
+        , it_end(it_end)
     {
-        ++map.open_iterables;
+        ++map.open_queries;
     }
 
     ~SpatialIndexQuery()
     {
-        if (--map.open_iterables == 0)
-            map.vacuum();
-
         if (deduper != NULL)
         {
             deduper->clear();
-            map.pool.release(*deduper);
+            map.dedupers.release(*deduper);
         }
+
+        if (--map.open_queries == 0)
+            map.vacuum();
     }
 
-    SpatialIndexIterator<T> begin() const
-    {
-        if (key1.x >= map.map_width || key1.y >= map.map_height || key2.x < 0 || key2.y < 0)
-            return end(); // the sample location that spawned this iterable does not overlap the map at all
-        else
-        {
-            SpatialIndexIterator<T> it(map, corrected_key1, corrected_key2, corrected_key1, deduper);
-            it.seek_to_next_valid();
-            return std::move(it);
-        }
-    }
+    SpatialIndexIterator<T> begin() const { return it_begin; }
 
-    SpatialIndexIterator<T> end() const
-    {
-        impl::BlockKey one_past_the_end(corrected_key1.x, corrected_key2.y + 1);
-        return SpatialIndexIterator<T>(map, corrected_key1, corrected_key2, one_past_the_end, NULL);
-    }
+    SpatialIndexIterator<T> end() const { return it_end; }
 
 private:
-    const impl::BlockKey key1, key2, corrected_key1, corrected_key2;
-    std::unordered_set<const T *> *const deduper;
     SpatialIndex<T> &map;
+    std::unordered_set<const T *> *deduper;
+    SpatialIndexIterator<T> it_begin;
+    SpatialIndexIterator<T> it_end;
 };
 
 struct SpatialIndexLocation
@@ -289,18 +263,18 @@ template<typename T> class SpatialIndex
 public:
     SpatialIndex() = default;
 
-    void reset(float divisions, float map_left, float map_right, float map_bottom, float map_top)
+    void reset(float block_size, float map_left, float map_right, float map_bottom, float map_top)
     {
-        if (open_iterables > 0)
+        if (open_queries != 0)
             win::bug("SpatialIndex: Can't reset while iterating!");
 
-        this->divisions = divisions;
+        this->block_size = block_size;
         this->map_left = map_left;
         this->map_right = map_right;
         this->map_bottom = map_bottom;
         this->map_top = map_top;
-        this->map_width = std::ceil((map_right - map_left) / divisions);
-        this->map_height = std::ceil((map_top - map_bottom) / divisions);
+        this->map_width = std::ceil((map_right - map_left) / block_size);
+        this->map_height = std::ceil((map_top - map_bottom) / block_size);
 
         if (this->map_width < 1 || this->map_height < 1)
             win::bug("SpatialIndex: to small");
@@ -308,11 +282,7 @@ public:
         if (this->map_width > std::numeric_limits<std::int16_t>::max() || this->map_height > std::numeric_limits<std::int16_t>::max())
             win::bug("SpatialIndex: exceeds integer limits.");
 
-        open_iterables = 0;
-
-        for (auto &item : map)
-            item.items.clear();
-
+        map.clear();
         map.resize(map_width * map_height);
 
         vacuum_queue.clear();
@@ -343,7 +313,37 @@ public:
         const auto key1 = sample(loc.x, loc.y);
         const auto key2 = sample(loc.x + loc.w, loc.y + loc.h);
 
-        return SpatialIndexQuery<T>(*this, key1, key2);
+        if (key1.x > key2.x || key1.y > key2.y)
+            win::bug("SpatialIndex: location has negative area?");
+
+        // detect the location being completely outside the index
+        const bool outside = key1.x >= map_width || key1.y >= map_height || key2.x < 0 || key2.y < 0;
+
+        // fit the keys to the actual bounds of the index
+        const auto corrected_key1_x = std::min(std::max((std::int16_t)0, key1.x), (std::int16_t)(map_width - 1));
+        const auto corrected_key1_y = std::min(std::max((std::int16_t)0, key1.y), (std::int16_t)(map_height - 1));
+        const auto corrected_key2_x = std::min(std::max((std::int16_t)0, key2.x), (std::int16_t)(map_width - 1));
+        const auto corrected_key2_y = std::min(std::max((std::int16_t)0, key2.y), (std::int16_t)(map_height - 1));
+
+        const impl::BlockKey corrected_key1(corrected_key1_x, corrected_key1_y);
+        const impl::BlockKey corrected_key2(corrected_key2_x, corrected_key2_y);
+
+        const impl::BlockKey one_past_the_end(corrected_key1.x, (std::int16_t)(corrected_key2.y + 1));
+        SpatialIndexIterator<T> end(*this, NULL, corrected_key1, corrected_key2, one_past_the_end);
+
+        if (outside)
+        {
+            return SpatialIndexQuery<T>(*this, NULL, end, end);
+        }
+        else
+        {
+            auto deduper = key1 == key2 ? NULL : &dedupers.acquire();
+
+            SpatialIndexIterator<T> begin(*this, deduper, corrected_key1, corrected_key2, corrected_key1);
+            begin.seek_to_next_valid();
+
+            return SpatialIndexQuery<T>(*this, deduper, begin, end);
+        }
     }
 
 private:
@@ -420,15 +420,15 @@ private:
 
     impl::BlockKey sample(float x, float y) const
     {
-        const std::int16_t blockx = std::floor((x - map_left) / divisions);
-        const std::int16_t blocky = std::floor((y - map_bottom) / divisions);
+        const std::int16_t blockx = std::floor((x - map_left) / block_size);
+        const std::int16_t blocky = std::floor((y - map_bottom) / block_size);
 
         return impl::BlockKey(blockx, blocky);
     }
 
     int index(impl::BlockKey key) const { return (key.y * map_width) + key.x; }
 
-    float divisions = 0.0f;
+    float block_size = 0.0f;
 
     float map_left = 0.0f;
     float map_right = 0.0f;
@@ -439,9 +439,9 @@ private:
     int map_height = 0;
 
     std::vector<impl::Block<T>> map;
-    impl::SimplePool<std::unordered_set<const T *>, 4> pool;
+    impl::SimplePool<std::unordered_set<const T *>, 4> dedupers;
 
-    int open_iterables = 0;
+    int open_queries = 0;
 
     std::vector<int> vacuum_queue;
 };
