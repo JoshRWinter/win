@@ -1,4 +1,5 @@
 #include <chrono>
+#include <functional>
 #include <random>
 
 #include <win/Pool.hpp>
@@ -677,56 +678,25 @@ void out_of_bounds_tests()
     }
 }
 
-template<int objects, int loops> void performance_tests()
+struct CoolObject
 {
-    std::mt19937 mersenne(6969);
-
-    std::vector<float> big_randoms;
-    std::vector<float> small_randoms;
-    std::vector<int> bool_randoms;
-
-    unsigned big_randoms_index = 0;
-    unsigned small_randoms_index = 0;
-    unsigned bool_randoms_index = 0;
-
-    for (int i = 0; i < 1000; ++i)
+    explicit CoolObject(const std::function<float()> &big_rando, const std::function<float()> &small_rando)
+        : x(big_rando())
+        , y(big_rando())
+        , w(small_rando())
+        , h(small_rando())
+        , rot(small_rando())
     {
-        big_randoms.push_back(std::uniform_real_distribution<float>(-50, 50)(mersenne));
-        small_randoms.push_back(std::uniform_real_distribution<float>(1.0, 5.0)(mersenne));
-        bool_randoms.push_back(std::uniform_int_distribution<int>(0, 1)(mersenne));
     }
 
-    const auto big_rando = [&big_randoms_index, &big_randoms]()
-    {
-        ++big_randoms_index;
-        return big_randoms[big_randoms_index % big_randoms.size()];
-    };
-    const auto small_rando = [&small_randoms_index, &small_randoms]()
-    {
-        ++small_randoms_index;
-        return small_randoms[small_randoms_index % small_randoms.size()];
-    };
+    float x, y, w, h, rot;
+};
 
-    const auto bool_rando = [&bool_randoms_index, &bool_randoms]()
-    {
-        ++bool_randoms_index;
-        return !!bool_randoms[bool_randoms_index % bool_randoms.size()];
-    };
-
-    struct CoolObject
-    {
-        explicit CoolObject(decltype(big_rando) &big_rando, decltype(small_rando) &small_rando)
-            : x(big_rando())
-            , y(big_rando())
-            , w(small_rando())
-            , h(small_rando())
-            , rot(small_rando())
-        {
-        }
-
-        float x, y, w, h, rot;
-    };
-
+template<int objects, int loops> void performance_tests(const std::function<float()> &big_rando,
+                                                        const std::function<float()> &small_rando,
+                                                        const std::function<int()> &int_rando,
+                                                        int &hits)
+{
     win::Pool<CoolObject, 20, false> pool;
     win::SpatialIndex<CoolObject> index;
     index.reset(25, -50, 50, -50, 50);
@@ -742,7 +712,7 @@ template<int objects, int loops> void performance_tests()
     // delete some items to shake things up
     for (auto it = pool.begin(); it != pool.end();)
     {
-        if (bool_rando())
+        if (int_rando() == 0)
         {
             index.remove(win::SpatialIndexLocation(it->x, it->y, it->w, it->h), *it);
             it = pool.remove(it);
@@ -750,9 +720,6 @@ template<int objects, int loops> void performance_tests()
         else
             ++it;
     }
-
-    const auto start = std::chrono::high_resolution_clock::now();
-    int hits = 0;
 
     for (int i = 0; i < loops; ++i)
     {
@@ -762,20 +729,64 @@ template<int objects, int loops> void performance_tests()
             ++hits;
         }
     }
+}
+
+void performance_tests()
+{
+    std::mt19937 mersenne(6969);
+
+    std::vector<float> big_randoms;
+    std::vector<float> small_randoms;
+    std::vector<int> int_randoms;
+
+    unsigned big_randoms_index = 0;
+    unsigned small_randoms_index = 0;
+    unsigned int_randoms_index = 0;
+
+    for (int i = 0; i < 1000; ++i)
+    {
+        big_randoms.push_back(std::uniform_real_distribution<float>(-50, 50)(mersenne));
+        small_randoms.push_back(std::uniform_real_distribution<float>(1.0, 5.0)(mersenne));
+        int_randoms.push_back(std::uniform_int_distribution<int>(0, 10)(mersenne));
+    }
+
+    const std::function<float()> big_rando = [&big_randoms_index, &big_randoms]()
+    {
+        ++big_randoms_index;
+        return big_randoms[big_randoms_index % big_randoms.size()];
+    };
+    const std::function<float()> small_rando = [&small_randoms_index, &small_randoms]()
+    {
+        ++small_randoms_index;
+        return small_randoms[small_randoms_index % small_randoms.size()];
+    };
+
+    const std::function<int()> int_rando = [&int_randoms_index, &int_randoms]()
+    {
+        ++int_randoms_index;
+        return int_randoms[int_randoms_index % int_randoms.size()];
+    };
+
+#ifndef NDEBUG
+    fprintf(stderr, "WARNING: better to run the performance tests in release mode you dingdong\n");
+#endif
+
+    const auto start = std::chrono::high_resolution_clock::now();
+    int hits = 0;
+ for (int i = 0; i < 100; ++i)
+        performance_tests<50, 200>(big_rando, small_rando, int_rando, hits);
+
+    for (int i = 0; i < 100; ++i)
+        performance_tests<50, 10>(big_rando, small_rando, int_rando, hits);
+
+    performance_tests<200, 1000>(big_rando, small_rando, int_rando, hits);
+    performance_tests<2000, 10>(big_rando, small_rando, int_rando, hits);
+    performance_tests<2000, 5000>(big_rando, small_rando, int_rando, hits);
 
     const auto end = std::chrono::high_resolution_clock::now();
     const auto elapsed_micros = std::chrono::duration<float, std::micro>(end - start).count();
 
     fprintf(stderr, "Performance tests: elapsed %.4f (%d hits)\n", elapsed_micros, hits);
-}
-
-void performance_tests()
-{
-#ifndef NDEBUG
-    fprintf(stderr, "WARNING: better to run the performance tests in release mode you dingdong\n");
-#endif
-
-    performance_tests<200, 1000>();
 }
 
 int main()
