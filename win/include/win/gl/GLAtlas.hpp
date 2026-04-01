@@ -31,8 +31,6 @@ public:
 
 private:
     GLTexture gltex;
-
-    std::unique_ptr<AtlasItem[]> items;
 };
 
 }
