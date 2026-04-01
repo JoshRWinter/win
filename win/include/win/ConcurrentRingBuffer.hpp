@@ -17,8 +17,6 @@ template<typename T, int desired_length = -1> class ConcurrentRingBuffer
     static_assert(std::is_trivially_copyable<T>::value, "T must be trivially copyable");
 
 public:
-    constexpr static auto length = desired_length;
-
     ConcurrentRingBuffer(T *user_buffer, int user_length)
         : atomic_read_cursor(0)
         , atomic_write_cursor(0)
@@ -121,6 +119,14 @@ public:
             return (ringbuffer_length - read_cursor) + write_cursor;
         else
             return write_cursor - read_cursor;
+    }
+
+    int user_length() const { return ringbuffer_length; }
+
+    static int length()
+    {
+        static_assert(desired_length > 0, "To use length(), you must use the non-type-template parameter for length");
+        return desired_length;
     }
 
 private:
