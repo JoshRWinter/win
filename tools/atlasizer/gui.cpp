@@ -61,7 +61,7 @@ void gui()
     options.caption = "Atlasizer";
 
     win::Display display(options);
-    win::load_gl_functions();
+    win::gl_load_functions();
 
     const Platform &platform = get_platform();
 

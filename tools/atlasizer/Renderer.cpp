@@ -31,7 +31,7 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
     set_view(viewport_width / 2.0f, viewport_height / 2.0f, 1.0f);
     glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 
-    program = win::GLProgram(win::load_gl_shaders(roll["vertex_shader.vert"], roll["fragment_shader.frag"]));
+    program = win::GLProgram(win::gl_load_shaders(roll["vertex_shader.vert"], roll["fragment_shader.frag"]));
     glUseProgram(program.get());
 
     uniform_mvp = get_uniform(program, "mvp");
