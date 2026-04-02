@@ -6,9 +6,19 @@
 namespace win
 {
 
+template<typename T> struct PoolBox
+{
+    template<typename... Ts> explicit PoolBox(Ts &&...ts)
+        : inner(std::forward<Ts>(ts)...)
+    {
+    }
+
+    T inner;
+};
+
 template<typename T> struct PoolNode : T
 {
-    template<typename... Ts> PoolNode(Ts &&...ts)
+    template<typename... Ts> explicit PoolNode(Ts &&...ts)
         : T(std::forward<Ts>(ts)...)
     {
     }

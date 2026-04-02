@@ -294,7 +294,7 @@ void vacuum_tests()
         for (auto &block : index.map)
         {
             for (auto &item : block.items)
-                if (item.p == NULL)
+                if (item.inner == NULL)
                     ++ghosts;
         }
 
@@ -315,7 +315,7 @@ void vacuum_tests()
         for (auto &block : index.map)
         {
             for (auto &item : block.items)
-                if (item.p == NULL)
+                if (item.inner == NULL)
                     ++ghosts;
         }
 
@@ -335,7 +335,7 @@ void vacuum_tests()
         for (auto &block : index.map)
         {
             for (auto &item : block.items)
-                if (item.p == NULL)
+                if (item.inner == NULL)
                     ++ghosts;
         }
 
@@ -773,7 +773,7 @@ void performance_tests()
 
     const auto start = std::chrono::high_resolution_clock::now();
     int hits = 0;
- for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 100; ++i)
         performance_tests<50, 200>(big_rando, small_rando, int_rando, hits);
 
     for (int i = 0; i < 100; ++i)
