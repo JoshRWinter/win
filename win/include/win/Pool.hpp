@@ -128,7 +128,7 @@ public:
 
     ConstIterator end() const { return ConstIterator(NULL); }
 
-    int size() const { return bag.size(); }
+    int size() const { return count; }
 
     void clear()
     {
@@ -140,6 +140,7 @@ public:
     template<typename... Ts> T &add(Ts &&...ts)
     {
         auto node = &bag.add(std::forward<Ts>(ts)...);
+        ++count;
 
         node->next = NULL;
         node->prev = tail;
@@ -176,12 +177,15 @@ private:
         auto next = node->next;
 
         bag.remove(*node);
+        --count;
 
         return Iterator(next);
     }
 
     PoolNode<T> *head = NULL;
     PoolNode<T> *tail = NULL;
+
+    int count = 0;
 
     // hoo boy clang format does my boy dirty here
     // clang-format off
