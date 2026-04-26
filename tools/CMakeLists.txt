@@ -3,8 +3,27 @@ project(wintools)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(roll roll/roll.cpp roll/roll.hpp roll/recipe/recipe.cpp roll/recipe/recipe.hpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
-add_executable(roll-recipe-tests roll/recipe/tests/test.hpp roll/recipe/tests/parsertests.cpp roll/recipe/recipeparser.cpp roll/recipe/recipeparser.hpp)
+add_executable(roll
+	roll/roll.cpp
+	roll/roll.hpp
+	roll/recipe/recipe.cpp
+	roll/recipe/recipe.hpp
+	roll/recipe/recipeparser.cpp
+	roll/recipe/recipeparser.hpp
+	roll/features/Shadower.hpp
+	roll/features/Shadower.cpp
+	../win/src/Targa.cpp
+	../win/src/FileStream.cpp
+)
+
+add_executable(roll-recipe-tests
+	roll/recipe/tests/test.hpp
+	roll/recipe/tests/parsertests.cpp
+	roll/recipe/recipeparser.cpp
+	roll/recipe/recipeparser.hpp
+)
+
+target_include_directories(roll PUBLIC ../win/include)
 
 set(atlasizer_sources
 	atlasizer/main.cpp

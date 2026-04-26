@@ -34,14 +34,21 @@ const unsigned char *Targa::data() const
 
 void Targa::load_image_bytes(Stream &raw)
 {
-    // compressed?
+    unsigned char id_length;
+    raw.read(&id_length, sizeof(id_length));
+    if (id_length != 0)
+        win::bug("Targa: Can't handle non-zero id length field");
+
+    unsigned char color_map_type;
+    raw.read(&color_map_type, sizeof(color_map_type));
+    if (color_map_type != 0)
+        win::bug("Targa: Color maps are not supported");
+
     unsigned char image_type;
-    raw.seek(2);
     raw.read(&image_type, sizeof(image_type));
 
-    const bool compressed = (image_type >> 3) & 1;
-    if (compressed)
-        win::bug("Compressed TARGAs are not supported");
+    if (image_type != 2 && image_type != 3)
+        win::bug("Targa: Only uncompressed true-color or grayscale images are supported");
 
     // width
     raw.seek(12);
@@ -51,11 +58,10 @@ void Targa::load_image_bytes(Stream &raw)
     raw.read(&h, sizeof(h));
 
     // bpp
-    raw.seek(16);
     raw.read(&bits, sizeof(bits));
 
     if (bits != 8 && bits != 24 && bits != 32)
-        win::bug("TARGAs must be 8, 24, or 32 bit color depth");
+        win::bug("Targa: must be 8, 24, or 32 bit color depth");
 
     // components per pixel
     const int cpp = bits / 8;
@@ -64,16 +70,28 @@ void Targa::load_image_bytes(Stream &raw)
     unsigned char imdesc;
     raw.read(&imdesc, sizeof(imdesc));
 
-    const bool bottom_origin = !((imdesc >> 5) & 1);
+    const int alpha_depth = imdesc & 0b00001111;
+    if (alpha_depth != 0 && alpha_depth != 8)
+        win::bug("Targa: Only 8 bit alpha components are supported");
+
+    const bool right_to_left = ((imdesc >> 4) & 1) == 1;
+    if (right_to_left)
+        win::bug("Targa: Right to left ordering is not supported");
+
+    const bool top_origin = ((imdesc >> 5) & 1) == 1;
+
+    const unsigned char interleave_mode = imdesc >> 6;
+    if (interleave_mode != 0)
+        win::bug("Targa: Interleaving is not supported");
 
     if (raw.size() - 18 < w * h * cpp)
-        win::bug("Corrupt targa: tried to read " + std::to_string(w * h * cpp) + " bytes from " + std::to_string(raw.size() - 18) + " bytes");
+        win::bug("Targa: Corrupt - tried to read " + std::to_string(w * h * cpp) + " bytes from " + std::to_string(raw.size() - 18) + " bytes");
 
     raw.seek(18);
     bytes.reset(new unsigned char[w * (h + 1) * cpp]); // "h + 1": account for a bit extra for temp space if we need to flip the image
     raw.read(bytes.get(), w * h * cpp);
 
-    if (!bottom_origin)
+    if (top_origin)
     {
         unsigned char *temp = bytes.get() + (w * h * cpp); // use the extra space at the end
 

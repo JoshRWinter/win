@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <iostream>
 #include <random>
 
+#include "../features/Shadower.hpp"
 #include "recipe.hpp"
 #include "recipeparser.hpp"
 
@@ -12,11 +14,11 @@
 #endif
 
 Recipe::Recipe(const std::filesystem::path &recipe_file, const std::filesystem::path &roll_file)
-    : recreate(false)
-    , recipe_file(recipe_file)
+    : recipe_file(recipe_file)
     , roll_file(roll_file)
     , recipe_file_lastwrite(std::filesystem::exists(recipe_file) ? std::filesystem::last_write_time(recipe_file) : std::filesystem::file_time_type::min())
     , roll_file_lastwrite(std::filesystem::exists(roll_file) ? std::filesystem::last_write_time(roll_file) : std::filesystem::file_time_type::min())
+    , recreate(false)
 {
     if (!std::filesystem::exists(roll_file))
     {
@@ -37,6 +39,8 @@ Recipe::Recipe(const std::filesystem::path &recipe_file, const std::filesystem::
                 process_svg2tga_section(input.section);
             else if (input.section.name == "atlas")
                 process_atlas_section(input.section);
+            else if (input.section.name == "shadowdef")
+                process_shadowdef_section(input.section);
             else if (input.section.name.empty())
                 throw std::runtime_error(std::to_string(input.section.line_number) + ": Missing section name");
             else
@@ -96,7 +100,7 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
             throw std::runtime_error(std::to_string(section.line_number) + ": Unrecognized svg2tga section options");
     }
 
-    std::string converted_png = "";
+    std::string converted_png;
     for (const RecipeInputLine &line : section.lines)
     {
         if (line.tokens.size() == 0)
@@ -105,6 +109,7 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
         if (line.tokens.size() < 3)
             throw std::runtime_error(std::to_string(line.line_number) + ": svg2tga: need at least 3 arguments - filename width height");
 
+        const ShadowDef *shadowdef = NULL;
         bool exclude = section_exclude;
         int token_index = 0;
 
@@ -117,13 +122,41 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
         const std::string height_string = line.tokens.at(token_index);
         ++token_index;
 
-        if (line.tokens.size() > 3)
+        bool exclude_specified = false;
+        for (; token_index < line.tokens.size(); ++token_index)
         {
-            if (line.tokens.at(token_index) != "exclude")
-                throw std::runtime_error(std::to_string(line.line_number) + ": svg2tga: unrecognized parameter \"" + line.tokens.at(token_index) + "\"");
+            if (line.tokens.at(token_index) == "exclude")
+            {
+                if (exclude_specified)
+                    throw std::runtime_error(std::to_string(line.line_number) + ": exclude cannot be specified more than once");
 
-            ++token_index;
-            exclude = true;
+                exclude_specified = true;
+                exclude = true;
+            }
+            else if (line.tokens.at(token_index).find("shadowdef=") == 0)
+            {
+                if (shadowdef != NULL)
+                    throw std::runtime_error(std::to_string(line.line_number) + ": shadowdef= cannot be specified more than once");
+
+                const auto defname = line.tokens.at(token_index).substr(10);
+
+                if (defname.empty())
+                    throw std::runtime_error(std::to_string(line.line_number) + ": shadowdef= must reference a name");
+
+                const auto found = std::find_if(shadowdefs.begin(),
+                                                shadowdefs.end(),
+                                                [&defname](const ShadowDef &def)
+                                                {
+                                                    return def.name == defname;
+                                                });
+
+                if (found == shadowdefs.end())
+                    throw std::runtime_error(std::to_string(line.line_number) + ": definition for " + defname + " was not found");
+
+                shadowdef = &(*found);
+            }
+            else
+                throw std::runtime_error(std::to_string(line.line_number) + ": svg2tga: unrecognized parameter \"" + line.tokens.at(token_index) + "\"");
         }
 
         int test;
@@ -153,6 +186,18 @@ void Recipe::process_svg2tga_section(const RecipeInputSection &section)
         {
             run_cmd("rsvg-convert --width " + width_string + " --height " + height_string + " " + real_file.string() + " > " + converted_png);
             run_cmd("convert -auto-orient " + converted_png + " " + converted_tga.string());
+
+            try
+            {
+                if (shadowdef != NULL)
+                    shadow(converted_tga, shadowdef->weights);
+            }
+            catch (const std::runtime_error &)
+            {
+                // have to delete the file if the shadower failed, so that on the next run it will try again.
+                std::filesystem::remove(converted_tga);
+                throw;
+            }
         }
 
         std::filesystem::remove(converted_png);
@@ -211,6 +256,34 @@ void Recipe::process_atlas_section(const RecipeInputSection &section)
         }
 
         items.emplace_back(real_atlas_file.string(), recorded_atlas_file.string(), true);
+    }
+}
+
+void Recipe::process_shadowdef_section(const RecipeInputSection &section)
+{
+    if (!section.options.empty())
+        throw std::runtime_error(std::to_string(section.line_number) + ": Unrecognized shadowdef section options.");
+
+    for (const auto &line : section.lines)
+    {
+        if (line.tokens.empty())
+            continue;
+
+        if (line.tokens.size() < 1)
+            throw std::runtime_error(std::to_string(line.line_number) + ": Need definition name");
+
+        if (line.tokens.at(0).find(' ') != -1)
+            throw std::runtime_error(std::to_string(line.line_number) + ": " + line.tokens.at(0) + " cannot contain a space");
+
+        auto &def = shadowdefs.emplace_back();
+        def.name = line.tokens.at(0);
+
+        for (int i = 1; i < line.tokens.size(); ++i)
+        {
+            auto &f = def.weights.emplace_back();
+            if (sscanf(line.tokens[i].c_str(), "%f", &f) != 1)
+                throw std::runtime_error(std::to_string(line.line_number) + ": " + line.tokens[i] + " is not a float");
+        }
     }
 }
 
