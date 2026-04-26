@@ -20,7 +20,6 @@ public:
     int height() const;
     int bpp() const;
     const unsigned char *data() const;
-    ;
 
 private:
     void load_image_bytes(Stream &);

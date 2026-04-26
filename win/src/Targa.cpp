@@ -70,21 +70,25 @@ void Targa::load_image_bytes(Stream &raw)
         win::bug("Corrupt targa: tried to read " + std::to_string(w * h * cpp) + " bytes from " + std::to_string(raw.size() - 18) + " bytes");
 
     raw.seek(18);
-    bytes.reset(new unsigned char[w * h * cpp]);
+    bytes.reset(new unsigned char[w * (h + 1) * cpp]); // "h + 1": account for a bit extra for temp space if we need to flip the image
     raw.read(bytes.get(), w * h * cpp);
 
     if (!bottom_origin)
     {
-        auto newbytes = std::make_unique<unsigned char[]>(w * h * cpp);
+        unsigned char *temp = bytes.get() + (w * h * cpp); // use the extra space at the end
 
-        int sourceindex = (w * h * cpp) - (w * cpp);
-        for (int i = 0; i < w * h * cpp; i += w * cpp)
+        for (int i = 0; i < h / 2; ++i)
         {
-            memcpy(newbytes.get() + i, bytes.get() + sourceindex, w * cpp);
-            sourceindex -= w * cpp;
-        }
+            const auto line1 = i;
+            const auto line2 = (h - 1) - i;
 
-        bytes = std::move(newbytes);
+            const int index1 = line1 * w * cpp;
+            const int index2 = line2 * w * cpp;
+
+            memcpy(temp, bytes.get() + index2, w * cpp);
+            memcpy(bytes.get() + index2, bytes.get() + index1, w * cpp);
+            memcpy(bytes.get() + index1, temp, w * cpp);
+        }
     }
 }
 
