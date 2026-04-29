@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
 #include <unordered_set>
 #include <vector>
 
@@ -97,6 +98,8 @@ template<typename T> class SpatialIndex;
 
 template<typename T> class SpatialIndexIterator
 {
+    friend class SpatialIndex<T>;
+
 public:
     SpatialIndexIterator(const SpatialIndex<T> &map,
                          std::unordered_set<const T *> *deduper,
