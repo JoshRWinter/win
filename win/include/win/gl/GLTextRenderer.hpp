@@ -22,6 +22,8 @@ class GLTextRenderer : public TextRenderer
     constexpr static int object_data_length = 500;
 
 public:
+    GLTextRenderer(GLenum texture_unit, bool texture_unit_owned, GLuint uniform_block_binding, bool uniform_block_binding_owned);
+
     GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions,
                    const Area<float> &screen_area,
                    GLenum texture_unit,

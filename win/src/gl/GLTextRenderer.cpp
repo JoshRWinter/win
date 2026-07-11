@@ -59,6 +59,16 @@ static const char
 namespace win
 {
 
+GLTextRenderer::GLTextRenderer(GLenum texture_unit, bool texture_unit_owned, GLuint uniform_block_binding, bool uniform_block_binding_owned)
+    : GLTextRenderer(win::Dimensions<int>(0, 0),
+                     win::Area<float>(0.0f, 0.0f, 0.0f, 0.0f),
+                     texture_unit,
+                     texture_unit_owned,
+                     uniform_block_binding,
+                     uniform_block_binding_owned)
+{
+}
+
 GLTextRenderer::GLTextRenderer(const Dimensions<int> &screen_pixel_dimensions,
                                const Area<float> &screen_area,
                                GLenum texture_unit,
