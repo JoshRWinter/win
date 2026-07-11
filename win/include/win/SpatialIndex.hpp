@@ -271,6 +271,41 @@ template<typename T> class SpatialIndex
 public:
     SpatialIndex() = default;
 
+    template<typename Items, typename Converter> void reset(float block_size, Items &items, const Converter &converter)
+    {
+        float left;
+        float right;
+        float bottom;
+        float top;
+
+        for (const auto &item : items)
+        {
+            const auto loc = converter(item);
+
+            left = loc.x;
+            right = loc.x + loc.w;
+            bottom = loc.y;
+            top = loc.y + loc.h;
+
+            break;
+        }
+
+        for (const auto &item : items)
+        {
+            const auto loc = converter(item);
+
+            left = std::min(left, loc.x);
+            right = std::max(right, loc.x + loc.w);
+            bottom = std::min(bottom, loc.y);
+            top = std::max(top, loc.y + loc.h);
+        }
+
+        reset(block_size, left, right, bottom, top);
+
+        for (auto &item : items)
+            add(converter(item), item);
+    }
+
     void reset(float block_size, float map_left, float map_right, float map_bottom, float map_top)
     {
         if (open_queries != 0)
