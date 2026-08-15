@@ -3,6 +3,7 @@
 #ifdef WIN_USE_OPENGL
 
 #define WIN_GL_EXTENSION_STORAGE
+#include <EGL/egl.h>
 #include <win/gl/GL.hpp>
 
 using namespace win::gl;
@@ -13,7 +14,9 @@ namespace win
 #if defined WINPLAT_LINUX
 static void *get_proc(const char *name)
 {
-    void *address = (void *)glXGetProcAddress((const unsigned char *)name);
+    void *address = (void *)eglGetProcAddress(name);
+    if (address == NULL)
+        win::bug("EGL: Couldn't load function " + std::string(name));
 
     return address;
 }

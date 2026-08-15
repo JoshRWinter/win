@@ -1,4 +1,5 @@
 #pragma once
+/*
 
 #include <win/Win.hpp>
 
@@ -66,3 +67,5 @@ private:
 }
 
 #endif
+
+*/

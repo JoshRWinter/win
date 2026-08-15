@@ -1,7 +1,7 @@
 #include <win/MonitorEnumerator.hpp>
 
 #if defined WINPLAT_LINUX
-#include <win/X11MonitorEnumerator.hpp>
+#include <win/WaylandMonitorEnumerator.hpp>
 #elif defined WINPLAT_WINDOWS
 #include <win/Win32MonitorEnumerator.hpp>
 #endif
@@ -9,10 +9,25 @@
 namespace win
 {
 
+int MonitorEnumeratorBase::count()
+{
+    return monitors.size();
+}
+
+std::vector<Monitor>::const_iterator MonitorEnumeratorBase::begin()
+{
+    return monitors.begin();
+}
+
+std::vector<Monitor>::const_iterator MonitorEnumeratorBase::end()
+{
+    return monitors.end();
+}
+
 MonitorEnumerator::MonitorEnumerator()
 {
 #if defined WINPLAT_LINUX
-    inner.reset(new X11MonitorEnumerator());
+    inner.reset(new WaylandMonitorEnumerator());
 #elif defined WINPLAT_WINDOWS
     inner.reset(new Win32MonitorEnumerator());
 #endif
@@ -26,11 +41,6 @@ void MonitorEnumerator::refresh()
 int MonitorEnumerator::count() const
 {
     return inner->count();
-}
-
-const Monitor &MonitorEnumerator::operator[](int index) const
-{
-    return inner->operator[](index);
 }
 
 std::vector<Monitor>::const_iterator MonitorEnumerator::begin() const

@@ -9,7 +9,6 @@
 #if defined WINPLAT_LINUX
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include <GL/glx.h>
 #elif defined WINPLAT_WINDOWS
 #include <GL/GL.h>
 #include <GL/glext.h>

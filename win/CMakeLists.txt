@@ -84,9 +84,6 @@ add_library(win STATIC
 	include/win/FileStream.hpp
 	src/FileStream.cpp
 
-	include/win/X11MonitorEnumerator.hpp
-	src/X11MonitorEnumerator.cpp
-
 	include/win/Win32MonitorEnumerator.hpp
 	src/Win32MonitorEnumerator.cpp
 
@@ -96,8 +93,15 @@ add_library(win STATIC
 	include/win/DisplayBase.hpp
 	src/DisplayBase.cpp
 
-	include/win/X11Display.hpp
-	src/X11Display.cpp
+	include/win/WaylandDisplay.hpp
+	src/WaylandDisplay.cpp
+	src/WaylandXdg.c
+	src/WaylandRelativePointer.c
+	src/WaylandPointerConstraints.c
+	src/WaylandTearingControl.c
+
+	include/win/WaylandMonitorEnumerator.hpp
+	src/WaylandMonitorEnumerator.cpp
 
 	include/win/Win32Display.hpp
 	src/Win32Display.cpp
@@ -188,7 +192,10 @@ else ()
 
 	find_package(Freetype REQUIRED)
 	find_package(OpenGL REQUIRED)
-	find_package(X11 REQUIRED)
+	#find_package(X11 REQUIRED)
+	find_package(XKBCommon REQUIRED)
+	find_package(EGL REQUIRED)
+	find_package(Wayland REQUIRED)
 	find_package(Threads REQUIRED)
 	find_package(ZLIB REQUIRED)
 	find_package(OggVorbis REQUIRED)
@@ -208,8 +215,11 @@ else ()
 	target_link_libraries(win
 		PRIVATE
 		${FREETYPE_LIBRARIES}
-		${X11_LIBRARIES}
+		#${X11_LIBRARIES}
+		${Wayland_LIBRARIES}
+		${XKBCommon_LIBRARIES}
 		${OPENGL_LIBRARIES}
+		${EGL_LIBRARIES}
 		${CMAKE_THREAD_LIBS_INIT}
 		${ZLIB_LIBRARIES}
 		${OGGVORBIS_LIBRARIES}

@@ -119,7 +119,7 @@ public:
         get_interval_bounds_nanos(refreshrate, &current_vblank, NULL);
 
         if (current_vblank - last_vblank > ((1.0 / refreshrate) * 1'000'000'000) * 1.1)
-            fprintf(stderr, "MISSED A VBLANK\n");
+            ; // fprintf(stderr, "MISSED A VBLANK\n");
 
         last_vblank = current_vblank;
 

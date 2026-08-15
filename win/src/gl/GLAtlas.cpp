@@ -1,5 +1,4 @@
 #include <cmath>
-#include <cstdint>
 
 #include "win/gl/GLAtlas.hpp"
 

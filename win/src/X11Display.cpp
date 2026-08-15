@@ -1,3 +1,4 @@
+/*
 #include <win/Win.hpp>
 
 #ifdef WINPLAT_LINUX
@@ -447,6 +448,8 @@ void X11Display::process()
         resize_handler(window_prop_cache.w, window_prop_cache.h);
     }
 
+    bool reset_pointer = 0;
+
     while (XPending(xdisplay))
     {
         XEvent xevent;
@@ -504,7 +507,18 @@ void X11Display::process()
                 break;
             }
             case MotionNotify:
-                mouse_handler(xevent.xmotion.x, xevent.xmotion.y);
+                if (cursor_locked)
+                {
+                    const int centerx = window_prop_cache.w / 2;
+                    const int centery = window_prop_cache.h / 2;
+                    if (xevent.xmotion.x != centerx || xevent.xmotion.y != centery)
+                    {
+                        mouse_handler(xevent.xmotion.x - centerx, xevent.xmotion.y - centery);
+                        reset_pointer = true;
+                    }
+                }
+                else
+                    mouse_handler(xevent.xmotion.x, xevent.xmotion.y);
                 break;
             case ButtonPress:
             case ButtonRelease:
@@ -523,6 +537,8 @@ void X11Display::process()
                 break;
         }
     }
+    if (reset_pointer)
+        XWarpPointer(xdisplay, None, window, 0, 0, 0, 0, window_prop_cache.w / 2, window_prop_cache.h / 2);
 }
 
 void X11Display::swap()
@@ -589,6 +605,12 @@ void X11Display::cursor(bool show)
 
         XDefineCursor(xdisplay, window, cursor);
     }
+}
+
+void X11Display::lock_cursor(bool lock)
+{
+    cursor_locked = lock;
+    // XGrabPointer(xdisplay, window, 1, 0, GrabModeSync, GrabModeSync, window, None, CurrentTime);
 }
 
 void X11Display::vsync(bool on)
@@ -672,3 +694,5 @@ bool X11Display::contains_point(int monitorx, int monitory, int monitorw, int mo
 }
 
 #endif
+
+*/

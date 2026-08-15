@@ -10,6 +10,7 @@ DisplayBase::DisplayBase()
     button_handler = default_button_handler;
     character_handler = default_character_handler;
     mouse_handler = default_mouse_handler;
+    relative_mouse_handler = default_relative_mouse_handler;
 }
 
 void DisplayBase::register_window_handler(WindowHandler handler)
@@ -35,6 +36,11 @@ void DisplayBase::register_character_handler(CharacterHandler handler)
 void DisplayBase::register_mouse_handler(MouseHandler handler)
 {
     mouse_handler = std::move(handler);
+}
+
+void DisplayBase::register_relative_mouse_handler(RelativeMouseHandler handler)
+{
+    relative_mouse_handler = std::move(handler);
 }
 
 }

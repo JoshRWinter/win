@@ -7,7 +7,7 @@
 #if defined WINPLAT_WINDOWS
 #include <win/Win32Display.hpp>
 #elif defined WINPLAT_LINUX
-#include <win/X11Display.hpp>
+#include <win/WaylandDisplay.hpp>
 #endif
 
 namespace win
@@ -23,7 +23,7 @@ public:
 #if defined WINPLAT_WINDOWS
         inner.reset(new Win32Display(options));
 #elif defined WINPLAT_LINUX
-        inner.reset(new X11Display(options));
+        inner.reset(new WaylandDisplay(options));
 #endif
     }
 
@@ -39,7 +39,9 @@ public:
 
     float refresh_rate() { return inner->refresh_rate(); }
 
-    void cursor(bool show) { inner->cursor(show); }
+    void show_pointer(bool show) { inner->show_pointer(show); }
+
+    void lock_pointer(bool lock) { inner->lock_pointer(lock); }
 
     void set_fullscreen(bool fullscreen) { inner->set_fullscreen(fullscreen); }
 
@@ -56,6 +58,8 @@ public:
     void register_character_handler(DisplayBase::CharacterHandler handler) { inner->register_character_handler(std::move(handler)); }
 
     void register_mouse_handler(DisplayBase::MouseHandler handler) { inner->register_mouse_handler(std::move(handler)); }
+
+    void register_relative_mouse_handler(DisplayBase::RelativeMouseHandler handler) { inner->register_relative_mouse_handler(std::move(handler)); }
 
 private:
     std::unique_ptr<DisplayBase> inner;

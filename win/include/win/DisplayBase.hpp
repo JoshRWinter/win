@@ -15,7 +15,7 @@ namespace win
 #if defined WINPLAT_WINDOWS
 typedef HWND NativeWindowHandle;
 #elif defined WINPLAT_LINUX
-typedef Window *NativeWindowHandle;
+typedef void *NativeWindowHandle;
 #endif
 
 struct DisplayOptions
@@ -47,12 +47,15 @@ class DisplayBase
 
     static void default_mouse_handler(int x, int y) {}
 
+    static void default_relative_mouse_handler(int x, int y) {}
+
 public:
     typedef std::function<void(WindowEvent event)> WindowHandler;
     typedef std::function<void(int w, int h)> ResizeHandler;
     typedef std::function<void(Button button, bool press)> ButtonHandler;
     typedef std::function<void(int c)> CharacterHandler;
     typedef std::function<void(int x, int y)> MouseHandler;
+    typedef std::function<void(int x, int y)> RelativeMouseHandler;
 
     DisplayBase();
     virtual ~DisplayBase() = default;
@@ -63,9 +66,10 @@ public:
     virtual int height() = 0;
     virtual void resize(int w, int h) = 0;
     virtual float refresh_rate() = 0;
-    virtual void cursor(bool) = 0;
+    virtual void show_pointer(bool show) = 0;
+    virtual void lock_pointer(bool lock) = 0;
     virtual void set_fullscreen(bool fullscreen) = 0;
-    virtual void vsync(bool) = 0;
+    virtual void vsync(bool on) = 0;
     virtual NativeWindowHandle native_handle() = 0;
 
     void register_window_handler(WindowHandler);
@@ -73,12 +77,14 @@ public:
     void register_button_handler(ButtonHandler);
     void register_character_handler(CharacterHandler);
     void register_mouse_handler(MouseHandler);
+    void register_relative_mouse_handler(RelativeMouseHandler);
 
 protected:
     WindowHandler window_handler;
     ButtonHandler button_handler;
     CharacterHandler character_handler;
     MouseHandler mouse_handler;
+    RelativeMouseHandler relative_mouse_handler;
     ResizeHandler resize_handler;
 };
 

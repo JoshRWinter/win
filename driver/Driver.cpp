@@ -48,7 +48,6 @@ int main()
     display_options.debug = true;
 
     win::Display display(display_options);
-    display.cursor(true);
 
     win::gl_load_functions();
 

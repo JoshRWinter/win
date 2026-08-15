@@ -100,8 +100,8 @@ const char *key_name(const Button key)
             return "BackTick";
         case Button::dash:
             return "Dash";
-        case Button::equals:
-            return "Equals";
+        case Button::equal:
+            return "Equal";
         case Button::lbracket:
             return "LeftBracket";
         case Button::rbracket:
@@ -201,12 +201,12 @@ const char *key_name(const Button key)
         case Button::tab:
             return "Tab";
 
-        case Button::num_lock:
+        case Button::numlock:
             return "NumLock";
         case Button::num_slash:
             return "NumSlash";
-        case Button::num_multiply:
-            return "NumMultiply";
+        case Button::num_star:
+            return "NumStar";
         case Button::num_minus:
             return "NumMinus";
         case Button::num_plus:

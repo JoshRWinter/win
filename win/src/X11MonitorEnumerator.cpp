@@ -2,6 +2,7 @@
 
 #ifdef WINPLAT_LINUX
 
+/*
 #include <X11/extensions/Xrandr.h>
 #include <X11/Xlib.h>
 
@@ -52,26 +53,7 @@ void X11MonitorEnumerator::refresh()
         monitors.at(0).primary = true;
 }
 
-int X11MonitorEnumerator::count() const
-{
-    return monitors.size();
 }
-
-const Monitor &X11MonitorEnumerator::operator[](int index) const
-{
-    return monitors.at(index);
-}
-
-std::vector<Monitor>::const_iterator X11MonitorEnumerator::begin() const
-{
-    return monitors.begin();
-}
-
-std::vector<Monitor>::const_iterator X11MonitorEnumerator::end() const
-{
-    return monitors.end();
-}
-
-}
+*/
 
 #endif

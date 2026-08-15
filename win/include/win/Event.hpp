@@ -30,7 +30,7 @@ enum class Button
 	d0, d1, d2, d3, d4, d5, d6, d7, d8, d9,
 
 	// symbols
-	backtick, dash, equals, lbracket,
+	backtick, dash, equal, lbracket,
 	rbracket, semicolon, apostrophe,
 	comma, period, slash, backslash,
 
@@ -45,7 +45,7 @@ enum class Button
 	left, right, down, capslock, tab,
 
 	// numpad
-	num_lock, num_slash, num_multiply, num_minus,
+	numlock, num_slash, num_star, num_minus,
 	num_plus, num_del,
 	num0, num1, num2, num3, num4, num5,
 	num6, num7, num8, num9,

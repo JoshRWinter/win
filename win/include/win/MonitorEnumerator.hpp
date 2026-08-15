@@ -37,16 +37,16 @@ class MonitorEnumeratorBase
 
 protected:
     MonitorEnumeratorBase() = default;
+    std::vector<Monitor> monitors;
 
 public:
     virtual ~MonitorEnumeratorBase() = default;
 
     virtual void refresh() = 0;
 
-    virtual int count() const = 0;
-    virtual const Monitor &operator[](int index) const = 0;
-    virtual std::vector<Monitor>::const_iterator begin() const = 0;
-    virtual std::vector<Monitor>::const_iterator end() const = 0;
+    int count();
+    std::vector<Monitor>::const_iterator begin();
+    std::vector<Monitor>::const_iterator end();
 };
 
 class MonitorEnumerator
@@ -59,7 +59,6 @@ public:
     void refresh();
 
     int count() const;
-    const Monitor &operator[](int index) const;
     std::vector<Monitor>::const_iterator begin() const;
     std::vector<Monitor>::const_iterator end() const;
 
