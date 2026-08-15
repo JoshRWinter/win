@@ -121,6 +121,8 @@ win::WaylandDisplay::~WaylandDisplay()
     if (wl.xkbstate != NULL)
         xkb_state_unref(wl.xkbstate);
 
+    eglMakeCurrent(egl.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
     eglDestroySurface(egl.display, egl.surface);
     eglDestroyContext(egl.display, egl.context);
     eglTerminate(egl.display);
