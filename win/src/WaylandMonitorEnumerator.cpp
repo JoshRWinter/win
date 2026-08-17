@@ -1,3 +1,7 @@
+#include <win/Win.hpp>
+
+#ifdef WINPLAT_LINUX
+
 #include <cstring>
 #include <map>
 #include <utility>
@@ -101,3 +105,5 @@ void win::WaylandMonitorEnumerator::init()
     wl_registry_destroy(registry);
     wl_display_disconnect(display);
 }
+
+#endif

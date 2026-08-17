@@ -88,6 +88,7 @@ private:
     struct
     {
         int width = 0, height = 0;
+    	int relx = 0, rely = 0;
         float refresh = 60.0f;
         bool resized = false;
         std::chrono::time_point<std::chrono::steady_clock> resize_time;

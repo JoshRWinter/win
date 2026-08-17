@@ -5,6 +5,7 @@
 #ifdef WINPLAT_WINDOWS
 
 #include <chrono>
+#include <vector>
 
 #include <gl/GL.h>
 #include <GL/wglext.h>
@@ -32,7 +33,8 @@ public:
     int height() override;
     void resize(int w, int h) override;
     float refresh_rate() override;
-    void cursor(bool show) override;
+    void show_pointer(bool show) override;
+    void lock_pointer(bool lock) override;
     void set_fullscreen(bool fullscreen) override;
     void vsync(bool on) override;
     NativeWindowHandle native_handle() override;
@@ -42,6 +44,8 @@ private:
     void win_init_gl(HWND);
     void win_term_gl();
     void update_refresh_rate();
+    void process_raw_mouse();
+    void lock_pointer();
 
     HWND window;
     HDC hdc;
@@ -50,6 +54,9 @@ private:
     Win32MonitorEnumerator monitors;
     float rrate;
     const win::DisplayOptions options;
+    bool pointer_locked = false;
+
+    std::vector<RAWINPUT> raw_input;
 
     struct
     {
@@ -61,8 +68,6 @@ private:
         bool resize = false;
         std::chrono::time_point<std::chrono::steady_clock> time;
     } resize_state;
-
-    ;
 };
 
 }

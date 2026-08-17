@@ -175,26 +175,6 @@ void Win32MonitorEnumerator::refresh()
     factory->Release();
 }
 
-int Win32MonitorEnumerator::count() const
-{
-    return monitors.size();
-}
-
-const Monitor &Win32MonitorEnumerator::operator[](int index) const
-{
-    return monitors.at(index);
-}
-
-std::vector<Monitor>::const_iterator Win32MonitorEnumerator::begin() const
-{
-    return monitors.begin();
-}
-
-std::vector<Monitor>::const_iterator Win32MonitorEnumerator::end() const
-{
-    return monitors.end();
-}
-
 }
 
 #endif

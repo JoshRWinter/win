@@ -1,3 +1,7 @@
+#include <win/Win.hpp>
+
+#ifdef WINPLAT_LINUX
+
 #include <cstring>
 
 #include <linux/input.h>
@@ -176,16 +180,17 @@ win::WaylandDisplay::~WaylandDisplay()
 
 void win::WaylandDisplay::process()
 {
-    int times = 0;
-    while (wl_display_dispatch_pending(wl.display) != 0)
-        ++times;
+    wl_display_dispatch_pending(wl.display);
 
-    if (times > 1)
-        fprintf(stderr, "%d\n", times);
+	if (props.relx != 0 || props.rely != 0)
+		relative_mouse_handler(props.relx, props.rely);
+
+	props.relx = 0;
+	props.rely = 0;
+
     if (props.resized && std::chrono::duration<float>(std::chrono::steady_clock::now() - props.resize_time).count() > 0.8f)
     {
         props.resized = false;
-        fprintf(stderr, "RESIZE BABYYYYY HELL YEAH %dx%d\n", props.width, props.height);
         resize_handler(props.width, props.height);
     }
 }
@@ -401,7 +406,9 @@ void win::WaylandDisplay::zwp_relative_pointer_listener_relative_motion(void *da
                                                                         wl_fixed_t dy_unaccel)
 {
     auto &wd = *(WaylandDisplay *)data;
-    wd.relative_mouse_handler(wl_fixed_to_int(dx_unaccel), wl_fixed_to_int(dy_unaccel));
+
+	wd.props.relx += wl_fixed_to_int(dx_unaccel);
+	wd.props.rely += wl_fixed_to_int(dy_unaccel);
 }
 
 void win::WaylandDisplay::wl_keyboard_listener_keymap(void *data, wl_keyboard *keyboard, uint32_t format, int32_t fd, uint32_t size)
@@ -648,3 +655,5 @@ void win::WaylandDisplay::init_button_map()
     button_map.at(KEY_N) = win::Button::n;
     button_map.at(KEY_M) = win::Button::m;
 }
+
+#endif

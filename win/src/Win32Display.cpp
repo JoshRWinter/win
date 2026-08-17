@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include <dxgi.h>
+#include <windowsx.h>
 
 #include <win/Win32Display.hpp>
 
@@ -63,7 +64,7 @@ static std::unordered_map<unsigned, win::Button> get_physical_keys()
 
     map.insert({ MapVirtualKeyEx(VK_OEM_3, MAPVK_VK_TO_VSC, qwerty), win::Button::backtick });
     map.insert({ MapVirtualKeyEx(VK_OEM_MINUS, MAPVK_VK_TO_VSC, qwerty), win::Button::dash });
-    map.insert({ MapVirtualKeyEx(VK_OEM_PLUS, MAPVK_VK_TO_VSC, qwerty), win::Button::equals });
+    map.insert({ MapVirtualKeyEx(VK_OEM_PLUS, MAPVK_VK_TO_VSC, qwerty), win::Button::equal });
     map.insert({ MapVirtualKeyEx(VK_OEM_4, MAPVK_VK_TO_VSC, qwerty), win::Button::lbracket });
     map.insert({ MapVirtualKeyEx(VK_OEM_6, MAPVK_VK_TO_VSC, qwerty), win::Button::rbracket });
     map.insert({ MapVirtualKeyEx(VK_OEM_1, MAPVK_VK_TO_VSC, qwerty), win::Button::semicolon });
@@ -115,9 +116,9 @@ static std::unordered_map<unsigned, win::Button> get_physical_keys()
     map.insert({ MapVirtualKeyEx(VK_CAPITAL, MAPVK_VK_TO_VSC, qwerty), win::Button::capslock });
     map.insert({ MapVirtualKeyEx(VK_TAB, MAPVK_VK_TO_VSC, qwerty), win::Button::tab });
 
-    map.insert({ MapVirtualKeyEx(VK_NUMLOCK, MAPVK_VK_TO_VSC, qwerty), win::Button::num_lock });
+    map.insert({ MapVirtualKeyEx(VK_NUMLOCK, MAPVK_VK_TO_VSC, qwerty), win::Button::numlock });
     map.insert({ MapVirtualKeyEx(VK_DIVIDE, MAPVK_VK_TO_VSC, qwerty), win::Button::num_slash });
-    map.insert({ MapVirtualKeyEx(VK_MULTIPLY, MAPVK_VK_TO_VSC, qwerty), win::Button::num_multiply });
+    map.insert({ MapVirtualKeyEx(VK_MULTIPLY, MAPVK_VK_TO_VSC, qwerty), win::Button::num_star });
     map.insert({ MapVirtualKeyEx(VK_SUBTRACT, MAPVK_VK_TO_VSC, qwerty), win::Button::num_minus });
     map.insert({ MapVirtualKeyEx(VK_ADD, MAPVK_VK_TO_VSC, qwerty), win::Button::num_plus });
     map.insert({ MapVirtualKeyEx(VK_NUMPAD0, MAPVK_VK_TO_VSC, qwerty), win::Button::num0 });
@@ -248,7 +249,7 @@ LRESULT CALLBACK Win32Display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
         //		return DefWindowProc(hwnd, msg, wp, lp);
         //	break;
         case WM_MOUSEMOVE:
-            display.mouse_handler(LOWORD(lp), HIWORD(lp));
+            display.mouse_handler(GET_X_LPARAM(lp), GET_Y_LPARAM(lp));
             return 0;
         case WM_LBUTTONDOWN:
             display.button_handler(Button::mouse_left, true);
@@ -276,6 +277,8 @@ LRESULT CALLBACK Win32Display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
         case WM_WINDOWPOSCHANGED:
             return DefWindowProc(hwnd, msg, wp, lp);
         case WM_MOVE:
+            if (display.pointer_locked)
+                display.lock_pointer();
             display.update_refresh_rate();
             return 0;
         case WM_SIZE:
@@ -297,8 +300,20 @@ LRESULT CALLBACK Win32Display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
                 }
             }
 
+            if (display.pointer_locked)
+                display.lock_pointer();
+
             return 0;
         }
+        case WM_ACTIVATE:
+            if (display.pointer_locked)
+            {
+                if (LOWORD(wp) == WA_INACTIVE)
+                    ClipCursor(NULL);
+                else
+                    display.lock_pointer();
+            }
+            return 0;
         default:
             return DefWindowProc(hwnd, msg, wp, lp);
     }
@@ -356,7 +371,7 @@ Win32Display::Win32Display(const DisplayOptions &options)
     }
 
     if (primary_monitor == NULL)
-        primary_monitor = &monitors[0];
+        primary_monitor = &(*monitors.begin());
 
     DWORD style;
     int x, y;
@@ -457,6 +472,16 @@ Win32Display::Win32Display(const DisplayOptions &options)
     glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
 
     update_refresh_rate();
+
+    RAWINPUTDEVICE rid;
+    rid.usUsagePage = 1;
+    rid.usUsage = 2;
+    rid.dwFlags = 0;
+    rid.hwndTarget = window;
+    if (!RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
+        win::bug("Win32Display: Couldn't register raw input devices");
+
+    raw_input.resize(16);
 }
 
 Win32Display::~Win32Display()
@@ -476,11 +501,13 @@ void Win32Display::process()
 
     MSG msg;
 
-    while (PeekMessage(&msg, window, 0, 0, PM_REMOVE))
+    while (PeekMessage(&msg, window, 0, WM_INPUT - 1, PM_REMOVE) || PeekMessage(&msg, window, WM_INPUT + 1, 0xFFFF, PM_REMOVE))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+
+    process_raw_mouse();
 }
 
 void Win32Display::swap()
@@ -530,9 +557,18 @@ float Win32Display::refresh_rate()
     return rrate;
 }
 
-void Win32Display::cursor(bool show)
+void Win32Display::show_pointer(bool show)
 {
     ShowCursor(show);
+}
+
+void Win32Display::lock_pointer(bool lock)
+{
+    pointer_locked = lock;
+    if (lock)
+        lock_pointer();
+    else
+        ClipCursor(NULL);
 }
 
 void Win32Display::set_fullscreen(bool fullscreen)
@@ -635,6 +671,68 @@ void Win32Display::update_refresh_rate()
     }
 
     rrate = m->rate;
+}
+
+void Win32Display::process_raw_mouse()
+{
+    int x = 0, y = 0;
+
+    while (true)
+    {
+        UINT size = sizeof(RAWINPUT) * raw_input.size();
+        const auto count = GetRawInputBuffer(raw_input.data(), &size, sizeof(RAWINPUT::header));
+
+        if (count == 0)
+            break;
+
+        if (count == (UINT)-1)
+        {
+            const auto e = GetLastError();
+            if (e == 122)
+            {
+                raw_input.resize(raw_input.size() * 2);
+                continue;
+            }
+
+            return; // just bug out
+        }
+
+        for (int i = 0; i < count; ++i)
+        {
+            if (raw_input[i].header.dwType == RIM_TYPEMOUSE)
+            {
+                if ((raw_input[i].data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) == 0)
+                {
+                    x += raw_input[i].data.mouse.lLastX;
+                    y += raw_input[i].data.mouse.lLastY;
+                }
+            }
+        }
+    }
+
+    if (x != 0 || y != 0)
+    {
+        relative_mouse_handler(x, y);
+    }
+}
+
+void Win32Display::lock_pointer()
+{
+    const auto exstyle = GetWindowExStyle(window);
+    const auto style = GetWindowStyle(window);
+
+    RECT rect;
+    GetWindowRect(window, &rect);
+
+    RECT rect2 = rect;
+    AdjustWindowRectEx(&rect2, style, FALSE, exstyle);
+
+    rect.left -= rect2.left - rect.left;
+    rect.right -= rect2.right - rect.right;
+    rect.bottom -= rect2.bottom - rect.bottom;
+    rect.top -= rect2.top - rect.top;
+
+    ClipCursor(&rect);
 }
 
 }

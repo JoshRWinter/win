@@ -3,7 +3,6 @@
 #ifdef WIN_USE_OPENGL
 
 #define WIN_GL_EXTENSION_STORAGE
-#include <EGL/egl.h>
 #include <win/gl/GL.hpp>
 
 using namespace win::gl;
@@ -12,6 +11,7 @@ namespace win
 {
 
 #if defined WINPLAT_LINUX
+#include <EGL/egl.h>
 static void *get_proc(const char *name)
 {
     void *address = (void *)eglGetProcAddress(name);
