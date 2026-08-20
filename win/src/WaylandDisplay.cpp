@@ -2,6 +2,7 @@
 
 #ifdef WINPLAT_LINUX
 
+#include <chrono>
 #include <cstring>
 
 #include <linux/input.h>

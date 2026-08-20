@@ -12,6 +12,7 @@ namespace win
 
 #if defined WINPLAT_LINUX
 #include <EGL/egl.h>
+
 static void *get_proc(const char *name)
 {
     void *address = (void *)eglGetProcAddress(name);
@@ -201,6 +202,7 @@ void gl_load_functions()
     glBindFramebuffer = (decltype(glBindFramebuffer))get_proc("glBindFramebuffer");
     glFramebufferTexture2D = (decltype(glFramebufferTexture2D))get_proc("glFramebufferTexture2D");
     glDrawBuffers = (decltype(glDrawBuffers))get_proc("glDrawBuffers");
+    glBlendFuncSeparate = (decltype(glBlendFuncSeparate))get_proc("glBlendFuncSeparate");
     glColorMaski = (decltype(glColorMaski))get_proc("glColorMaski");
     glClearBufferfv = (decltype(glClearBufferfv))get_proc("glClearBufferfv");
     glDeleteFramebuffers = (decltype(glDeleteFramebuffers))get_proc("glDeleteFramebuffers");
