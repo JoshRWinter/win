@@ -7,6 +7,12 @@ ControlPanel::ControlPanel(Renderer &renderer, const win::Box<int> &box)
     reflow();
 }
 
+void ControlPanel::set_box(const win::Box<int> &box)
+{
+    this->box = box;
+    reflow();
+}
+
 void ControlPanel::mouse_move(int x, int y)
 {
     mouse_x = x;

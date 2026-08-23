@@ -60,6 +60,7 @@ class ControlPanel
 public:
     explicit ControlPanel(Renderer &renderer, const win::Box<int> &box);
 
+    void set_box(const win::Box<int> &box);
     void mouse_move(int x, int y);
     void click(bool down);
     void set_pad(int p);

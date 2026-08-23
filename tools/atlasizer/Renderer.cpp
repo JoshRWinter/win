@@ -66,6 +66,15 @@ Renderer::Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
+void Renderer::resize(int width, int height)
+{
+	projection = glm::ortho((float)0, (float)width, (float)0, (float)height);
+	glViewport(0, 0, width, height);
+	viewport_width = width;
+	viewport_height = height;
+	text_renderer.resize(win::Dimensions(width, height), win::Area(0.0f, (float)width, 0.0f, (float)height));
+}
+
 void Renderer::screen_to_world(int mouse_x, int mouse_y, int &world_x, int &world_y) const
 {
 	const glm::vec4 ndc((mouse_x / (viewport_width / 2.0f)) - 1.0f, (mouse_y / (viewport_height / 2.0f)) - 1.0f, -1, 1);

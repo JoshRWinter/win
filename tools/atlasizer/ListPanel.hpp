@@ -38,6 +38,7 @@ class ListPanel
 public:
     ListPanel(Renderer &renderer, const win::Box<int> &box);
 
+    void set_box(const win::Box<int> &box);
     void add(int id, const std::string &text);
     void remove(int id);
     void clear();

@@ -24,6 +24,7 @@ class Renderer
 public:
     explicit Renderer(win::AssetRoll &roll, int viewport_width, int viewport_height);
 
+    void resize(int width, int height);
     void screen_to_world(int mouse_x, int mouse_y, int &world_x, int &world_y) const;
     int add_texture(const win::Targa &tga);
     void remove_texture(int texture);

@@ -6,6 +6,13 @@ ListPanel::ListPanel(Renderer &renderer, const win::Box<int> &box)
 {
 }
 
+void ListPanel::set_box(const win::Box<int> &box)
+{
+    this->box = box;
+    scroll_yoffset = 0;
+    reflow();
+}
+
 void ListPanel::add(int id, const std::string &text)
 {
     items.emplace_back(id, text, 0, 0, 0, 0);

@@ -476,6 +476,17 @@ void gui()
             }
         });
 
+    display.register_resize_handler([&renderer, &cpanel, &cpanel_box, &lpanel, &lpanel_box](int width, int height)
+    {
+        renderer.resize(width, height);
+
+        cpanel_box = win::Box(1, 1, width - 2, 50 - 2);
+        cpanel.set_box(cpanel_box);
+
+        lpanel_box = win::Box(1, 50, 200, height - 51);
+        lpanel.set_box(lpanel_box);
+    });
+
     while (!quit)
     {
         // if no activity in last 10 seconds, slow down this loop
