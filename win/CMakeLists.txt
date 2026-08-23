@@ -177,6 +177,7 @@ if (WIN32)
 		${DSOUND_LIBRARIES}
 		dxgi.lib
 		dxguid.lib
+		#dwmapi.lib
 		${CMAKE_CURRENT_LIST_DIR}/lib/zlib.lib
 		${CMAKE_CURRENT_LIST_DIR}/lib/freetype.lib
 		${CMAKE_CURRENT_LIST_DIR}/lib/ogg.lib

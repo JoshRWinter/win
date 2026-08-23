@@ -7,6 +7,7 @@
 
 #include <dxgi.h>
 #include <windowsx.h>
+//#include <dwmapi.h>
 
 #include <win/Win32Display.hpp>
 
@@ -158,8 +159,11 @@ void Win32Display::win_init_gl(HWND hwnd)
     pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
     pfd.iPixelType = PFD_TYPE_RGBA;
     pfd.cColorBits = 32;
+    pfd.cRedBits = 8;
+    pfd.cGreenBits = 8;
+    pfd.cBlueBits = 8;
+    //pfd.cAlphaBits = 8;
     pfd.cDepthBits = 24;
-    pfd.cStencilBits = 8;
     pfd.iLayerType = PFD_MAIN_PLANE;
 
     const int attribs[] = { WGL_CONTEXT_MAJOR_VERSION_ARB, options.gl_major, WGL_CONTEXT_MINOR_VERSION_ARB, options.gl_minor, 0 };
@@ -454,6 +458,14 @@ Win32Display::Win32Display(const DisplayOptions &options)
     }
 
     window = CreateWindowEx(0, window_class, options.caption.c_str(), style, x, y, w, h, options.parent, NULL, GetModuleHandle(NULL), this);
+
+    /*
+    DWM_BLURBEHIND bb = {0};
+    bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
+    bb.hRgnBlur = CreateRectRgn(0, 0, -1, -1);
+    bb.fEnable = TRUE;
+    DwmEnableBlurBehindWindow(window, &bb);
+    */
 
     if (window == NULL)
         win::bug("Could not create window");
