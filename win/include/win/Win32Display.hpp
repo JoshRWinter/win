@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <vector>
+#include <array>
 
 #include <gl/GL.h>
 #include <GL/wglext.h>
@@ -46,6 +47,7 @@ private:
     void update_refresh_rate();
     void process_raw_mouse();
     void lock_pointer();
+    void get_keys();
 
     HWND window;
     HDC hdc;
@@ -68,6 +70,9 @@ private:
         bool resize = false;
         std::chrono::time_point<std::chrono::steady_clock> time;
     } resize_state;
+
+    std::array<win::Button, 93> keys;
+    std::array<bool, 93> keystates;
 };
 
 }
