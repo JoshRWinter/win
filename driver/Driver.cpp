@@ -68,8 +68,10 @@ int main()
 
     win::SoundEngine audio_engine(roll);
 
-    win::GLTextRenderer text_renderer(win::Dimensions<int>(display.width(), display.height()),
-                                      win::Area<float>(-4.0f, 4.0f, -3.0f, 3.0f),
+    win::Dimensions dims(display.width(), display.height());
+    win::Area area(-4.0f, 4.0f, -3.0f, 3.0f);
+    win::GLTextRenderer text_renderer(dims,
+                                      area,
                                       GL_TEXTURE1,
                                       true,
                                       0,
@@ -161,10 +163,10 @@ int main()
 
     float mousex = 0.0f, mousey = 0.0f;
     display.register_mouse_handler(
-        [&mousex, &mousey](int x, int y)
+        [&mousex, &mousey, &dims, &area](int x, int y)
         {
-            mousex = ((x / 800.0f) * 8.0f) - 4.0f;
-            mousey = -(((y / 600.0f) * 6.0f) - 3.0f);
+            mousex = ((x / (float)dims.width) * (area.right - area.left)) - area.right;
+            mousey = -(((y / (float)dims.height) * (area.top - area.bottom)) - area.top);
         });
 
     display.register_window_handler(
@@ -173,6 +175,16 @@ int main()
             if (event == win::WindowEvent::close)
                 quit = true;
         });
+
+    display.register_resize_handler([&roll, &text_renderer, &dims, &area, &font1, &font2, &font3](int width, int height)
+    {
+        glViewport(0, 0, width, height);
+        dims = win::Dimensions(width, height);
+        text_renderer.resize(dims, area);
+        font1 = text_renderer.create_font(0.5f, roll["assets/arial.ttf"]);
+        font2 = text_renderer.create_font(0.5f, roll["assets/CHE-THIS.TTF"]);
+        font3 = text_renderer.create_font(0.2f, roll["assets/NotoSansMono-Regular.ttf"]);
+    });
 
     // display.register_character_handle([](int key)
     // {
