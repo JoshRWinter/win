@@ -160,7 +160,7 @@ win::WaylandDisplay::~WaylandDisplay()
     if (wl.shm != NULL)
         wl_shm_destroy(wl.shm);
 
-    for (auto output : wl.outputs)
+    for (auto output : wl.known_outputs)
         wl_output_destroy(output.first);
 
     if (wl.tearing_control != NULL)
@@ -183,11 +183,11 @@ void win::WaylandDisplay::process()
 {
     wl_display_dispatch_pending(wl.display);
 
-	if (props.relx != 0 || props.rely != 0)
-		relative_mouse_handler(props.relx, props.rely);
+    if (props.relx != 0 || props.rely != 0)
+        relative_mouse_handler(props.relx, props.rely);
 
-	props.relx = 0;
-	props.rely = 0;
+    props.relx = 0;
+    props.rely = 0;
 
     if (props.resized && std::chrono::duration<float>(std::chrono::steady_clock::now() - props.resize_time).count() > 0.8f)
     {
@@ -263,7 +263,7 @@ void win::WaylandDisplay::lock_pointer(bool lock)
 void win::WaylandDisplay::set_fullscreen(bool fullscreen)
 {
     if (fullscreen)
-        xdg_toplevel_set_fullscreen(xdg.toplevel, wl.current_output);
+        xdg_toplevel_set_fullscreen(xdg.toplevel, wl.current_outputs.empty() ? NULL : wl.current_outputs.back());
     else
         xdg_toplevel_unset_fullscreen(xdg.toplevel);
 }
@@ -285,12 +285,35 @@ win::NativeWindowHandle win::WaylandDisplay::native_handle()
 
 void win::WaylandDisplay::load_normal_pointer(wl_pointer *pointer, uint32_t serial)
 {
-    auto image = wl.cursor->images[0];
+    if (wl.cursor_theme != NULL)
+        wl_cursor_theme_destroy(wl.cursor_theme);
+
+    wl.cursor_theme = wl_cursor_theme_load(NULL, 24 * props.scale, wl.shm);
+
+    wl_surface_set_buffer_scale(wl.cursor_surface, props.scale);
+    auto cursor = wl_cursor_theme_get_cursor(wl.cursor_theme, "left_ptr");
+
+    auto image = cursor->images[0];
     auto buffer = wl_cursor_image_get_buffer(image);
     wl_pointer_set_cursor(pointer, serial, wl.cursor_surface, image->hotspot_x, image->hotspot_y);
     wl_surface_attach(wl.cursor_surface, buffer, 0, 0);
     wl_surface_damage(wl.cursor_surface, 0, 0, image->width, image->height);
     wl_surface_commit(wl.cursor_surface);
+}
+
+void win::WaylandDisplay::set_monitor_props()
+{
+    if (!wl.current_outputs.empty())
+    {
+        auto last_enter = wl.current_outputs.back();
+        props.refresh = wl.known_outputs.contains(last_enter) ? wl.known_outputs.at(last_enter).refresh : 60.0f;
+
+        props.scale = 1;
+        for (auto output : wl.current_outputs)
+            props.scale = std::max(props.scale, wl.known_outputs.contains(output) ? wl.known_outputs.at(output).scale : 1);
+
+        wl_surface_set_buffer_scale(wl.surface, props.scale);
+    }
 }
 
 void win::WaylandDisplay::registry_add_object(void *data, wl_registry *registry, uint32_t name, const char *interface, uint32_t version)
@@ -299,7 +322,7 @@ void win::WaylandDisplay::registry_add_object(void *data, wl_registry *registry,
 
     if (!strcmp(interface, wl_compositor_interface.name))
     {
-        wd.wl.compositor = (wl_compositor *)wl_registry_bind(registry, name, &wl_compositor_interface, 1);
+        wd.wl.compositor = (wl_compositor *)wl_registry_bind(registry, name, &wl_compositor_interface, 3);
     }
     else if (!strcmp(interface, xdg_wm_base_interface.name))
     {
@@ -323,12 +346,11 @@ void win::WaylandDisplay::registry_add_object(void *data, wl_registry *registry,
     {
         wd.wl.shm = (wl_shm *)wl_registry_bind(registry, name, &wl_shm_interface, 1);
         wd.wl.cursor_theme = wl_cursor_theme_load(NULL, 16, wd.wl.shm);
-        wd.wl.cursor = wl_cursor_theme_get_cursor(wd.wl.cursor_theme, "left_ptr");
     }
     else if (!strcmp(interface, wl_output_interface.name))
     {
         auto output = (wl_output *)wl_registry_bind(registry, name, &wl_output_interface, 4);
-        wd.wl.outputs.emplace(output, Output());
+        wd.wl.known_outputs.emplace(output, Output());
         wl_output_add_listener(output, &wd.wl.output_listener, data);
     }
     else if (!strcmp(interface, wp_tearing_control_manager_v1_interface.name))
@@ -375,7 +397,7 @@ void win::WaylandDisplay::wl_pointer_listener_enter(void *data, wl_pointer *poin
 void win::WaylandDisplay::wl_pointer_listener_motion(void *data, wl_pointer *seat, uint32_t time, wl_fixed_t x, wl_fixed_t y)
 {
     auto &wd = *(WaylandDisplay *)data;
-    wd.mouse_handler(wl_fixed_to_int(x), wl_fixed_to_int(y));
+    wd.mouse_handler(wl_fixed_to_int(x) * wd.props.scale, wl_fixed_to_int(y) * wd.props.scale);
 }
 
 void win::WaylandDisplay::wl_pointer_listener_button(void *data, wl_pointer *pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
@@ -408,8 +430,8 @@ void win::WaylandDisplay::zwp_relative_pointer_listener_relative_motion(void *da
 {
     auto &wd = *(WaylandDisplay *)data;
 
-	wd.props.relx += wl_fixed_to_int(dx_unaccel);
-	wd.props.rely += wl_fixed_to_int(dy_unaccel);
+    wd.props.relx += wl_fixed_to_int(dx_unaccel) * wd.props.scale;
+    wd.props.rely += wl_fixed_to_int(dy_unaccel) * wd.props.scale;
 }
 
 void win::WaylandDisplay::wl_keyboard_listener_keymap(void *data, wl_keyboard *keyboard, uint32_t format, int32_t fd, uint32_t size)
@@ -478,19 +500,22 @@ void win::WaylandDisplay::wl_keyboard_listener_modifiers(void *data,
 void win::WaylandDisplay::wl_output_listener_mode(void *data, wl_output *output, uint32_t flags, int32_t width, int32_t height, int32_t refresh)
 {
     auto &wd = *(WaylandDisplay *)data;
-    wd.wl.outputs.at(output).refresh = refresh / 1000.0f;
+    wd.wl.known_outputs.at(output).refresh = refresh / 1000.0f;
+}
+
+void win::WaylandDisplay::wl_output_listener_scale(void *data, wl_output *output, int32_t factor)
+{
+    auto &wd = *(WaylandDisplay *)data;
+    wd.wl.known_outputs.at(output).scale = factor;
 }
 
 void win::WaylandDisplay::wl_surface_listener_enter(void *data, wl_surface *surface, wl_output *output)
 {
     auto &wd = *(WaylandDisplay *)data;
 
-    if (wd.wl.current_outputs == 0)
-        wd.props.refresh = wd.wl.outputs.contains(output) ? wd.wl.outputs.at(output).refresh : 60.0f;
+    wd.wl.current_outputs.push_back(output);
 
-    wd.wl.current_output = output;
-
-    ++wd.wl.current_outputs;
+    wd.set_monitor_props();
 
     if (wd.props.go_fullscreen)
     {
@@ -503,8 +528,18 @@ void win::WaylandDisplay::wl_surface_listener_leave(void *data, wl_surface *surf
 {
     auto &wd = *(WaylandDisplay *)data;
 
-    if (--wd.wl.current_outputs == 1)
-        wd.props.refresh = wd.wl.outputs.contains(wd.wl.current_output) ? wd.wl.outputs.at(wd.wl.current_output).refresh : 60.0f;
+    for (auto it = wd.wl.current_outputs.begin(); it != wd.wl.current_outputs.end();)
+    {
+        if (*it == output)
+        {
+            it = wd.wl.current_outputs.erase(it);
+            break;
+        }
+
+        ++it;
+    }
+
+    wd.set_monitor_props();
 }
 
 void win::WaylandDisplay::xdg_wm_base_listener_pong(void *data, xdg_wm_base *wm_base, uint32_t serial)
@@ -525,14 +560,14 @@ void win::WaylandDisplay::xdg_toplevel_listener_configure(void *data, xdg_toplev
     auto &w = *(WaylandDisplay *)data;
 
     bool resize = false;
-    if (width != 0 && width != w.props.width)
+    if (width != 0 && width * w.props.scale != w.props.width)
     {
-        w.props.width = width;
+        w.props.width = width * w.props.scale;
         resize = true;
     }
-    if (height != 0 && height != w.props.height)
+    if (height != 0 && height * w.props.scale != w.props.height)
     {
-        w.props.height = height;
+        w.props.height = height * w.props.scale;
         resize = true;
     }
 

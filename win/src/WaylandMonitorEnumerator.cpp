@@ -33,7 +33,7 @@ void win::WaylandMonitorEnumerator::init()
                                                    if (!strcmp(interface, wl_output_interface.name))
                                                    {
                                                        auto output = (wl_output *)wl_registry_bind(registry, name, &wl_output_interface, 4);
-                                                       map.emplace(output, Monitor("", false, 0, 0, 0, 0, 0));
+                                                       map.emplace(output, Monitor("", false, 0, 0, 0, 0, 0, 0));
                                                        wl_output_add_listener(output, &listener, &map);
                                                    }
                                                },
@@ -66,7 +66,12 @@ void win::WaylandMonitorEnumerator::init()
                                                mon.rate = refresh / 1000.0f;
                                            },
                                            .done = [](void *, wl_output *) {},
-                                           .scale = [](void *, wl_output *, int32_t) {},
+                                           .scale =
+                                               [](void *data, wl_output *output, int32_t factor)
+                                           {
+                                               auto &mon = ((std::map<wl_output *, Monitor> *)data)->at(output);
+                                               mon.scale = factor;
+                                           },
                                            .name =
                                                [](void *data, wl_output *output, const char *name)
                                            {

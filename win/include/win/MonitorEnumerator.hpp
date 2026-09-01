@@ -10,7 +10,7 @@ namespace win
 
 struct Monitor
 {
-    Monitor(const std::string &id, bool primary, int x, int y, int width, int height, float rate)
+    Monitor(const std::string &id, bool primary, int x, int y, int width, int height, int scale, float rate)
         : id(id)
         , primary(primary)
         , x(x)
@@ -28,6 +28,7 @@ struct Monitor
     int y;
     int width;
     int height;
+    int scale;
     float rate;
 };
 
