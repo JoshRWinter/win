@@ -307,12 +307,6 @@ void win::WaylandDisplay::set_monitor_props()
     {
         auto last_enter = wl.current_outputs.back();
         props.refresh = wl.known_outputs.contains(last_enter) ? wl.known_outputs.at(last_enter).refresh : 60.0f;
-
-        props.scale = 1;
-        for (auto output : wl.current_outputs)
-            props.scale = std::max(props.scale, wl.known_outputs.contains(output) ? wl.known_outputs.at(output).scale : 1);
-
-        wl_surface_set_buffer_scale(wl.surface, props.scale);
     }
 }
 
@@ -322,7 +316,7 @@ void win::WaylandDisplay::registry_add_object(void *data, wl_registry *registry,
 
     if (!strcmp(interface, wl_compositor_interface.name))
     {
-        wd.wl.compositor = (wl_compositor *)wl_registry_bind(registry, name, &wl_compositor_interface, 3);
+        wd.wl.compositor = (wl_compositor *)wl_registry_bind(registry, name, &wl_compositor_interface, 6);
     }
     else if (!strcmp(interface, xdg_wm_base_interface.name))
     {
@@ -540,6 +534,13 @@ void win::WaylandDisplay::wl_surface_listener_leave(void *data, wl_surface *surf
     }
 
     wd.set_monitor_props();
+}
+
+void win::WaylandDisplay::wl_surface_listener_preferred_buffer_scale(void *data, wl_surface *surface, int factor)
+{
+    auto &wd = *(win::WaylandDisplay *)data;
+    wd.props.scale = factor;
+    wl_surface_set_buffer_scale(surface, factor);
 }
 
 void win::WaylandDisplay::xdg_wm_base_listener_pong(void *data, xdg_wm_base *wm_base, uint32_t serial)

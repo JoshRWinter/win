@@ -80,6 +80,7 @@ private:
     static void wl_output_listener_scale(void *data, wl_output *output, int32_t factor);
     static void wl_surface_listener_enter(void *data, wl_surface *surface, wl_output *output);
     static void wl_surface_listener_leave(void *data, wl_surface *surface, wl_output *output);
+    static void wl_surface_listener_preferred_buffer_scale(void *data, wl_surface *surface, int factor);
     static void xdg_wm_base_listener_pong(void *data, xdg_wm_base *wm_base, uint32_t serial);
     static void xdg_surface_listener_configure(void *data, xdg_surface *surface, uint32_t serial);
     static void xdg_toplevel_listener_configure(void *data, xdg_toplevel *toplevel, int32_t width, int32_t height, struct wl_array *states);
@@ -153,7 +154,9 @@ private:
         wl_cursor_theme *cursor_theme = NULL;
         wl_surface *cursor_surface = NULL;
         wl_surface_listener surface_listener { .enter = wl_surface_listener_enter,
-                                               .leave = wl_surface_listener_leave }; //[](void *, wl_surface *, wl_output *) {} };
+                                               .leave = wl_surface_listener_leave,
+                                               .preferred_buffer_scale = wl_surface_listener_preferred_buffer_scale,
+                                               .preferred_buffer_transform = [](void *, wl_surface *, unsigned) {} };
 
         wl_registry *registry = NULL;
         wl_compositor *compositor = NULL;

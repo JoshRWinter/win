@@ -70,12 +70,7 @@ int main()
 
     win::Dimensions dims(display.width(), display.height());
     win::Area area(-4.0f, 4.0f, -3.0f, 3.0f);
-    win::GLTextRenderer text_renderer(dims,
-                                      area,
-                                      GL_TEXTURE1,
-                                      true,
-                                      0,
-                                      true);
+    win::GLTextRenderer text_renderer(dims, area, GL_TEXTURE1, true, 0, true);
     win::GLFont font1 = text_renderer.create_font(0.5f, roll["assets/arial.ttf"]);
     win::GLFont font2 = text_renderer.create_font(0.5f, roll["assets/CHE-THIS.TTF"]);
     win::GLFont font3 = text_renderer.create_font(0.2f, roll["assets/NotoSansMono-Regular.ttf"]);
@@ -176,15 +171,17 @@ int main()
                 quit = true;
         });
 
-    display.register_resize_handler([&roll, &text_renderer, &dims, &area, &font1, &font2, &font3](int width, int height)
-    {
-        glViewport(0, 0, width, height);
-        dims = win::Dimensions(width, height);
-        text_renderer.resize(dims, area);
-        font1 = text_renderer.create_font(0.5f, roll["assets/arial.ttf"]);
-        font2 = text_renderer.create_font(0.5f, roll["assets/CHE-THIS.TTF"]);
-        font3 = text_renderer.create_font(0.2f, roll["assets/NotoSansMono-Regular.ttf"]);
-    });
+    display.register_resize_handler(
+        [&roll, &text_renderer, &dims, &area, &font1, &font2, &font3](int width, int height)
+        {
+            glViewport(0, 0, width, height);
+            dims = win::Dimensions(width, height);
+            text_renderer.resize(dims, area);
+            font1 = text_renderer.create_font(0.5f, roll["assets/arial.ttf"]);
+            font2 = text_renderer.create_font(0.5f, roll["assets/CHE-THIS.TTF"]);
+            font3 = text_renderer.create_font(0.2f, roll["assets/NotoSansMono-Regular.ttf"]);
+            fprintf(stderr, "Resize: %d %d\n", width, height);
+        });
 
     // display.register_character_handle([](int key)
     // {
