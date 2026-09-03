@@ -37,6 +37,7 @@ win::WaylandDisplay::WaylandDisplay(const win::DisplayOptions &options)
         win::bug("WaylandDisplay: Couldn't create wayland surface");
     wl_surface_add_listener(wl.surface, &wl.surface_listener, this);
 
+    if (wl.tearing_control_manager != NULL)
     wl.tearing_control = wp_tearing_control_manager_v1_get_tearing_control(wl.tearing_control_manager, wl.surface);
 
     if (xdg.wm_base == NULL)
