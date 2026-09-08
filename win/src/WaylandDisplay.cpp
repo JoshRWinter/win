@@ -3,6 +3,7 @@
 #ifdef WINPLAT_LINUX
 
 #include <chrono>
+#include <cmath>
 #include <cstring>
 
 #include <linux/input.h>
@@ -11,6 +12,9 @@
 #include <xkbcommon/xkbcommon.h>
 
 #include <win/WaylandDisplay.hpp>
+
+#include "win/WaylandFractionalScale.h"
+#include "win/WaylandViewporter.h"
 
 win::WaylandDisplay::WaylandDisplay(const win::DisplayOptions &options)
 {
@@ -38,7 +42,13 @@ win::WaylandDisplay::WaylandDisplay(const win::DisplayOptions &options)
     wl_surface_add_listener(wl.surface, &wl.surface_listener, this);
 
     if (wl.tearing_control_manager != NULL)
-    wl.tearing_control = wp_tearing_control_manager_v1_get_tearing_control(wl.tearing_control_manager, wl.surface);
+        wl.tearing_control = wp_tearing_control_manager_v1_get_tearing_control(wl.tearing_control_manager, wl.surface);
+
+    if (wl.fractional_scale_manager != NULL)
+    {
+        wl.fractional_scale = wp_fractional_scale_manager_v1_get_fractional_scale(wl.fractional_scale_manager, wl.surface);
+        wp_fractional_scale_v1_add_listener(wl.fractional_scale, &wl.fractional_scale_listener, this);
+    }
 
     if (xdg.wm_base == NULL)
         win::bug("WaylandDisplay: couldn't create xdg base");
@@ -164,6 +174,18 @@ win::WaylandDisplay::~WaylandDisplay()
     for (auto output : wl.known_outputs)
         wl_output_destroy(output.first);
 
+    if (wl.viewport != NULL)
+        wp_viewport_destroy(wl.viewport);
+
+    if (wl.viewporter != NULL)
+        wp_viewporter_destroy(wl.viewporter);
+
+    if (wl.fractional_scale != NULL)
+        wp_fractional_scale_v1_destroy(wl.fractional_scale);
+
+    if (wl.fractional_scale_manager != NULL)
+        wp_fractional_scale_manager_v1_destroy(wl.fractional_scale_manager);
+
     if (wl.tearing_control != NULL)
         wp_tearing_control_v1_destroy(wl.tearing_control);
 
@@ -190,7 +212,7 @@ void win::WaylandDisplay::process()
     props.relx = 0;
     props.rely = 0;
 
-    if (props.resized && std::chrono::duration<float>(std::chrono::steady_clock::now() - props.resize_time).count() > 0.8f)
+    if (props.resized && std::chrono::duration<float>(std::chrono::steady_clock::now() - props.resize_time).count() > 0.5f)
     {
         props.resized = false;
         resize_handler(props.width, props.height);
@@ -289,9 +311,9 @@ void win::WaylandDisplay::load_normal_pointer(wl_pointer *pointer, uint32_t seri
     if (wl.cursor_theme != NULL)
         wl_cursor_theme_destroy(wl.cursor_theme);
 
-    wl.cursor_theme = wl_cursor_theme_load(NULL, 24 * props.scale, wl.shm);
+    wl.cursor_theme = wl_cursor_theme_load(NULL, 24 * props.intscale, wl.shm);
 
-    wl_surface_set_buffer_scale(wl.cursor_surface, props.scale);
+    wl_surface_set_buffer_scale(wl.cursor_surface, props.intscale);
     auto cursor = wl_cursor_theme_get_cursor(wl.cursor_theme, "left_ptr");
 
     auto image = cursor->images[0];
@@ -352,6 +374,14 @@ void win::WaylandDisplay::registry_add_object(void *data, wl_registry *registry,
     {
         wd.wl.tearing_control_manager = (wp_tearing_control_manager_v1 *)wl_registry_bind(registry, name, &wp_tearing_control_manager_v1_interface, 1);
     }
+    else if (!strcmp(interface, wp_fractional_scale_manager_v1_interface.name))
+    {
+        wd.wl.fractional_scale_manager = (wp_fractional_scale_manager_v1 *)wl_registry_bind(registry, name, &wp_fractional_scale_manager_v1_interface, 1);
+    }
+    else if (!strcmp(interface, wp_viewporter_interface.name))
+    {
+        wd.wl.viewporter = (wp_viewporter *)wl_registry_bind(registry, name, &wp_viewporter_interface, 1);
+    }
 }
 
 void win::WaylandDisplay::registry_remove_object(void *data, wl_registry *registry, uint32_t name) {}
@@ -392,7 +422,7 @@ void win::WaylandDisplay::wl_pointer_listener_enter(void *data, wl_pointer *poin
 void win::WaylandDisplay::wl_pointer_listener_motion(void *data, wl_pointer *seat, uint32_t time, wl_fixed_t x, wl_fixed_t y)
 {
     auto &wd = *(WaylandDisplay *)data;
-    wd.mouse_handler(wl_fixed_to_int(x) * wd.props.scale, wl_fixed_to_int(y) * wd.props.scale);
+    wd.mouse_handler(std::round(wl_fixed_to_int(x) * wd.props.realscale), std::round(wl_fixed_to_int(y) * wd.props.realscale));
 }
 
 void win::WaylandDisplay::wl_pointer_listener_button(void *data, wl_pointer *pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
@@ -425,8 +455,8 @@ void win::WaylandDisplay::zwp_relative_pointer_listener_relative_motion(void *da
 {
     auto &wd = *(WaylandDisplay *)data;
 
-    wd.props.relx += wl_fixed_to_int(dx_unaccel) * wd.props.scale;
-    wd.props.rely += wl_fixed_to_int(dy_unaccel) * wd.props.scale;
+    wd.props.relx += std::round(wl_fixed_to_int(dx_unaccel) * wd.props.realscale);
+    wd.props.rely += std::round(wl_fixed_to_int(dy_unaccel) * wd.props.realscale);
 }
 
 void win::WaylandDisplay::wl_keyboard_listener_keymap(void *data, wl_keyboard *keyboard, uint32_t format, int32_t fd, uint32_t size)
@@ -504,6 +534,12 @@ void win::WaylandDisplay::wl_output_listener_scale(void *data, wl_output *output
     wd.wl.known_outputs.at(output).scale = factor;
 }
 
+void win::WaylandDisplay::wp_fractional_scale_listener_preferred_scale(void *data, wp_fractional_scale_v1 *fs, unsigned scale)
+{
+    auto &wd = *(WaylandDisplay *)data;
+    wd.props.realscale = scale / 120.0f;
+}
+
 void win::WaylandDisplay::wl_surface_listener_enter(void *data, wl_surface *surface, wl_output *output)
 {
     auto &wd = *(WaylandDisplay *)data;
@@ -540,8 +576,7 @@ void win::WaylandDisplay::wl_surface_listener_leave(void *data, wl_surface *surf
 void win::WaylandDisplay::wl_surface_listener_preferred_buffer_scale(void *data, wl_surface *surface, int factor)
 {
     auto &wd = *(win::WaylandDisplay *)data;
-    wd.props.scale = factor;
-    wl_surface_set_buffer_scale(surface, factor);
+    wd.props.intscale = factor;
 }
 
 void win::WaylandDisplay::xdg_wm_base_listener_pong(void *data, xdg_wm_base *wm_base, uint32_t serial)
@@ -562,19 +597,38 @@ void win::WaylandDisplay::xdg_toplevel_listener_configure(void *data, xdg_toplev
     auto &w = *(WaylandDisplay *)data;
 
     bool resize = false;
-    if (width != 0 && width * w.props.scale != w.props.width)
+    if (width != 0 && w.props.width != std::round(width * w.props.realscale))
     {
-        w.props.width = width * w.props.scale;
+        w.props.width = std::round(width * w.props.realscale);
         resize = true;
     }
-    if (height != 0 && height * w.props.scale != w.props.height)
+    if (height != 0 && w.props.height != std::round(height * w.props.realscale))
     {
-        w.props.height = height * w.props.scale;
+        w.props.height = std::round(height * w.props.realscale);
         resize = true;
     }
 
     if (resize)
     {
+        if (w.wl.viewporter != NULL)
+        {
+            if (w.props.realscale == 1.0f)
+            {
+                if (w.wl.viewport != NULL)
+                {
+                    wp_viewport_destroy(w.wl.viewport);
+                    w.wl.viewport = NULL;
+                }
+            }
+            else
+            {
+                if (w.wl.viewport == NULL)
+                    w.wl.viewport = wp_viewporter_get_viewport(w.wl.viewporter, w.wl.surface);
+
+                wp_viewport_set_destination(w.wl.viewport, width, height);
+            }
+        }
+
         w.props.resized = true;
         w.props.resize_time = std::chrono::steady_clock::now();
     }

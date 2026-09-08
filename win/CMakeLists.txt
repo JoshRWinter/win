@@ -99,6 +99,8 @@ add_library(win STATIC
 	src/WaylandRelativePointer.c
 	src/WaylandPointerConstraints.c
 	src/WaylandTearingControl.c
+	src/WaylandFractionalScale.c
+	src/WaylandViewporter.c
 
 	include/win/WaylandMonitorEnumerator.hpp
 	src/WaylandMonitorEnumerator.cpp

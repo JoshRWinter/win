@@ -75,8 +75,6 @@ int main()
     win::GLFont font2 = text_renderer.create_font(0.5f, roll["assets/CHE-THIS.TTF"]);
     win::GLFont font3 = text_renderer.create_font(0.2f, roll["assets/NotoSansMono-Regular.ttf"]);
 
-    std::cerr << "width is " << display.width() << " and height is " << display.height() << std::endl;
-
     const win::AtlasItem coords = atlas.item(4);
 
     // clang-format off
@@ -187,6 +185,8 @@ int main()
     // {
     // 	std::cerr << (char)key;
     // });
+
+    glViewport(0, 0, display.width(), display.height());
 
     const auto block_sid = audio_engine.play(music, 5, 1.0f, 1.0f, 1.0f, true, false);
     while (!quit)

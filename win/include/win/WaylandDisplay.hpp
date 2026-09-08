@@ -13,9 +13,11 @@
 
 #include <win/DisplayBase.hpp>
 
+#include "WaylandFractionalScale.h"
 #include "WaylandPointerConstraints.h"
 #include "WaylandRelativePointer.h"
 #include "WaylandTearingControl.h"
+#include "WaylandViewporter.h"
 #include "WaylandXdg.h"
 
 namespace win
@@ -78,6 +80,7 @@ private:
                                                uint32_t group);
     static void wl_output_listener_mode(void *data, wl_output *output, uint32_t flags, int32_t width, int32_t height, int32_t refresh);
     static void wl_output_listener_scale(void *data, wl_output *output, int32_t factor);
+    static void wp_fractional_scale_listener_preferred_scale(void *data, wp_fractional_scale_v1 *fs, unsigned scale);
     static void wl_surface_listener_enter(void *data, wl_surface *surface, wl_output *output);
     static void wl_surface_listener_leave(void *data, wl_surface *surface, wl_output *output);
     static void wl_surface_listener_preferred_buffer_scale(void *data, wl_surface *surface, int factor);
@@ -93,7 +96,8 @@ private:
     struct
     {
         int width = 0, height = 0;
-        int scale = 1;
+        int intscale = 1;
+        float realscale = 1.0f;
         int relx = 0, rely = 0;
         float refresh = 60.0f;
         bool resized = false;
@@ -147,6 +151,13 @@ private:
                                                .scale = wl_output_listener_scale,
                                                .name = [](void *, wl_output *, const char *name) {},
                                                .description = [](void *, wl_output *, const char *) {} };
+
+        wp_fractional_scale_manager_v1 *fractional_scale_manager = NULL;
+        wp_fractional_scale_v1 *fractional_scale = NULL;
+        wp_fractional_scale_v1_listener fractional_scale_listener = { .preferred_scale = wp_fractional_scale_listener_preferred_scale };
+
+        wp_viewporter *viewporter = NULL;
+        wp_viewport *viewport = NULL;
 
         wp_tearing_control_manager_v1 *tearing_control_manager = NULL;
         wp_tearing_control_v1 *tearing_control = NULL;
