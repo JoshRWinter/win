@@ -4,12 +4,17 @@
 
 #include <cstring>
 #include <map>
-#include <utility>
 
 #include <EGL/egl.h>
 #include <wayland-client.h>
 
 #include <win/WaylandMonitorEnumerator.hpp>
+
+struct UserData
+{
+    std::map<wl_output *, win::Monitor> *map = NULL;
+    wl_output_listener *output_listener = NULL;
+};
 
 win::WaylandMonitorEnumerator::WaylandMonitorEnumerator()
 {
@@ -26,15 +31,13 @@ void win::WaylandMonitorEnumerator::init()
     wl_registry_listener registry_listener = { .global =
                                                    [](void *data, wl_registry *registry, uint32_t name, const char *interface, uint32_t version)
                                                {
-                                                   auto &pair = *(std::pair<std::map<wl_output *, Monitor> *, wl_output_listener *> *)data;
-                                                   auto &map = *pair.first;
-                                                   auto &listener = *pair.second;
+                                                   auto &userdata = *(UserData *)data;
 
                                                    if (!strcmp(interface, wl_output_interface.name))
                                                    {
                                                        auto output = (wl_output *)wl_registry_bind(registry, name, &wl_output_interface, 4);
-                                                       map.emplace(output, Monitor("", false, 0, 0, 0, 0, 0, 0));
-                                                       wl_output_add_listener(output, &listener, &map);
+                                                       userdata.map->emplace(output, Monitor("", false, 0, 0, 0, 0, 1.0f, 60.0f));
+                                                       wl_output_add_listener(output, userdata.output_listener, userdata.map);
                                                    }
                                                },
                                                .global_remove = [](void *, wl_registry *, uint32_t) {} };
@@ -85,9 +88,11 @@ void win::WaylandMonitorEnumerator::init()
         win::bug("WaylandMonitorEnumerator: couldn't connect to display");
 
     std::map<wl_output *, Monitor> map;
-    std::pair regdata(&map, &output_listener);
+
+    UserData userdata { .map = &map, .output_listener = &output_listener };
+
     wl_registry *registry = wl_display_get_registry(display);
-    wl_registry_add_listener(registry, &registry_listener, &regdata);
+    wl_registry_add_listener(registry, &registry_listener, &userdata);
 
     wl_display_roundtrip(display);
 

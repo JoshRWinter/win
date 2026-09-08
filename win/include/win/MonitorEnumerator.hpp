@@ -28,7 +28,7 @@ struct Monitor
     int y;
     int width;
     int height;
-    int scale;
+    float scale;
     float rate;
 };
 

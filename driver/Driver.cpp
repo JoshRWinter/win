@@ -12,6 +12,7 @@
 #include <win/gl/GL.hpp>
 #include <win/gl/GLAtlas.hpp>
 #include <win/gl/GLTextRenderer.hpp>
+#include <win/MonitorEnumerator.hpp>
 #include <win/sound/SoundEngine.hpp>
 
 using namespace win::gl;
@@ -39,6 +40,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 int main()
 #endif
 {
+    fprintf(stderr, "Monitor info:\n");
+    win::MonitorEnumerator mi;
+    for (const auto &m : mi)
+    {
+        fprintf(stderr,
+                "\tId: %s, primary: %s, x: %d, y: %d, w: %d, h: %d, scale: %.2f, rate: %.4f\n",
+                m.id.c_str(),
+                m.primary ? "true" : "false",
+                m.x,
+                m.y,
+                m.width,
+                m.height,
+                m.scale,
+                m.rate);
+    }
+
+    fprintf(stderr, "\n");
+
     win::DisplayOptions display_options;
     display_options.caption = "debug_window";
     display_options.width = 800;
