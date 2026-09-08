@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include <dxgi.h>
+#include <shellscalingapi.h>
 
 #include <win/Win32MonitorEnumerator.hpp>
 
@@ -16,6 +17,7 @@ struct Win32MonitorInfo
     std::string name;
     int width;
     int height;
+    float scale;
     int rate;
     bool primary;
 };
@@ -38,10 +40,16 @@ static BOOL __stdcall callback(HMONITOR monitor, HDC hdc, LPRECT rect, LPARAM lp
         win::bug("EnumDisplaySettings failed");
     }
 
+    float scale = 1.0f;
+    DEVICE_SCALE_FACTOR dsf;
+    if (GetScaleFactorForMonitor(monitor, &dsf) == S_OK)
+        scale = (int)dsf / 100.0f;
+
     auto &item = v.emplace_back();
     item.name = info.szDevice;
     item.width = dm.dmPelsWidth;
     item.height = dm.dmPelsHeight;
+    item.scale = scale;
     item.rate = dm.dmDisplayFrequency;
     item.primary = info.dwFlags & MONITORINFOF_PRIMARY;
 
@@ -162,6 +170,7 @@ void Win32MonitorEnumerator::refresh()
                                   desc.DesktopCoordinates.top,
                                   closestmode->Width,
                                   closestmode->Height,
+                                  win32mon->scale,
                                   closestmode->RefreshRate.Numerator / (float)closestmode->RefreshRate.Denominator);
 
             output->Release();
