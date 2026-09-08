@@ -81,9 +81,9 @@ private:
     static void wl_output_listener_mode(void *data, wl_output *output, uint32_t flags, int32_t width, int32_t height, int32_t refresh);
     static void wl_output_listener_scale(void *data, wl_output *output, int32_t factor);
     static void wp_fractional_scale_listener_preferred_scale(void *data, wp_fractional_scale_v1 *fs, unsigned scale);
+    static void wp_cursor_fractional_scale_listener_preferred_scale(void *data, wp_fractional_scale_v1 *fs, unsigned scale);
     static void wl_surface_listener_enter(void *data, wl_surface *surface, wl_output *output);
     static void wl_surface_listener_leave(void *data, wl_surface *surface, wl_output *output);
-    static void wl_surface_listener_preferred_buffer_scale(void *data, wl_surface *surface, int factor);
     static void xdg_wm_base_listener_pong(void *data, xdg_wm_base *wm_base, uint32_t serial);
     static void xdg_surface_listener_configure(void *data, xdg_surface *surface, uint32_t serial);
     static void xdg_toplevel_listener_configure(void *data, xdg_toplevel *toplevel, int32_t width, int32_t height, struct wl_array *states);
@@ -96,8 +96,8 @@ private:
     struct
     {
         int width = 0, height = 0;
-        int intscale = 1;
-        float realscale = 1.0f;
+        float scale = 1.0f;
+        float cursor_scale = 1.0f;
         int relx = 0, rely = 0;
         float refresh = 60.0f;
         bool resized = false;
@@ -154,7 +154,9 @@ private:
 
         wp_fractional_scale_manager_v1 *fractional_scale_manager = NULL;
         wp_fractional_scale_v1 *fractional_scale = NULL;
+        wp_fractional_scale_v1 *cursor_fractional_scale = NULL;
         wp_fractional_scale_v1_listener fractional_scale_listener = { .preferred_scale = wp_fractional_scale_listener_preferred_scale };
+        wp_fractional_scale_v1_listener cursor_fractional_scale_listener = { .preferred_scale = wp_cursor_fractional_scale_listener_preferred_scale };
 
         wp_viewporter *viewporter = NULL;
         wp_viewport *viewport = NULL;
@@ -164,9 +166,10 @@ private:
 
         wl_cursor_theme *cursor_theme = NULL;
         wl_surface *cursor_surface = NULL;
+        wp_viewport *cursor_viewport = NULL;
         wl_surface_listener surface_listener { .enter = wl_surface_listener_enter,
                                                .leave = wl_surface_listener_leave,
-                                               .preferred_buffer_scale = wl_surface_listener_preferred_buffer_scale,
+                                               .preferred_buffer_scale = [](void *, wl_surface *, int) {},
                                                .preferred_buffer_transform = [](void *, wl_surface *, unsigned) {} };
 
         wl_registry *registry = NULL;
