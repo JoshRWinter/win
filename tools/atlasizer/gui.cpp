@@ -85,7 +85,7 @@ void gui()
     cpanel.enable_move_up(false);
     cpanel.enable_move_down(false);
 
-    win::Box<int> lpanel_box(1, 50, 200, display.height() - 51);
+    win::Box<int> lpanel_box(1, 50, 250, display.height() - 51);
     ListPanel lpanel(renderer, lpanel_box);
 
     // interface state
@@ -96,7 +96,7 @@ void gui()
         drag
     } drag_mode = DragMode::none;
 
-    int center_x = (display.width() / 2.0f) - 250, center_y = (display.height() / 2.0f) - 105;
+    int center_x = (display.width() / 2.0f) - 325, center_y = (display.height() / 2.0f) - 105;
     win::Dimensions<int> canvas_dimensions;
     std::optional<std::filesystem::path> current_save_file;
     auto last_interaction = std::chrono::high_resolution_clock::now();
@@ -481,10 +481,10 @@ void gui()
         {
             renderer.resize(width, height);
 
-            cpanel_box = win::Box(1, 1, width - 2, 50 - 2);
+            cpanel_box.width = width - 2;
             cpanel.set_box(cpanel_box);
 
-            lpanel_box = win::Box(1, 50, 200, height - 51);
+            lpanel_box.height = height - 51;
             lpanel.set_box(lpanel_box);
         });
 
