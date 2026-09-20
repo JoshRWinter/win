@@ -17,6 +17,8 @@ add_library(win STATIC
 
 	include/win/ObjectExchanger.hpp
 
+	include/win/ComponentSet.hpp
+
 	include/win/SimStateExchanger.hpp
 
 	include/win/Utility.hpp
